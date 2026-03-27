@@ -3,7 +3,7 @@
 ================================================
 
 REQUISITOS PREVIOS
-------------------
+-------------------
 Necesitas instalar 3 cosas antes de poder correr el proyecto:
 
 1. .NET SDK 8
@@ -14,18 +14,13 @@ Necesitas instalar 3 cosas antes de poder correr el proyecto:
    - Debería mostrar algo como: 8.0.x
 
 2. Flutter SDK
-   - Ve a: https://docs.flutter.dev/get-started/install/windows/mobile
+   - Ve a: https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.41.6-stable.zip
    - Descarga el ZIP de Flutter y extráelo en C:\flutter
      ⚠️ NO lo pongas en C:\Program Files ni en OneDrive
-   - Añade Flutter al PATH:
-       * Busca "Variables de entorno" en el menú inicio
-       * Pulsa "Variables de entorno..."
-       * En "Variables del sistema" busca "Path" y pulsa "Editar"
-       * Pulsa "Nuevo" y añade: C:\flutter\bin
-       * Acepta todo y cierra
-   - Cierra PowerShell y ábrelo de nuevo
-   - Para verificar:
-       flutter --version
+
+3. Configurar Flutter
+   - Ejecutar "flutterEnv.ps1", para descargar flutter en pc
+   - ‼️ ATENCION‼️SI PC YA TIENE FLUTTER FUNCIONAL, NO EJECUTAR.
 
 ================================================
        CÓMO ARRANCAR EL PROYECTO
