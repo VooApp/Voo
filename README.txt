@@ -3,7 +3,7 @@
 ================================================
 
 REQUISITOS PREVIOS
-------------------
+-------------------
 Necesitas instalar 3 cosas antes de poder correr el proyecto:
 
 1. .NET SDK 8
