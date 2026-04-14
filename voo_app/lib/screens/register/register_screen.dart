@@ -416,7 +416,7 @@ class _VooInput extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: const TextStyle(
-          color: Color.fromARGB(255, 255, 255, 255),
+          color: Colors.white54,
         ),
         suffixIcon: suffixIcon,
         filled: true,
