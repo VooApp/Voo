@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'room_code_screen.dart';
 
 class RoomSetupScreen extends StatefulWidget {
   const RoomSetupScreen({super.key});
@@ -245,9 +246,10 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         onTap: () {
                           if (!canContinue) return;
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Sala configurada'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RoomCodeScreen(),
                             ),
                           );
                         },
