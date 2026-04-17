@@ -1,0 +1,122 @@
+# VOOAPI — Backend de VOO
+
+API REST construida en **ASP.NET Core** conectada a **MongoDB Atlas**.  
+Es el núcleo del backend de VOO: recibe peticiones desde Flutter, procesa la lógica y se comunica con la base de datos.
+
+---
+
+## Tecnologías
+
+- .NET 10 / ASP.NET Core
+- MongoDB Atlas (MongoDB.Driver)
+- C#
+
+---
+
+## Estructura del proyecto
+
+```
+VOOAPI/
+├── Controllers/        → Endpoints HTTP. Reciben las requests de Flutter y devuelven respuestas.
+│                         Cada controller corresponde a una entidad (Usuario, Sala, Reto...).
+│                         NO contiene lógica de negocio, solo llama al Service correspondiente.
+│
+├── Services/           → Lógica de negocio. Aquí se procesan y validan los datos antes
+│                         de guardarlos o después de obtenerlos. Cada Service corresponde
+│                         a una entidad y usa su Repository para acceder a la base de datos.
+│
+├── Data/               → Acceso a MongoDB. Cada Repository contiene las operaciones CRUD
+│                         (insertar, obtener, actualizar, eliminar) de una colección concreta.
+│                         Solo habla con la base de datos, sin lógica extra.
+│
+├── Models/             → Clases que representan los documentos de MongoDB.
+│                         Cada Model es el esquema de una colección (Usuario, Sala, Reto...).
+│                         Incluye los atributos BsonId y BsonElement para el mapeo con Mongo.
+│
+├── Database/           → Configuración de la conexión con MongoDB Atlas.
+│                         MongoDbContext lee el appsettings.json y provee acceso
+│                         a las colecciones. Se registra como Singleton en Program.cs.
+│
+├── appsettings.json    → Configuración de la app: cadena de conexión a Atlas,
+│                         nombre de la base de datos y colección por defecto.
+│                         ⚠️ No subir al repositorio con credenciales reales.
+│
+└── Program.cs          → Punto de entrada. Registra todos los servicios, repositorios
+                          y configuraciones (CORS, MongoDB, etc.) antes de arrancar la app.
+```
+
+---
+
+## Flujo de una petición
+
+```
+Flutter
+  │
+  ▼
+Controller      → recibe la request HTTP (POST, GET, DELETE...)
+  │
+  ▼
+Service         → valida y procesa los datos
+  │
+  ▼
+Repository      → ejecuta la operación en MongoDB Atlas
+  │
+  ▼
+MongoDB Atlas   → guarda o devuelve el documento
+```
+
+---
+
+## Colecciones en MongoDB (VooDB)
+
+| Colección   | Descripción                                                                 |
+|-------------|-----------------------------------------------------------------------------|
+| `usuarios`  | Datos de cada persona: nombre, edad, foto, estado, puntos, poder, respuestas|
+| `salas`     | Salas creadas por el host: nombre, contexto, aforo, dirección, código único |
+| `retos`     | Retos flash: descripción, puntos, premio, hora activación, duración, estado |
+| `mensajes`  | Mensajes de chat entre usuarios: emisor, receptor, texto, fecha             |
+
+> MongoDB crea la base de datos y las colecciones automáticamente al primer insert.
+
+---
+
+## Cómo añadir una nueva entidad
+
+Cuando se necesite agregar una nueva funcionalidad (ej: `Sala`), seguir este orden:
+
+1. **`Models/Sala.cs`** — definir los campos del documento
+2. **`Data/SalaRepository.cs`** — escribir las operaciones CRUD contra MongoDB
+3. **`Services/SalaService.cs`** — añadir la lógica de negocio
+4. **`Controllers/SalaController.cs`** — exponer los endpoints HTTP
+5. **`Program.cs`** — registrar el nuevo Repository y Service con `AddScoped<>()`
+
+---
+
+## Configuración (appsettings.json)
+
+```json
+{
+  "MongoDB": {
+    "ConnectionString": "mongodb+srv://usuario:password@cluster.mongodb.net/",
+    "DatabaseName": "VooDB",
+    "CollectionName": "mensajes"
+  }
+}
+```
+
+---
+
+## CORS
+
+La API acepta requests desde cualquier origen, cabecera y método.  
+Configurado en `Program.cs` con `AllowAnyOrigin` para desarrollo.  
+En producción se debería restringir al dominio de la app.
+
+---
+
+## Notas para el equipo
+
+- Cada miembro que trabaje en una entidad nueva sigue el mismo patrón: Model → Repository → Service → Controller.
+- No conectar directamente a MongoDB desde el Controller. Siempre pasar por Service → Repository.
+- El `MongoDbContext` es Singleton (una sola instancia para toda la app). Los Services y Repositories son Scoped (una instancia por request).
+- Para cambiar la base de datos de Atlas, solo hay que modificar `ConnectionString` en `appsettings.json`.
