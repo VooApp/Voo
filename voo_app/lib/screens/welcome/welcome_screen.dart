@@ -21,7 +21,7 @@ class WelcomeScreen extends StatelessWidget {
                   const Text(
                     'Bienvenido',
                     style: TextStyle(
-                      fontSize: 50,
+                      fontSize: 40,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFD78BFF),
                     ),
@@ -32,7 +32,7 @@ class WelcomeScreen extends StatelessWidget {
                   RichText(
                     text: const TextSpan(
                       style: TextStyle(
-                        fontSize: 50,
+                        fontSize: 100,
                         fontWeight: FontWeight.bold,
                       ),
                       children: [
