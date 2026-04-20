@@ -1,39 +1,39 @@
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver;
+using VooApi.Models;
+using VooApi.Services;
 
-namespace VooApi.Controllers;
-
-public class Mensaje
+namespace VooApi.Controllers
 {
-    public string? Id { get; set; }
-    public string? Texto { get; set; }
-    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
-}
-
-[ApiController]
-[Route("[controller]")]
-public class MensajeController : ControllerBase
-{
-    private readonly IMongoCollection<Mensaje> _mensajes;
-
-    public MensajeController(IConfiguration config)
+    [ApiController]
+    [Route("[controller]")]
+    public class MensajeController : ControllerBase
     {
-        var client = new MongoClient(config["MongoDB:ConnectionString"]);
-        var db = client.GetDatabase(config["MongoDB:DatabaseName"]);
-        _mensajes = db.GetCollection<Mensaje>(config["MongoDB:CollectionName"]);
-    }
+        private readonly MensajeService _service;
 
-    [HttpPost]
-    public async Task<IActionResult> Post([FromBody] Mensaje mensaje)
-    {
-        await _mensajes.InsertOneAsync(mensaje);
-        return Ok(new { mensaje = "Guardado correctamente", data = mensaje });
-    }
+        public MensajeController(MensajeService service)
+        {
+            _service = service;
+        }
 
-    [HttpGet]
-    public async Task<IActionResult> Get()
-    {
-        var lista = await _mensajes.Find(_ => true).ToListAsync();
-        return Ok(lista);
+        [HttpPost]
+        public async Task<IActionResult> Enviar([FromBody] Mensaje mensaje)
+        {
+            var enviado = await _service.EnviarAsync(mensaje);
+            return Ok(enviado);
+        }
+
+        [HttpGet("chat/{chatId}")]
+        public async Task<IActionResult> ObtenerPorChat(string chatId)
+        {
+            var lista = await _service.ObtenerPorChatAsync(chatId);
+            return Ok(lista);
+        }
+
+        [HttpPatch("{id}/leido")]
+        public async Task<IActionResult> MarcarLeido(string id)
+        {
+            await _service.MarcarLeidoAsync(id);
+            return Ok(new { mensaje = "Mensaje marcado como leído" });
+        }
     }
 }

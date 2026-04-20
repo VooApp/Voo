@@ -12,15 +12,20 @@ namespace VooApi.Services
             _repository = repository;
         }
 
-        public async Task<Mensaje> GuardarAsync(Mensaje mensaje)
+        public async Task<Mensaje> EnviarAsync(Mensaje mensaje)
         {
             await _repository.InsertarAsync(mensaje);
             return mensaje;
         }
 
-        public async Task<List<Mensaje>> ObtenerTodosAsync()
+        public async Task<List<Mensaje>> ObtenerPorChatAsync(string chatId)
         {
-            return await _repository.ObtenerTodosAsync();
+            return await _repository.ObtenerPorChatAsync(chatId);
+        }
+
+        public async Task MarcarLeidoAsync(string id)
+        {
+            await _repository.MarcarLeidoAsync(id);
         }
     }
 }
