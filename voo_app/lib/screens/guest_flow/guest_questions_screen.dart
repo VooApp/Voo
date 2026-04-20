@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../room_setup/room_setup_screen.dart';
+import '../home/home_screen.dart';
 
-class QuestionsScreen extends StatefulWidget {
-  const QuestionsScreen({super.key});
+class GuestQuestionsScreen extends StatefulWidget {
+  const GuestQuestionsScreen({super.key});
 
   @override
-  State<QuestionsScreen> createState() => _QuestionsScreenState();
+  State<GuestQuestionsScreen> createState() => _GuestQuestionsScreenState();
 }
 
-class _QuestionsScreenState extends State<QuestionsScreen> {
+class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
   final TextEditingController question1Controller = TextEditingController();
   final TextEditingController question2Controller = TextEditingController();
   final TextEditingController question3Controller = TextEditingController();
@@ -102,10 +102,10 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                         onTap: () {
                           if (!canContinue) return;
 
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const RoomSetupScreen(),
+                              builder: (_) => const HomeScreen(),
                             ),
                           );
                         },

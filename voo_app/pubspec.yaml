@@ -38,6 +38,8 @@ dependencies:
   share_plus: ^13.0.0
   universal_html: ^2.2.4
   qr_flutter: ^4.1.0
+  permission_handler: ^11.0.1
+  camera: ^0.11.0+2
 
 dev_dependencies:
   flutter_test:
