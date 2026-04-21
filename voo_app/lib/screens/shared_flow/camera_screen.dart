@@ -7,7 +7,12 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'loading_screen.dart';
 
 class CameraScreen extends StatefulWidget {
-  const CameraScreen({super.key});
+  final Widget nextScreen;
+
+  const CameraScreen({
+    super.key,
+    required this.nextScreen,
+  });
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -66,13 +71,11 @@ class _CameraScreenState extends State<CameraScreen> {
       });
 
       _cameras = await availableCameras();
-      debugPrint('CAMARAS ENCONTRADAS: ${_cameras.length}');
 
       if (_cameras.isEmpty) {
         throw Exception('No hay cámaras disponibles');
       }
 
-      // Preferimos frontal si existe
       if (_cameras.length > 1 && cameraIndex == 0) {
         final frontIndex = _cameras.indexWhere(
           (c) => c.lensDirection == CameraLensDirection.front,
@@ -113,8 +116,6 @@ class _CameraScreenState extends State<CameraScreen> {
         _flashEnabled = false;
       });
     } catch (e) {
-      debugPrint('ERROR CAMARA: $e');
-
       if (!mounted) return;
 
       setState(() {
@@ -199,8 +200,7 @@ class _CameraScreenState extends State<CameraScreen> {
       final dx = (faceCenterX - targetCenterX).abs();
       final dy = (faceCenterY - targetCenterY).abs();
 
-      final centered =
-          dx < frameWidth * 0.15 && dy < frameHeight * 0.15;
+      final centered = dx < frameWidth * 0.15 && dy < frameHeight * 0.15;
 
       setState(() {
         _faceDetected = true;
@@ -209,8 +209,7 @@ class _CameraScreenState extends State<CameraScreen> {
             ? 'Cara detectada y centrada'
             : 'Mueve tu cara al centro';
       });
-    } catch (e) {
-      debugPrint('ERROR DETECCION CARA: $e');
+    } catch (_) {
     } finally {
       _isProcessingFace = false;
     }
@@ -242,9 +241,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
       if (!mounted) return;
       setState(() {});
-    } catch (e) {
-      debugPrint('ERROR FLASH: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> _setZoom(double zoom) async {
@@ -260,9 +257,7 @@ class _CameraScreenState extends State<CameraScreen> {
       setState(() {
         _currentZoom = newZoom;
       });
-    } catch (e) {
-      debugPrint('ERROR ZOOM: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> _capture() async {
@@ -293,12 +288,12 @@ class _CameraScreenState extends State<CameraScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const LoadingScreen(),
+          builder: (_) => LoadingScreen(
+            nextScreen: widget.nextScreen,
+          ),
         ),
       );
-    } catch (e) {
-      debugPrint('ERROR CAPTURA: $e');
-
+    } catch (_) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -313,6 +308,17 @@ class _CameraScreenState extends State<CameraScreen> {
         });
       }
     }
+  }
+
+  void _goNextDev() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LoadingScreen(
+          nextScreen: widget.nextScreen,
+        ),
+      ),
+    );
   }
 
   @override
@@ -364,7 +370,6 @@ class _CameraScreenState extends State<CameraScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
-
                   Expanded(
                     child: Container(
                       width: double.infinity,
@@ -407,7 +412,6 @@ class _CameraScreenState extends State<CameraScreen> {
                                               ),
                                             ),
                             ),
-
                             Center(
                               child: IgnorePointer(
                                 child: Container(
@@ -435,7 +439,6 @@ class _CameraScreenState extends State<CameraScreen> {
                                 ),
                               ),
                             ),
-
                             Positioned(
                               top: 18,
                               left: 18,
@@ -470,7 +473,6 @@ class _CameraScreenState extends State<CameraScreen> {
                                 ),
                               ),
                             ),
-
                             Positioned(
                               bottom: 104,
                               left: 0,
@@ -496,7 +498,6 @@ class _CameraScreenState extends State<CameraScreen> {
                                 ),
                               ),
                             ),
-
                             Positioned(
                               bottom: 56,
                               left: 24,
@@ -522,36 +523,67 @@ class _CameraScreenState extends State<CameraScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 14),
-
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: const Color(0xFF2E2E2E),
-                        width: 1.2,
+                  Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: const Color(0xFF2E2E2E),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _CameraIconButton(
+                              icon: _flashEnabled
+                                  ? Icons.flash_on
+                                  : Icons.flash_off,
+                              onTap: _toggleFlash,
+                            ),
+                            _CaptureButton(
+                              onTap: _capture,
+                            ),
+                            _CameraIconButton(
+                              icon: Icons.cameraswitch,
+                              onTap: _switchCamera,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _CameraIconButton(
-                          icon: _flashEnabled ? Icons.flash_on : Icons.flash_off,
-                          onTap: _toggleFlash,
-                        ),
-                        _CaptureButton(
-                          onTap: _capture,
-                        ),
-                        _CameraIconButton(
-                          icon: Icons.cameraswitch,
-                          onTap: _switchCamera,
+                      if (kIsWeb) ...[
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: _goNextDev,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(26),
+                              border: Border.all(
+                                color: const Color(0xFF9C4DFF),
+                                width: 1.5,
+                              ),
+                              color: const Color(0xFF9C4DFF).withOpacity(0.15),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Siguiente (dev)',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -602,8 +634,7 @@ class _BackButtonPurpleState extends State<_BackButtonPurple> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF)
-                  .withOpacity(_pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),

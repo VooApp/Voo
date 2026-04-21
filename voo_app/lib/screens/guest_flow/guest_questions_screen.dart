@@ -29,75 +29,94 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
         question3Controller.text.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      backgroundColor: const Color(0xFF05051C),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.25,
+            colors: [
+              Color(0xFF171128),
+              Color(0xFF0C0A18),
+              Color(0xFF05051C),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Preguntas rápidas',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFD78BFF),
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        _RoundBackButton(
+                          onTap: () => Navigator.pop(context),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Responde estas 3 preguntas para ver tu afinidad con otros invitados.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 26),
-
-                  const _QuestionLabel(text: 'Pregunta rápida 1'),
-                  const SizedBox(height: 10),
-                  _QuestionInput(
-                    controller: question1Controller,
-                    hintText: 'Escribe tu respuesta',
-                    onChanged: (_) => setState(() {}),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  const _QuestionLabel(text: 'Pregunta rápida 2'),
-                  const SizedBox(height: 10),
-                  _QuestionInput(
-                    controller: question2Controller,
-                    hintText: 'Escribe tu respuesta',
-                    onChanged: (_) => setState(() {}),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  const _QuestionLabel(text: 'Pregunta rápida 3'),
-                  const SizedBox(height: 10),
-                  _QuestionInput(
-                    controller: question3Controller,
-                    hintText: 'Escribe tu respuesta',
-                    onChanged: (_) => setState(() {}),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _RoundBackButton(
-                        onTap: () => Navigator.pop(context),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Preguntas rápidas',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
                       ),
-                      const SizedBox(width: 20),
-                      _NextButton(
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Responde estas 3 preguntas para ver tu afinidad con otros invitados.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.68),
+                        fontSize: 14,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _QuestionLabel(text: 'Pregunta rápida 1'),
+                        const SizedBox(height: 12),
+                        _QuestionInput(
+                          controller: question1Controller,
+                          hintText: 'Escribe tu respuesta',
+                          onChanged: (_) => setState(() {}),
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        const _QuestionLabel(text: 'Pregunta rápida 2'),
+                        const SizedBox(height: 12),
+                        _QuestionInput(
+                          controller: question2Controller,
+                          hintText: 'Escribe tu respuesta',
+                          onChanged: (_) => setState(() {}),
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        const _QuestionLabel(text: 'Pregunta rápida 3'),
+                        const SizedBox(height: 12),
+                        _QuestionInput(
+                          controller: question3Controller,
+                          hintText: 'Escribe tu respuesta',
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _NextButton(
                         enabled: canContinue,
                         onTap: () {
                           if (!canContinue) return;
@@ -105,14 +124,14 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const HomeScreen(),
+                              builder: (_) => const HomeScreen(isHost: false),
                             ),
                           );
                         },
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -136,14 +155,14 @@ class _QuestionLabel extends StatelessWidget {
         style: const TextStyle(
           color: Colors.white,
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 }
 
-class _QuestionInput extends StatelessWidget {
+class _QuestionInput extends StatefulWidget {
   final TextEditingController controller;
   final String hintText;
   final ValueChanged<String> onChanged;
@@ -155,37 +174,67 @@ class _QuestionInput extends StatelessWidget {
   });
 
   @override
+  State<_QuestionInput> createState() => _QuestionInputState();
+}
+
+class _QuestionInputState extends State<_QuestionInput> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-      ),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(
-          color: Colors.white54,
+    return Focus(
+      onFocusChange: (value) {
+        setState(() {
+          _focused = value;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: _focused
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF9C4DFF).withOpacity(0.22),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
         ),
-        filled: true,
-        fillColor: const Color(0xFF151515),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFFD78BFF),
-            width: 2,
+        child: TextField(
+          controller: widget.controller,
+          onChanged: widget.onChanged,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
           ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFFD78BFF),
-            width: 2,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: TextStyle(
+              color: Colors.white.withOpacity(0.42),
+              fontSize: 15,
+            ),
+            filled: true,
+            fillColor: const Color(0xFF151525),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 18,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(22),
+              borderSide: BorderSide(
+                color: const Color(0xFF9C4DFF).withOpacity(0.38),
+                width: 1.6,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(22),
+              borderSide: const BorderSide(
+                color: Color(0xFF9C4DFF),
+                width: 2,
+              ),
+            ),
           ),
         ),
       ),
@@ -193,7 +242,7 @@ class _QuestionInput extends StatelessWidget {
   }
 }
 
-class _RoundBackButton extends StatelessWidget {
+class _RoundBackButton extends StatefulWidget {
   final VoidCallback onTap;
 
   const _RoundBackButton({
@@ -201,25 +250,49 @@ class _RoundBackButton extends StatelessWidget {
   });
 
   @override
+  State<_RoundBackButton> createState() => _RoundBackButtonState();
+}
+
+class _RoundBackButtonState extends State<_RoundBackButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        width: 50,
-        height: 50,
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3B1452),
+              Color(0xFF24103A),
+            ],
+          ),
           shape: BoxShape.circle,
-          color: const Color(0xFF151515),
           border: Border.all(
-            color: const Color.fromARGB(255, 62, 162, 255),
+            color: const Color(0xFF7E2BE8),
             width: 2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
         ),
         child: const Icon(
-          Icons.arrow_back,
-          color: Color.fromARGB(255, 62, 162, 255),
-          size: 24,
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
         ),
       ),
     );
@@ -244,9 +317,8 @@ class _NextButtonState extends State<_NextButton> {
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = widget.enabled
-        ? const Color.fromARGB(255, 44, 245, 117)
-        : Colors.grey;
+    final Color buttonColor =
+        widget.enabled ? const Color(0xFF22C55E) : Colors.grey;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -271,7 +343,7 @@ class _NextButtonState extends State<_NextButton> {
             color: buttonColor,
             width: 2,
           ),
-          boxShadow: _pressed && widget.enabled
+          boxShadow: widget.enabled && _pressed
               ? [
                   BoxShadow(
                     color: buttonColor.withOpacity(0.55),

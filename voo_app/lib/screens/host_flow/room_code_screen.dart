@@ -8,8 +8,15 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
 
+import '../home/home_screen.dart';
+
 class RoomCodeScreen extends StatefulWidget {
-  const RoomCodeScreen({super.key});
+  final bool isHost;
+
+  const RoomCodeScreen({
+    super.key,
+    required this.isHost,
+  });
 
   @override
   State<RoomCodeScreen> createState() => _RoomCodeScreenState();
@@ -33,13 +40,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
       _copied = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Código copiado'),
-      ),
-    );
-
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1500));
 
     if (!mounted) return;
 
@@ -121,7 +122,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
       final blob = html.Blob([pngBytes], 'image/png');
       final url = html.Url.createObjectUrlFromBlob(blob);
 
-      final anchor = html.AnchorElement(href: url)
+      html.AnchorElement(href: url)
         ..setAttribute('download', 'codigo_sala_voo.png')
         ..click();
 
@@ -151,22 +152,45 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
     }
   }
 
+  void _goToHome() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(isHost: widget.isHost),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Color accentColor = _copied
-        ? const Color.fromARGB(255, 44, 245, 117)
-        : const Color(0xFFD78BFF);
+    final Color accentColor =
+        _copied ? const Color(0xFF22C55E) : const Color(0xFF7E2BE8);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
+      backgroundColor: const Color(0xFF05051C),
       body: Stack(
         children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topCenter,
+                radius: 1.25,
+                colors: [
+                  Color(0xFF171128),
+                  Color(0xFF0C0A18),
+                  Color(0xFF05051C),
+                ],
+              ),
+            ),
+          ),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
+                  constraints: const BoxConstraints(maxWidth: 430),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -175,147 +199,142 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 30,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFD78BFF),
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Comparte el código o el QR con tus invitados.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.68),
+                          fontSize: 14,
+                          height: 1.35,
                         ),
                       ),
                       const SizedBox(height: 24),
-
                       GestureDetector(
                         onTap: _copyCode,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 220),
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 28,
+                            horizontal: 22,
+                            vertical: 24,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF151515),
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(30),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF141421),
+                                Color(0xFF0E0E18),
+                              ],
+                            ),
                             border: Border.all(
                               color: accentColor,
-                              width: 2,
+                              width: _copied ? 4 : 1.5,
                             ),
-                            boxShadow: _copied
-                                ? [
-                                    BoxShadow(
-                                      color: const Color.fromARGB(
-                                        255,
-                                        44,
-                                        245,
-                                        117,
-                                      ).withOpacity(0.45),
-                                      blurRadius: 18,
-                                      spreadRadius: 2,
-                                    ),
-                                  ]
-                                : [],
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentColor.withOpacity(
+                                  _copied ? 0.6 : 0.08,
+                                ),
+                                blurRadius: _copied ? 35 : 10,
+                                spreadRadius: _copied ? 3 : 0,
+                              ),
+                              if (_copied)
+                                BoxShadow(
+                                  color: const Color(0xFF22C55E).withOpacity(0.4),
+                                  blurRadius: 60,
+                                  spreadRadius: 6,
+                                ),
+                            ],
                           ),
                           child: Column(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.white.withOpacity(0.08),
+                                      blurRadius: 12,
+                                      spreadRadius: 0.4,
+                                    ),
+                                  ],
                                 ),
                                 child: QrImageView(
                                   data: roomCode,
                                   version: QrVersions.auto,
-                                  size: 140,
+                                  size: 180,
                                   backgroundColor: Colors.white,
                                 ),
                               ),
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 20),
                               Text(
-                                _copied ? 'Copiado ✔' : 'Tu código de sala',
+                                'Tu código de sala',
                                 style: TextStyle(
-                                  color: _copied
-                                      ? const Color.fromARGB(255, 44, 245, 117)
-                                      : Colors.white70,
+                                  color: Colors.white.withOpacity(0.72),
                                   fontSize: 15,
-                                  fontWeight: _copied
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Text(
+                              const Text(
                                 roomCode,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: const Color.fromARGB(255, 44, 245, 117),
-                                  fontSize: 28,
+                                  color: Color(0xFF22C55E),
+                                  fontSize: 30,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 2,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: _copied
-                                      ? const Color.fromARGB(255, 44, 245, 117)
-                                      : Colors.white54,
+                                  letterSpacing: 2.5,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 12),
                               Text(
-                                _copied
-                                    ? 'El código se ha copiado al portapapeles'
-                                    : 'Toca el QR o el código para copiarlo',
+                                'Toca el QR o el código para copiarlo',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: _copied ? Colors.white : Colors.white54,
+                                  color: Colors.white.withOpacity(0.48),
                                   fontSize: 13,
+                                  height: 1.35,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 26),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      const SizedBox(height: 22),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 14,
+                        runSpacing: 12,
                         children: [
-                          _ActionButton(
+                          _IconOnlyActionButton(
                             icon: _downloading
                                 ? Icons.hourglass_top
                                 : Icons.download_outlined,
-                            label: _downloading
-                                ? 'Descargando...'
-                                : 'Descargar',
-                            color: const Color.fromARGB(255, 62, 162, 255),
+                            color: const Color(0xFF9C4DFF),
                             onTap: _downloadCodeCard,
                           ),
-                          const SizedBox(width: 16),
-                          _ActionButton(
+                          _IconOnlyActionButton(
                             icon: _sharing
                                 ? Icons.hourglass_top
                                 : Icons.share_outlined,
-                            label: _sharing
-                                ? 'Compartiendo...'
-                                : 'Compartir',
-                            color: const Color.fromARGB(255, 44, 245, 117),
+                            color: const Color(0xFF9C4DFF),
                             onTap: _shareCode,
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 16),
-
-                      _ActionButton(
-                        icon: Icons.copy_all_outlined,
-                        label: _copied ? 'Copiado' : 'Copiar código',
-                        color: const Color.fromARGB(255, 44, 245, 117),
-                        onTap: _copyCode,
-                      ),
-
                       const SizedBox(height: 28),
-
                       _MainButton(
                         label: 'Ir al inicio',
-                        onTap: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        },
+                        onTap: _goToHome,
                       ),
                     ],
                   ),
@@ -323,8 +342,72 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
               ),
             ),
           ),
-
-          // Tarjeta oculta para generar el PNG
+          Positioned(
+            top: 28,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: AnimatedSlide(
+                offset: _copied ? Offset.zero : const Offset(0, -0.25),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutBack,
+                child: AnimatedOpacity(
+                  opacity: _copied ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  child: Center(
+                    child: AnimatedScale(
+                      scale: _copied ? 1 : 0.9,
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutBack,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFF0B3D1E),
+                              Color(0xFF22C55E),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF22C55E).withOpacity(0.55),
+                              blurRadius: 30,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Código copiado',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           Positioned(
             left: -10000,
             top: 0,
@@ -333,123 +416,192 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
               child: RepaintBoundary(
                 key: _downloadCardKey,
                 child: Container(
-                  width: 400,
-                  height: 800,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 32,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0B0B0B),
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: const Color(0xFFD78BFF),
-                      width: 3,
+                  width: 430,
+                  padding: const EdgeInsets.fromLTRB(28, 34, 28, 30),
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.topCenter,
+                      radius: 1.15,
+                      colors: [
+                        Color(0xFF171128),
+                        Color(0xFF0C0A18),
+                        Color(0xFF05051C),
+                      ],
                     ),
                   ),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Column(
-                        children: [
-                          RichText(
-                            text: const TextSpan(
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 66,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                            height: 1,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'V',
                               style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'V',
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 44, 245, 117),
+                                color: const Color(0xFF22C55E),
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFF22C55E)
+                                        .withOpacity(0.65),
+                                    blurRadius: 18,
                                   ),
-                                ),
-                                TextSpan(
-                                  text: 'O',
-                                  style: TextStyle(
-                                    color: Color(0xFFEAB308),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: 'O',
-                                  style: TextStyle(
-                                    color: Color(0xFFEF4444),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Código de Sala',
-                            style: TextStyle(
-                              color: Color(0xFFD78BFF),
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF151515),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: const Color.fromARGB(255, 44, 245, 117),
-                                width: 3,
+                                ],
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(18),
+                            TextSpan(
+                              text: 'O',
+                              style: TextStyle(
+                                color: const Color(0xFFEAB308),
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFFEAB308)
+                                        .withOpacity(0.65),
+                                    blurRadius: 18,
                                   ),
-                                  child: QrImageView(
-                                    data: roomCode,
-                                    version: QrVersions.auto,
-                                    size: 220,
-                                    backgroundColor: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                                const Text(
-                                  'Únete con este código',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                const Text(
-                                  roomCode,
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 44, 245, 117),
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 4,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            TextSpan(
+                              text: 'O',
+                              style: TextStyle(
+                                color: const Color(0xFFEF4444),
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFFEF4444)
+                                        .withOpacity(0.65),
+                                    blurRadius: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-
+                      const SizedBox(height: 16),
                       const Text(
+                        'Código de Sala',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
                         'Comparte esta tarjeta con tus invitados',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.60),
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 28,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(34),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF1A1A28),
+                              Color(0xFF11111B),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: const Color(0xFF9C4DFF),
+                            width: 2.4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9C4DFF).withOpacity(0.18),
+                              blurRadius: 24,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: QrImageView(
+                                data: roomCode,
+                                version: QrVersions.auto,
+                                size: 230,
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Tu código de acceso',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              roomCode,
+                              style: TextStyle(
+                                color: Color(0xFF22C55E),
+                                fontSize: 38,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'Escanea el QR o introduce el código para entrar en la sala.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.58),
+                                fontSize: 14,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: const Color(0xFF22C55E).withOpacity(0.45),
+                            width: 1.5,
+                          ),
+                          color: const Color(0xFF22C55E).withOpacity(0.08),
+                        ),
+                        child: const Text(
+                          'VOO · Ahora o nunca',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF22C55E),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
                         ),
                       ),
                     ],
@@ -464,24 +616,22 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
   }
 }
 
-class _ActionButton extends StatefulWidget {
+class _IconOnlyActionButton extends StatefulWidget {
   final IconData icon;
-  final String label;
   final Color color;
   final VoidCallback onTap;
 
-  const _ActionButton({
+  const _IconOnlyActionButton({
     required this.icon,
-    required this.label,
     required this.color,
     required this.onTap,
   });
 
   @override
-  State<_ActionButton> createState() => _ActionButtonState();
+  State<_IconOnlyActionButton> createState() => _IconOnlyActionButtonState();
 }
 
-class _ActionButtonState extends State<_ActionButton> {
+class _IconOnlyActionButtonState extends State<_IconOnlyActionButton> {
   bool _pressed = false;
 
   @override
@@ -495,10 +645,11 @@ class _ActionButtonState extends State<_ActionButton> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        width: 58,
+        height: 58,
         decoration: BoxDecoration(
           color: const Color(0xFF151515),
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: widget.color,
             width: 2,
@@ -506,27 +657,17 @@ class _ActionButtonState extends State<_ActionButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.55),
+                    color: widget.color.withOpacity(0.38),
                     blurRadius: 16,
-                    spreadRadius: 2,
+                    spreadRadius: 1.2,
                   ),
                 ]
               : [],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(widget.icon, color: widget.color, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              widget.label,
-              style: TextStyle(
-                color: widget.color,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+        child: Icon(
+          widget.icon,
+          color: widget.color,
+          size: 24,
         ),
       ),
     );
@@ -551,7 +692,7 @@ class _MainButtonState extends State<_MainButton> {
 
   @override
   Widget build(BuildContext context) {
-    const color = Color.fromARGB(255, 44, 245, 117);
+    const color = Color(0xFF22C55E);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -573,9 +714,9 @@ class _MainButtonState extends State<_MainButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.55),
+                    color: color.withOpacity(0.45),
                     blurRadius: 18,
-                    spreadRadius: 2,
+                    spreadRadius: 1.5,
                   ),
                 ]
               : [],

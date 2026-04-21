@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'guest_status_screen.dart';
 
 class JoinRoomScreen extends StatefulWidget {
@@ -10,6 +11,8 @@ class JoinRoomScreen extends StatefulWidget {
 
 class _JoinRoomScreenState extends State<JoinRoomScreen> {
   final TextEditingController _codeController = TextEditingController();
+
+  bool _requestingLocation = false;
 
   bool get _isValid => _codeController.text.trim().isNotEmpty;
 
@@ -27,94 +30,253 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
     super.dispose();
   }
 
-  void _goNext() {
-    if (!_isValid) return;
+  Future<void> _goNext() async {
+    if (!_isValid || _requestingLocation) return;
 
-    showDialog(
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    // Si ya tiene permiso, no mostramos popup y pasa directo
+    if (permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const GuestStatusScreen(),
+        ),
+      );
+      return;
+    }
+
+    // Si no tiene permiso, mostramos popup propio
+    final bool? wantsToContinue = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const _LocationPermissionDialog(),
     );
+
+    if (wantsToContinue != true) return;
+
+    setState(() {
+      _requestingLocation = true;
+    });
+
+    try {
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Activa la ubicación del dispositivo para continuar'),
+          ),
+        );
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (!mounted) return;
+
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Debes permitir la ubicación para entrar a la sala'),
+          ),
+        );
+        return;
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'La ubicación está bloqueada. Actívala desde ajustes para continuar',
+            ),
+          ),
+        );
+        await Geolocator.openAppSettings();
+        return;
+      }
+
+      await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const GuestStatusScreen(),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo obtener la ubicación'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _requestingLocation = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Tu sala',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 50,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontSize: 50,
-                        fontWeight: FontWeight.w800,
-                      ),
+      backgroundColor: const Color(0xFF05051C),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.25,
+            colors: [
+              Color(0xFF171128),
+              Color(0xFF0C0A18),
+              Color(0xFF05051C),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  children: [
+                    Row(
                       children: [
-                        TextSpan(
-                          text: 'V',
-                          style: TextStyle(color: Color(0xFF22C55E)),
-                        ),
-                        TextSpan(
-                          text: 'o',
-                          style: TextStyle(color: Color(0xFFEAB308)),
-                        ),
-                        TextSpan(
-                          text: 'o',
-                          style: TextStyle(color: Color(0xFFEF4444)),
-                        ),
-                        TextSpan(
-                          text: '!',
-                          style: TextStyle(color: Color(0xFFD78BFF)),
+                        _RoundBackButton(
+                          onTap: () => Navigator.pop(context),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  _VooInput(
-                    controller: _codeController,
-                    hintText: 'Código de Sala',
-                  ),
-                  const SizedBox(height: 12),
-                  if (!_isValid)
+                    const SizedBox(height: 20),
                     const Text(
-                      'Escribe el código para continuar.',
+                      'Tu sala',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 13,
+                        fontSize: 46,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
                       ),
                     ),
-                  const SizedBox(height: 30),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _RoundBackButton(
-                        onTap: () => Navigator.pop(context),
+                    const SizedBox(height: 6),
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 56,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'V',
+                            style: TextStyle(
+                              color: const Color(0xFF22C55E),
+                              shadows: [
+                                Shadow(
+                                  color: const Color(0xFF22C55E)
+                                      .withOpacity(0.65),
+                                  blurRadius: 16,
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'o',
+                            style: TextStyle(
+                              color: const Color(0xFFEAB308),
+                              shadows: [
+                                Shadow(
+                                  color: const Color(0xFFEAB308)
+                                      .withOpacity(0.65),
+                                  blurRadius: 16,
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'o',
+                            style: TextStyle(
+                              color: const Color(0xFFEF4444),
+                              shadows: [
+                                Shadow(
+                                  color: const Color(0xFFEF4444)
+                                      .withOpacity(0.65),
+                                  blurRadius: 16,
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextSpan(
+                            text: '!',
+                            style: TextStyle(
+                              color: const Color(0xFF9C4DFF),
+                              shadows: [
+                                Shadow(
+                                  color: const Color(0xFF9C4DFF)
+                                      .withOpacity(0.65),
+                                  blurRadius: 16,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 20),
-                      _NextButton(
-                        enabled: _isValid,
-                        onTap: _goNext,
+                    ),
+                    const SizedBox(height: 22),
+                    Text(
+                      'Introduce el código para unirte a la sala.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.68),
+                        fontSize: 14,
+                        height: 1.35,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 28),
+                    _VooInput(
+                      controller: _codeController,
+                      hintText: 'Código de Sala',
+                    ),
+                    const SizedBox(height: 12),
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 160),
+                      opacity: _isValid ? 0 : 1,
+                      child: const Text(
+                        'Escribe el código para continuar.',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _NextButton(
+                          enabled: _isValid && !_requestingLocation,
+                          loading: _requestingLocation,
+                          onTap: _goNext,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -124,7 +286,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
   }
 }
 
-class _VooInput extends StatelessWidget {
+class _VooInput extends StatefulWidget {
   final String hintText;
   final TextEditingController controller;
 
@@ -134,36 +296,67 @@ class _VooInput extends StatelessWidget {
   });
 
   @override
+  State<_VooInput> createState() => _VooInputState();
+}
+
+class _VooInputState extends State<_VooInput> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-      ),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(
-          color: Colors.white54,
+    return Focus(
+      onFocusChange: (value) {
+        setState(() {
+          _focused = value;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: _focused
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF9C4DFF).withOpacity(0.22),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
         ),
-        filled: true,
-        fillColor: const Color(0xFF151515),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFFD78BFF),
-            width: 2,
+        child: TextField(
+          controller: widget.controller,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
           ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(
-            color: Color(0xFFD78BFF),
-            width: 2,
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: TextStyle(
+              color: Colors.white.withOpacity(0.42),
+              fontSize: 15,
+            ),
+            filled: true,
+            fillColor: const Color(0xFF151525),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 18,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(22),
+              borderSide: BorderSide(
+                color: const Color(0xFF9C4DFF).withOpacity(0.38),
+                width: 1.6,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(22),
+              borderSide: const BorderSide(
+                color: Color(0xFF9C4DFF),
+                width: 2,
+              ),
+            ),
           ),
         ),
       ),
@@ -171,7 +364,7 @@ class _VooInput extends StatelessWidget {
   }
 }
 
-class _RoundBackButton extends StatelessWidget {
+class _RoundBackButton extends StatefulWidget {
   final VoidCallback onTap;
 
   const _RoundBackButton({
@@ -179,25 +372,49 @@ class _RoundBackButton extends StatelessWidget {
   });
 
   @override
+  State<_RoundBackButton> createState() => _RoundBackButtonState();
+}
+
+class _RoundBackButtonState extends State<_RoundBackButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        width: 50,
-        height: 50,
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3B1452),
+              Color(0xFF24103A),
+            ],
+          ),
           shape: BoxShape.circle,
-          color: const Color(0xFF151515),
           border: Border.all(
-            color: const Color.fromARGB(255, 62, 162, 255),
+            color: const Color(0xFF7E2BE8),
             width: 2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
         ),
         child: const Icon(
-          Icons.arrow_back,
-          color: Color.fromARGB(255, 62, 162, 255),
-          size: 24,
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
         ),
       ),
     );
@@ -207,10 +424,12 @@ class _RoundBackButton extends StatelessWidget {
 class _NextButton extends StatefulWidget {
   final VoidCallback onTap;
   final bool enabled;
+  final bool loading;
 
   const _NextButton({
     required this.onTap,
     required this.enabled,
+    required this.loading,
   });
 
   @override
@@ -223,17 +442,17 @@ class _NextButtonState extends State<_NextButton> {
   @override
   Widget build(BuildContext context) {
     final color = widget.enabled
-        ? const Color.fromARGB(255, 44, 245, 117)
+        ? const Color(0xFF22C55E)
         : Colors.grey;
 
     return GestureDetector(
       onTapDown: (_) {
-        if (widget.enabled) {
+        if (widget.enabled && !widget.loading) {
           setState(() => _pressed = true);
         }
       },
       onTapUp: (_) {
-        if (widget.enabled) {
+        if (widget.enabled && !widget.loading) {
           setState(() => _pressed = false);
           widget.onTap();
         }
@@ -259,14 +478,23 @@ class _NextButtonState extends State<_NextButton> {
                 ]
               : [],
         ),
-        child: Text(
-          'Siguiente',
-          style: TextStyle(
-            color: color,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: widget.loading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: Color(0xFF22C55E),
+                ),
+              )
+            : Text(
+                'Siguiente',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
@@ -283,12 +511,26 @@ class _LocationPermissionDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
         decoration: BoxDecoration(
-          color: const Color(0xFF151515),
-          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1A1A28),
+              Color(0xFF11111B),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: const Color(0xFFD78BFF),
+            color: const Color(0xFF9C4DFF),
             width: 2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF9C4DFF).withOpacity(0.18),
+              blurRadius: 22,
+              spreadRadius: 1,
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -309,6 +551,16 @@ class _LocationPermissionDialog extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
+            const SizedBox(height: 10),
+            Text(
+              'Solo la usamos para comprobar que estás dentro del radio del evento.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.58),
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -317,21 +569,15 @@ class _LocationPermissionDialog extends StatelessWidget {
                   label: 'Denegar',
                   color: const Color(0xFFEF4444),
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(context, false);
                   },
                 ),
                 const SizedBox(width: 14),
                 _DialogButton(
                   label: 'Permitir',
-                  color: const Color.fromARGB(255, 44, 245, 117),
+                  color: const Color(0xFF22C55E),
                   onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const GuestStatusScreen(),
-                      ),
-                    );
+                    Navigator.pop(context, true);
                   },
                 ),
               ],

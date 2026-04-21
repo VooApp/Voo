@@ -5,16 +5,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../shared_flow/camera_screen.dart';
-import 'host_status_screen.dart';
+import 'join_room_screen.dart';
 
-class RegisterHostScreen extends StatefulWidget {
-  const RegisterHostScreen({super.key});
+class RegisterGuestScreen extends StatefulWidget {
+  const RegisterGuestScreen({super.key});
 
   @override
-  State<RegisterHostScreen> createState() => _RegisterHostScreenState();
+  State<RegisterGuestScreen> createState() => _RegisterGuestScreenState();
 }
 
-class _RegisterHostScreenState extends State<RegisterHostScreen> {
+class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController birthDateController = TextEditingController();
   final TextEditingController instagramController = TextEditingController();
@@ -203,7 +203,7 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => const CameraScreen(
-              nextScreen: HostStatusScreen(),
+              nextScreen: JoinRoomScreen(),
             ),
           ),
         );

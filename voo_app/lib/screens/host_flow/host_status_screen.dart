@@ -14,67 +14,103 @@ class _HostStatusScreenState extends State<HostStatusScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Escoge tu estado',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFD78BFF),
+      backgroundColor: const Color(0xFF05051C),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.25,
+            colors: [
+              Color(0xFF171128),
+              Color(0xFF0C0A18),
+              Color(0xFF05051C),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        _RoundBackButton(
+                          onTap: () => Navigator.pop(context),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 28),
-                  _StatusOption(
-                    color: const Color(0xFF22C55E),
-                    label: 'Soltero',
-                    isSelected: selectedStatus == 'soltero',
-                    onTap: () {
-                      setState(() {
-                        selectedStatus = 'soltero';
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  _StatusOption(
-                    color: const Color(0xFFEAB308),
-                    label: 'Haciendo amigos',
-                    isSelected: selectedStatus == 'amigos',
-                    onTap: () {
-                      setState(() {
-                        selectedStatus = 'amigos';
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  _StatusOption(
-                    color: const Color(0xFFEF4444),
-                    label: 'En pareja',
-                    isSelected: selectedStatus == 'pareja',
-                    onTap: () {
-                      setState(() {
-                        selectedStatus = 'pareja';
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 34),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _RoundBackButton(
-                        onTap: () => Navigator.pop(context),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Escoge tu estado',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
                       ),
-                      const SizedBox(width: 20),
-                      _NextButton(
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Selecciona cómo quieres aparecer dentro de la sala.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.35,
+                        color: Colors.white.withOpacity(0.68),
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _StatusOption(
+                          color: const Color(0xFF22C55E),
+                          label: 'Soltero',
+                          subtitle: 'Abierto a conocer a alguien',
+                          isSelected: selectedStatus == 'soltero',
+                          onTap: () {
+                            setState(() {
+                              selectedStatus = 'soltero';
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        _StatusOption(
+                          color: const Color(0xFFEAB308),
+                          label: 'Haciendo amigos',
+                          subtitle: 'Buscando buen rollo y conectar',
+                          isSelected: selectedStatus == 'amigos',
+                          onTap: () {
+                            setState(() {
+                              selectedStatus = 'amigos';
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        _StatusOption(
+                          color: const Color(0xFFEF4444),
+                          label: 'En pareja',
+                          subtitle: 'Aquí para disfrutar y socializar',
+                          isSelected: selectedStatus == 'pareja',
+                          onTap: () {
+                            setState(() {
+                              selectedStatus = 'pareja';
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _NextButton(
                         enabled: selectedStatus != null,
                         onTap: () {
                           if (selectedStatus == null) return;
@@ -87,9 +123,9 @@ class _HostStatusScreenState extends State<HostStatusScreen> {
                           );
                         },
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -102,12 +138,14 @@ class _HostStatusScreenState extends State<HostStatusScreen> {
 class _StatusOption extends StatefulWidget {
   final Color color;
   final String label;
+  final String subtitle;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _StatusOption({
     required this.color,
     required this.label,
+    required this.subtitle,
     required this.isSelected,
     required this.onTap,
   });
@@ -121,6 +159,124 @@ class _StatusOptionState extends State<_StatusOption> {
 
   @override
   Widget build(BuildContext context) {
+    final active = widget.isSelected || _pressed;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 170),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: LinearGradient(
+            colors: active
+                ? [
+                    widget.color.withOpacity(0.25),
+                    widget.color.withOpacity(0.10),
+                  ]
+                : const [
+                    Color(0xFF1A1A28),
+                    Color(0xFF11111B),
+                  ],
+          ),
+          border: Border.all(
+            color: active ? widget.color : widget.color.withOpacity(0.3),
+            width: active ? 2.5 : 1.4,
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: widget.color.withOpacity(0.35),
+                    blurRadius: 24,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: active ? widget.color : widget.color.withOpacity(0.2),
+              ),
+              child: Icon(
+                _getIcon(),
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: widget.color,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getIcon() {
+    switch (widget.label) {
+      case 'Soltero':
+        return Icons.favorite_border;
+      case 'Haciendo amigos':
+        return Icons.groups;
+      case 'En pareja':
+        return Icons.favorite;
+      default:
+        return Icons.circle;
+    }
+  }
+}
+
+class _RoundBackButton extends StatefulWidget {
+  final VoidCallback onTap;
+
+  const _RoundBackButton({required this.onTap});
+
+  @override
+  State<_RoundBackButton> createState() => _RoundBackButtonState();
+}
+
+class _RoundBackButtonState extends State<_RoundBackButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -130,79 +286,32 @@ class _StatusOptionState extends State<_StatusOption> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: 180,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFF151515),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: widget.color,
-            width: widget.isSelected ? 3 : 2,
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3B1452),
+              Color(0xFF24103A),
+            ],
           ),
-          boxShadow: widget.isSelected || _pressed
-              ? [
-                  BoxShadow(
-                    color: widget.color.withOpacity(0.5),
-                    blurRadius: 18,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.color,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: const Color(0xFF7E2BE8),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
+              blurRadius: 18,
+              spreadRadius: 1,
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _RoundBackButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _RoundBackButton({
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF151515),
-          border: Border.all(
-            color: const Color.fromARGB(255, 62, 162, 255),
-            width: 2,
-          ),
-        ),
         child: const Icon(
-          Icons.arrow_back,
-          color: Color.fromARGB(255, 62, 162, 255),
-          size: 24,
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
         ),
       ),
     );
@@ -227,9 +336,7 @@ class _NextButtonState extends State<_NextButton> {
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = widget.enabled
-        ? const Color.fromARGB(255, 44, 245, 117)
-        : Colors.grey;
+    final color = widget.enabled ? const Color(0xFF22C55E) : Colors.grey;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -246,20 +353,17 @@ class _NextButtonState extends State<_NextButton> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF151515),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: buttonColor,
-            width: 2,
-          ),
+          border: Border.all(color: color, width: 2),
+          color: Colors.transparent,
           boxShadow: _pressed && widget.enabled
               ? [
                   BoxShadow(
-                    color: buttonColor.withOpacity(0.55),
-                    blurRadius: 18,
-                    spreadRadius: 2,
+                    color: color.withOpacity(0.4),
+                    blurRadius: 20,
+                    spreadRadius: 1,
                   ),
                 ]
               : [],
@@ -267,8 +371,7 @@ class _NextButtonState extends State<_NextButton> {
         child: Text(
           'Siguiente',
           style: TextStyle(
-            color: buttonColor,
-            fontSize: 15,
+            color: color,
             fontWeight: FontWeight.w600,
           ),
         ),
