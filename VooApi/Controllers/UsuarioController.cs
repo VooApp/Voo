@@ -44,31 +44,31 @@ namespace VooApi.Controllers
             return Ok(lista);
         }
         [HttpPatch("{id}/puntos")]
-public async Task<IActionResult> SumarPuntos(string id, [FromBody] SumarPuntosDto dto)
-{
-    var resultado = await _service.SumarPuntosAsync(id, dto.Puntos);
-
-    if (resultado == null) return NotFound(new { mensaje = "Usuario no encontrado" });
-
-    if (resultado.PoderDesbloqueado)
-    {
-        return Ok(new
+        public async Task<IActionResult> SumarPuntos(string id, [FromBody] SumarPuntosDto dto)
         {
-            usuario = resultado.Usuario,
-            poderDesbloqueado = true,
-            nuevoPoder = resultado.NuevoPoder,
-            mensaje = $"¡Has desbloqueado el poder {resultado.NuevoPoder}!"
-        });
-    }
+            var resultado = await _service.SumarPuntosAsync(id, dto.Puntos);
 
-    return Ok(new
-    {
-        usuario = resultado.Usuario,
-        poderDesbloqueado = false,
-        nuevoPoder = (string?)null,
-        mensaje = $"Puntos añadidos. Total: {resultado.Usuario.Puntos}"
-    });
-}
+            if (resultado == null) return NotFound(new { mensaje = "Usuario no encontrado" });
+
+            if (resultado.PoderDesbloqueado)
+            {
+                return Ok(new
+                {
+                    usuario = resultado.Usuario,
+                    poderDesbloqueado = true,
+                    nuevoPoder = resultado.NuevoPoder,
+                    mensaje = $"¡Has desbloqueado el poder {resultado.NuevoPoder}!"
+                });
+            }
+
+            return Ok(new
+            {
+                usuario = resultado.Usuario,
+                poderDesbloqueado = false,
+                nuevoPoder = (string?)null,
+                mensaje = $"Puntos añadidos. Total: {resultado.Usuario.Puntos}"
+            });
+        }
 
         [HttpPatch("{id}/banear")]
         public async Task<IActionResult> Banear(string id)
@@ -83,10 +83,17 @@ public async Task<IActionResult> SumarPuntos(string id, [FromBody] SumarPuntosDt
             await _service.ActualizarAsync(id, usuario);
             return Ok(usuario);
         }
-    }
 
+        [HttpPatch("{id}/salir")]
+        public async Task<IActionResult> SalirDeSala(string id)
+        {
+            await _service.SalirDeSalaAsync(id);
+            return Ok(new { mensaje = "Has salido de la sala" });
+        }
+
+    }            
     public class SumarPuntosDto
     {
         public int Puntos { get; set; }
-    }
+    }                
 }

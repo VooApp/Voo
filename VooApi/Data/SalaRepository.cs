@@ -23,6 +23,11 @@ namespace VooApi.Data
             return await _collection.Find(s => s.Id == id).FirstOrDefaultAsync();
         }
 
+        public async Task<Sala?> ObtenerPorCodigoAsync(string codigo) 
+        {
+            return await _coleccion.Find(s => s.CodigoSala == codigo).FirstOrDefaultAsync();
+        }
+
         public async Task<List<Sala>> ObtenerTodosAsync()
         {
             return await _collection.Find(_ => true).ToListAsync();

@@ -59,5 +59,11 @@ namespace VooApi.Data
         {
             await _collection.DeleteOneAsync(u => u.Id == id);
         }
+
+        public async Task SalirDeSalaAsync(string id)
+        {
+            var update = Builders<Usuario>.Update.Set(u => u.SalaId, (string?)null);
+            await _coleccion.UpdateOneAsync(u => u.Id == id, update);
+        }
     }
 }
