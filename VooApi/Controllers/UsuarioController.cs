@@ -1,73 +1,92 @@
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver;
 using VooApi.Models;
+using VooApi.Services;
 
-namespace VooApi.Controllers;
-
-[ApiController]
-[Route("[controller]")]
-public class UsuarioController : ControllerBase
+namespace VooApi.Controllers
 {
-    private readonly IMongoCollection<Usuario> _usuarios;
-
-    public UsuarioController(IConfiguration config)
+    [ApiController]
+    [Route("[controller]")]
+    public class UsuarioController : ControllerBase
     {
-        var client = new MongoClient(config["MongoDB:ConnectionString"]);
-        var db = client.GetDatabase(config["MongoDB:DatabaseName"]);
-        _usuarios = db.GetCollection<Usuario>("usuarios");
+        private readonly UsuarioService _service;
+
+        public UsuarioController(UsuarioService service)
+        {
+            _service = service;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Crear([FromBody] Usuario usuario)
+        {
+            var creado = await _service.CrearAsync(usuario);
+            return Ok(creado);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerTodos()
+        {
+            var lista = await _service.ObtenerTodosAsync();
+            return Ok(lista);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> ObtenerPorId(string id)
+        {
+            var usuario = await _service.ObtenerPorIdAsync(id);
+            if (usuario == null) return NotFound();
+            return Ok(usuario);
+        }
+
+        [HttpGet("sala/{salaId}")]
+        public async Task<IActionResult> ObtenerPorSala(string salaId)
+        {
+            var lista = await _service.ObtenerPorSalaAsync(salaId);
+            return Ok(lista);
+        }
+        [HttpPatch("{id}/puntos")]
+public async Task<IActionResult> SumarPuntos(string id, [FromBody] SumarPuntosDto dto)
+{
+    var resultado = await _service.SumarPuntosAsync(id, dto.Puntos);
+
+    if (resultado == null) return NotFound(new { mensaje = "Usuario no encontrado" });
+
+    if (resultado.PoderDesbloqueado)
+    {
+        return Ok(new
+        {
+            usuario = resultado.Usuario,
+            poderDesbloqueado = true,
+            nuevoPoder = resultado.NuevoPoder,
+            mensaje = $"¡Has desbloqueado el poder {resultado.NuevoPoder}!"
+        });
     }
 
-    // Registrar usuario (host o invitado)
-    [HttpPost]
-    public async Task<IActionResult> Registrar([FromBody] Usuario usuario)
+    return Ok(new
     {
-        // Amazon Rekognition: por ahora lo marcamos como verificado directamente
-        usuario.Verificado = true;
+        usuario = resultado.Usuario,
+        poderDesbloqueado = false,
+        nuevoPoder = (string?)null,
+        mensaje = $"Puntos añadidos. Total: {resultado.Usuario.Puntos}"
+    });
+}
 
-        await _usuarios.InsertOneAsync(usuario);
-        return Ok(usuario);
+        [HttpPatch("{id}/banear")]
+        public async Task<IActionResult> Banear(string id)
+        {
+            await _service.BanearAsync(id);
+            return Ok(new { mensaje = "Usuario baneado correctamente" });
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Actualizar(string id, [FromBody] Usuario usuario)
+        {
+            await _service.ActualizarAsync(id, usuario);
+            return Ok(usuario);
+        }
     }
 
-    // Obtener usuario por id
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(string id)
+    public class SumarPuntosDto
     {
-        var usuario = await _usuarios.Find(u => u.Id == id).FirstOrDefaultAsync();
-        if (usuario == null) return NotFound();
-        return Ok(usuario);
-    }
-
-    // Obtener todos los usuarios de una sala
-    [HttpGet("sala/{salaId}")]
-    public async Task<IActionResult> GetBySala(string salaId)
-    {
-        var usuarios = await _usuarios.Find(u => u.SalaId == salaId && !u.Baneado).ToListAsync();
-        return Ok(usuarios);
-    }
-
-    // Banear usuario
-    [HttpPatch("{id}/banear")]
-    public async Task<IActionResult> Banear(string id)
-    {
-        var update = Builders<Usuario>.Update.Set(u => u.Baneado, true);
-        await _usuarios.UpdateOneAsync(u => u.Id == id, update);
-        return Ok(new { mensaje = "Usuario baneado" });
-    }
-
-    // Sumar puntos
-    [HttpPatch("{id}/puntos")]
-    public async Task<IActionResult> SumarPuntos(string id, [FromBody] int puntos)
-    {
-        var update = Builders<Usuario>.Update.Inc(u => u.Puntos, puntos);
-        await _usuarios.UpdateOneAsync(u => u.Id == id, update);
-        return Ok(new { mensaje = "Puntos actualizados" });
-    }
-
-    // Eliminar usuario (al salir de sala)
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Eliminar(string id)
-    {
-        await _usuarios.DeleteOneAsync(u => u.Id == id);
-        return Ok(new { mensaje = "Usuario eliminado" });
+        public int Puntos { get; set; }
     }
 }

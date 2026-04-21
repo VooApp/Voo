@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../register/status_screen.dart';
+import 'guest_status_screen.dart';
 
 class JoinRoomScreen extends StatefulWidget {
   const JoinRoomScreen({super.key});
@@ -329,7 +329,7 @@ class _LocationPermissionDialog extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const StatusScreen(),
+                        builder: (_) => const GuestStatusScreen(),
                       ),
                     );
                   },

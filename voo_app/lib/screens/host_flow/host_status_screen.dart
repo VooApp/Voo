@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'questions_screen.dart';
+import '../shared_flow/questions_screen.dart';
 
-class StatusScreen extends StatefulWidget {
-  const StatusScreen({super.key});
+class HostStatusScreen extends StatefulWidget {
+  const HostStatusScreen({super.key});
 
   @override
-  State<StatusScreen> createState() => _StatusScreenState();
+  State<HostStatusScreen> createState() => _HostStatusScreenState();
 }
 
-class _StatusScreenState extends State<StatusScreen> {
+class _HostStatusScreenState extends State<HostStatusScreen> {
   String? selectedStatus;
 
   @override
@@ -34,7 +34,6 @@ class _StatusScreenState extends State<StatusScreen> {
                     ),
                   ),
                   const SizedBox(height: 28),
-
                   _StatusOption(
                     color: const Color(0xFF22C55E),
                     label: 'Soltero',
@@ -45,9 +44,7 @@ class _StatusScreenState extends State<StatusScreen> {
                       });
                     },
                   ),
-
                   const SizedBox(height: 18),
-
                   _StatusOption(
                     color: const Color(0xFFEAB308),
                     label: 'Haciendo amigos',
@@ -58,9 +55,7 @@ class _StatusScreenState extends State<StatusScreen> {
                       });
                     },
                   ),
-
                   const SizedBox(height: 18),
-
                   _StatusOption(
                     color: const Color(0xFFEF4444),
                     label: 'En pareja',
@@ -71,9 +66,7 @@ class _StatusScreenState extends State<StatusScreen> {
                       });
                     },
                   ),
-
                   const SizedBox(height: 34),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -202,13 +195,13 @@ class _RoundBackButton extends StatelessWidget {
           shape: BoxShape.circle,
           color: const Color(0xFF151515),
           border: Border.all(
-            color: const Color(0xFF3EA2FF),
+            color: const Color.fromARGB(255, 62, 162, 255),
             width: 2,
           ),
         ),
         child: const Icon(
           Icons.arrow_back,
-          color: Color(0xFF3EA2FF),
+          color: Color.fromARGB(255, 62, 162, 255),
           size: 24,
         ),
       ),

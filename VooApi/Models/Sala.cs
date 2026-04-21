@@ -1,22 +1,25 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace VooApi.Models;
-
-public class Sala
+namespace VooApi.Models
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string? Id { get; set; }
-    public string HostId { get; set; } = string.Empty;
-    public string Nombre { get; set; } = string.Empty;
-    public string Contexto { get; set; } = string.Empty; // "Pool Party", "Cena formal", "Reunión informal"
-    public string Aforo { get; set; } = string.Empty; // "15-30", "30-50", "+50"
-    public string Direccion { get; set; } = string.Empty;
-    public string CodigoPostal { get; set; } = string.Empty;
-    public List<string> Premios { get; set; } = new();
-    public string CodigoSala { get; set; } = string.Empty; // código único generado
-    public string? Incidencias { get; set; } // referencia al usuario host
-    public List<string> InvitadosIds { get; set; } = new();
-    public bool Activa { get; set; } = true; // TEMPORAL PARA FUNCIONALIDAD
+    public class Sala
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
+        public string HostId { get; set; } = string.Empty;      // FK → Usuario (host)
+        public string Nombre { get; set; } = string.Empty;
+        public string Contexto { get; set; } = string.Empty;    // "pool party", "cena formal"...
+        public int Aforo { get; set; }
+        public string Direccion { get; set; } = string.Empty;
+        public int CodigoPostal { get; set; }
+        public List<string> Premios { get; set; } = new();      // FK → Premio
+        public int Invitados { get; set; } = 0;
+        public int Baneados { get; set; } = 0;
+        public string? Incidencias { get; set; }
+        public DateTime FechaHoraInicio { get; set; } = DateTime.UtcNow;
+        public DateTime? FechaHoraFin { get; set; }
+    }
 }
