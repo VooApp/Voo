@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../state/app_state.dart';
 import '../home/home_screen.dart';
 
 class GuestQuestionsScreen extends StatefulWidget {
@@ -78,7 +81,6 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -89,9 +91,7 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                           hintText: 'Escribe tu respuesta',
                           onChanged: (_) => setState(() {}),
                         ),
-
                         const SizedBox(height: 26),
-
                         const _QuestionLabel(text: 'Pregunta rápida 2'),
                         const SizedBox(height: 12),
                         _QuestionInput(
@@ -99,9 +99,7 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                           hintText: 'Escribe tu respuesta',
                           onChanged: (_) => setState(() {}),
                         ),
-
                         const SizedBox(height: 26),
-
                         const _QuestionLabel(text: 'Pregunta rápida 3'),
                         const SizedBox(height: 12),
                         _QuestionInput(
@@ -111,9 +109,7 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                         ),
                       ],
                     ),
-
                     const Spacer(),
-
                     Align(
                       alignment: Alignment.centerRight,
                       child: _NextButton(
@@ -121,10 +117,16 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                         onTap: () {
                           if (!canContinue) return;
 
+                          context.read<AppState>().setUser(
+                            isHost: false,
+                            userName: 'Invitado',
+                            roomCode: context.read<AppState>().roomCode ?? '---',
+                          );
+
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const HomeScreen(isHost: false),
+                              builder: (_) => const HomeScreen(),
                             ),
                           );
                         },

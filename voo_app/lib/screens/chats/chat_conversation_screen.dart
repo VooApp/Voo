@@ -380,16 +380,16 @@ class _MessageBubble extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF3B1452),
-              Color(0xFF7E2BE8),
+              Color(0xFF1A1A28),
+              Color(0xFF11111B),
             ],
           )
         : const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF1A1A28),
-              Color(0xFF11111B),
+              Color(0xFF3B1452),
+              Color(0xFF7E2BE8),
             ],
           );
 
@@ -412,10 +412,19 @@ class _MessageBubble extends StatelessWidget {
             ),
             border: Border.all(
               color: message.isMine
-                  ? const Color(0xFF9C4DFF).withOpacity(0.65)
-                  : const Color(0xFF9C4DFF).withOpacity(0.20),
+                  ? Colors.white.withOpacity(0.10)
+                  : const Color(0xFF9C4DFF).withOpacity(0.65),
               width: 1.1,
             ),
+            boxShadow: !message.isMine
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF9C4DFF).withOpacity(0.20),
+                      blurRadius: 12,
+                      spreadRadius: 0.5,
+                    ),
+                  ]
+                : [],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -424,8 +433,8 @@ class _MessageBubble extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   message.text,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: message.isMine ? Colors.white : Colors.white,
                     fontSize: 14,
                     height: 1.35,
                     fontWeight: FontWeight.w500,

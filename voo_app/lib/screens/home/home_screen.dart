@@ -1,40 +1,108 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../mock/mock_users.dart';
+import '../../models/request_model.dart';
+import '../../models/user_model.dart';
+import '../../state/app_state.dart';
+import '../../widgets/sent_request_dialog.dart';
+import '../../widgets/user_interaction_dialog.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../chats/chats_screen.dart';
 import 'profile_qr_screen.dart';
-import 'user_profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  final bool isHost;
+  const HomeScreen({super.key});
 
-  const HomeScreen({
-    super.key,
-    required this.isHost,
-  });
+  String _requestTypeLabel(RequestType type) {
+    switch (type) {
+      case RequestType.truth:
+        return 'Verdad';
+      case RequestType.dare:
+        return 'Reto';
+      case RequestType.messageRequest:
+        return 'Mensaje';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final invitados = const [
-      ('Maria', 16, Color(0xFFEF4444)),
-      ('Juan', 21, Color(0xFF22C55E)),
-      ('Pedro', 18, Color(0xFFEAB308)),
-      ('Anna', 20, Color(0xFF22C55E)),
-      ('Alba', 17, Color(0xFFEF4444)),
-      ('Marina', 18, Color(0xFFEAB308)),
-      ('Paula', 18, Color(0xFF22C55E)),
-      ('Luna', 17, Color(0xFFEF4444)),
-      ('Lucas', 18, Color(0xFFEAB308)),
-      ('Pablo', 21, Color(0xFF22C55E)),
-    ];
+    final appState = context.watch<AppState>();
 
-    final saludo = isHost ? 'Hola Maxi!' : 'Hola Mogi!';
-    final codigoSala = 'x420011';
-    final tituloLista = isHost ? 'Tus invitados' : 'Invitados de la sala';
+    final bool isHost = appState.isHost;
+    final String saludo = appState.userName ?? 'Usuario';
+    final String codigoSala = appState.roomCode ?? '---';
+    final String tituloLista =
+        isHost ? 'Tus invitados' : 'Invitados de la sala';
 
     void openPlaceholder(String text) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(text)),
+      );
+    }
+
+    Future<void> openInteractionPopup(UserModel user) async {
+      final existingPending = appState.getPendingRequestForUser(user.id);
+      if (existingPending != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ya tienes una solicitud pendiente con ${user.name}',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final _DialogRequestResult? result =
+          await showDialog<_DialogRequestResult>(
+        context: context,
+        barrierDismissible: true,
+        builder: (_) => UserInteractionDialog(
+          targetUserId: user.id,
+          targetUserName: user.name,
+          targetUserAge: user.age,
+          statusColor: user.statusColor,
+        ),
+      );
+
+      if (result == null || !context.mounted) return;
+
+      appState.sendRequest(
+        targetUserId: result.targetUserId,
+        targetUserName: result.targetUserName,
+        type: result.type,
+        content: result.content,
+      );
+
+      String title;
+      String subtitle;
+
+      switch (result.type) {
+        case RequestType.truth:
+          title = 'Verdad enviada';
+          subtitle =
+              'Tu solicitud de verdad se ha enviado a ${result.targetUserName}';
+          break;
+        case RequestType.dare:
+          title = 'Reto enviado';
+          subtitle =
+              'Tu solicitud de reto se ha enviado a ${result.targetUserName}';
+          break;
+        case RequestType.messageRequest:
+          title = 'Mensaje enviado';
+          subtitle =
+              'Tu solicitud de mensaje se ha enviado a ${result.targetUserName}';
+          break;
+      }
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (_) => SentRequestDialog(
+          title: title,
+          subtitle: subtitle,
+        ),
       );
     }
 
@@ -59,7 +127,7 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _TopHeader(
-                  saludo: saludo,
+                  saludo: 'Hola $saludo!',
                   codigoSala: codigoSala,
                   onQrTap: () {
                     Navigator.push(
@@ -67,7 +135,7 @@ class HomeScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) => ProfileQrScreen(
                           isHost: isHost,
-                          userName: isHost ? 'Maxi' : 'Mogi',
+                          userName: saludo,
                           roomCode: codigoSala,
                         ),
                       ),
@@ -86,28 +154,21 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Expanded(
                   child: ListView.separated(
-                    itemCount: invitados.length,
+                    itemCount: mockUsers.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final invitado = invitados[index];
+                      final UserModel user = mockUsers[index];
+                      final pendingRequest =
+                          appState.getPendingRequestForUser(user.id);
 
                       return _GuestCard(
-                        name: invitado.$1,
-                        age: invitado.$2,
-                        statusColor: invitado.$3,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => UserProfileScreen(
-                                name: invitado.$1,
-                                age: invitado.$2,
-                                statusColor: invitado.$3,
-                                isHostViewer: isHost,
-                              ),
-                            ),
-                          );
-                        },
+                        name: user.name,
+                        age: user.age,
+                        statusColor: user.statusColor,
+                        pendingLabel: pendingRequest == null
+                            ? null
+                            : '${_requestTypeLabel(pendingRequest.type)} pendiente',
+                        onTap: () => openInteractionPopup(user),
                       );
                     },
                   ),
@@ -122,7 +183,7 @@ class HomeScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChatsScreen(isHost: isHost),
+                          builder: (_) => const ChatsScreen(),
                         ),
                       );
                     } else if (index == 2) {
@@ -247,6 +308,7 @@ class _GuestCard extends StatelessWidget {
   final String name;
   final int age;
   final Color statusColor;
+  final String? pendingLabel;
   final VoidCallback onTap;
 
   const _GuestCard({
@@ -254,6 +316,7 @@ class _GuestCard extends StatelessWidget {
     required this.age,
     required this.statusColor,
     required this.onTap,
+    this.pendingLabel,
   });
 
   @override
@@ -292,13 +355,29 @@ class _GuestCard extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                '$name, $age',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$name, $age',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (pendingLabel != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      pendingLabel!,
+                      style: const TextStyle(
+                        color: Color(0xFFEAB308),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             const Icon(
@@ -312,3 +391,5 @@ class _GuestCard extends StatelessWidget {
     );
   }
 }
+
+typedef _DialogRequestResult = dynamic;

@@ -4,19 +4,16 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
 
+import '../../state/app_state.dart';
 import '../home/home_screen.dart';
 
 class RoomCodeScreen extends StatefulWidget {
-  final bool isHost;
-
-  const RoomCodeScreen({
-    super.key,
-    required this.isHost,
-  });
+  const RoomCodeScreen({super.key});
 
   @override
   State<RoomCodeScreen> createState() => _RoomCodeScreenState();
@@ -40,7 +37,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
       _copied = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(const Duration(seconds: 1));
 
     if (!mounted) return;
 
@@ -57,21 +54,13 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
     });
 
     try {
-      final result = await SharePlus.instance.share(
+      await SharePlus.instance.share(
         ShareParams(
           text: 'Únete a mi sala de VOO con este código: $roomCode',
           subject: 'Código de sala VOO',
           title: 'Compartir código de sala',
         ),
       );
-
-      if (mounted && result.status == ShareResultStatus.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Código compartido'),
-          ),
-        );
-      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -127,14 +116,6 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
         ..click();
 
       html.Url.revokeObjectUrl(url);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tarjeta PNG descargada'),
-        ),
-      );
     } catch (_) {
       if (!mounted) return;
 
@@ -152,11 +133,17 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
     }
   }
 
-  void _goToHome() {
+  void _goHome() {
+    context.read<AppState>().setUser(
+      isHost: true,
+      userName: context.read<AppState>().userName ?? 'Host',
+      roomCode: roomCode,
+    );
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => HomeScreen(isHost: widget.isHost),
+        builder: (_) => const HomeScreen(),
       ),
       (route) => false,
     );
@@ -165,7 +152,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
   @override
   Widget build(BuildContext context) {
     final Color accentColor =
-        _copied ? const Color(0xFF22C55E) : const Color(0xFF7E2BE8);
+        _copied ? const Color(0xFF22C55E) : const Color(0xFF9C4DFF);
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -229,28 +216,22 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Color(0xFF141421),
-                                Color(0xFF0E0E18),
+                                Color(0xFF1A1A28),
+                                Color(0xFF11111B),
                               ],
                             ),
                             border: Border.all(
                               color: accentColor,
-                              width: _copied ? 4 : 1.5,
+                              width: 2,
                             ),
                             boxShadow: [
                               BoxShadow(
                                 color: accentColor.withOpacity(
-                                  _copied ? 0.6 : 0.08,
+                                  _copied ? 0.30 : 0.12,
                                 ),
-                                blurRadius: _copied ? 35 : 10,
-                                spreadRadius: _copied ? 3 : 0,
+                                blurRadius: _copied ? 26 : 14,
+                                spreadRadius: _copied ? 1.5 : 0.2,
                               ),
-                              if (_copied)
-                                BoxShadow(
-                                  color: const Color(0xFF22C55E).withOpacity(0.4),
-                                  blurRadius: 60,
-                                  spreadRadius: 6,
-                                ),
                             ],
                           ),
                           child: Column(
@@ -260,13 +241,6 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(24),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.white.withOpacity(0.08),
-                                      blurRadius: 12,
-                                      spreadRadius: 0.4,
-                                    ),
-                                  ],
                                 ),
                                 child: QrImageView(
                                   data: roomCode,
@@ -277,11 +251,15 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                'Tu código de sala',
+                                _copied ? 'Copiado ✔' : 'Tu código de sala',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.72),
+                                  color: _copied
+                                      ? const Color(0xFF22C55E)
+                                      : Colors.white70,
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: _copied
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -297,10 +275,12 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Toca el QR o el código para copiarlo',
+                                _copied
+                                    ? 'El código se ha copiado al portapapeles'
+                                    : 'Toca el QR o el código para copiarlo',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.48),
+                                  color: Colors.white.withOpacity(0.56),
                                   fontSize: 13,
                                   height: 1.35,
                                 ),
@@ -312,97 +292,37 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                       const SizedBox(height: 22),
                       Wrap(
                         alignment: WrapAlignment.center,
-                        spacing: 14,
+                        spacing: 12,
                         runSpacing: 12,
                         children: [
-                          _IconOnlyActionButton(
-                            icon: _downloading
-                                ? Icons.hourglass_top
-                                : Icons.download_outlined,
-                            color: const Color(0xFF9C4DFF),
-                            onTap: _downloadCodeCard,
+                          SizedBox(
+                            width: 138,
+                            child: _ActionButton(
+                              icon: _downloading
+                                  ? Icons.hourglass_top
+                                  : Icons.download_outlined,
+                              color: const Color(0xFF9C4DFF),
+                              onTap: _downloadCodeCard,
+                            ),
                           ),
-                          _IconOnlyActionButton(
-                            icon: _sharing
-                                ? Icons.hourglass_top
-                                : Icons.share_outlined,
-                            color: const Color(0xFF9C4DFF),
-                            onTap: _shareCode,
+                          SizedBox(
+                            width: 138,
+                            child: _ActionButton(
+                              icon: _sharing
+                                  ? Icons.hourglass_top
+                                  : Icons.share_outlined,
+                              color: const Color(0xFF9C4DFF),
+                              onTap: _shareCode,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 28),
                       _MainButton(
                         label: 'Ir al inicio',
-                        onTap: _goToHome,
+                        onTap: _goHome,
                       ),
                     ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 28,
-            left: 0,
-            right: 0,
-            child: IgnorePointer(
-              child: AnimatedSlide(
-                offset: _copied ? Offset.zero : const Offset(0, -0.25),
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutBack,
-                child: AnimatedOpacity(
-                  opacity: _copied ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
-                  child: Center(
-                    child: AnimatedScale(
-                      scale: _copied ? 1 : 0.9,
-                      duration: const Duration(milliseconds: 260),
-                      curve: Curves.easeOutBack,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0xFF0B3D1E),
-                              Color(0xFF22C55E),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF22C55E).withOpacity(0.55),
-                              blurRadius: 30,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Código copiado',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ),
                 ),
               ),
@@ -522,13 +442,6 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                             color: const Color(0xFF9C4DFF),
                             width: 2.4,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF9C4DFF).withOpacity(0.18),
-                              blurRadius: 24,
-                              spreadRadius: 1,
-                            ),
-                          ],
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -565,43 +478,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                 letterSpacing: 3,
                               ),
                             ),
-                            const SizedBox(height: 14),
-                            Text(
-                              'Escanea el QR o introduce el código para entrar en la sala.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.58),
-                                fontSize: 14,
-                                height: 1.35,
-                              ),
-                            ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 26),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: const Color(0xFF22C55E).withOpacity(0.45),
-                            width: 1.5,
-                          ),
-                          color: const Color(0xFF22C55E).withOpacity(0.08),
-                        ),
-                        child: const Text(
-                          'VOO · Ahora o nunca',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF22C55E),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
-                          ),
                         ),
                       ),
                     ],
@@ -616,22 +493,22 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
   }
 }
 
-class _IconOnlyActionButton extends StatefulWidget {
+class _ActionButton extends StatefulWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _IconOnlyActionButton({
+  const _ActionButton({
     required this.icon,
     required this.color,
     required this.onTap,
   });
 
   @override
-  State<_IconOnlyActionButton> createState() => _IconOnlyActionButtonState();
+  State<_ActionButton> createState() => _ActionButtonState();
 }
 
-class _IconOnlyActionButtonState extends State<_IconOnlyActionButton> {
+class _ActionButtonState extends State<_ActionButton> {
   bool _pressed = false;
 
   @override
@@ -645,11 +522,11 @@ class _IconOnlyActionButtonState extends State<_IconOnlyActionButton> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: 58,
-        height: 58,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF151515),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: widget.color,
             width: 2,
@@ -657,17 +534,15 @@ class _IconOnlyActionButtonState extends State<_IconOnlyActionButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.38),
+                    color: widget.color.withOpacity(0.45),
                     blurRadius: 16,
-                    spreadRadius: 1.2,
+                    spreadRadius: 1.5,
                   ),
                 ]
               : [],
         ),
-        child: Icon(
-          widget.icon,
-          color: widget.color,
-          size: 24,
+        child: Center(
+          child: Icon(widget.icon, color: widget.color, size: 20),
         ),
       ),
     );
@@ -721,9 +596,9 @@ class _MainButtonState extends State<_MainButton> {
                 ]
               : [],
         ),
-        child: const Text(
-          'Ir al inicio',
-          style: TextStyle(
+        child: Text(
+          widget.label,
+          style: const TextStyle(
             color: color,
             fontSize: 15,
             fontWeight: FontWeight.w600,

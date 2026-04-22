@@ -1,95 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../mock/mock_chats.dart';
+import '../../models/chat_model.dart';
+import '../../state/app_state.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import 'chat_conversation_screen.dart';
 
-class ChatsScreen extends StatefulWidget {
-  final bool isHost;
-
-  const ChatsScreen({
-    super.key,
-    required this.isHost,
-  });
-
-  @override
-  State<ChatsScreen> createState() => _ChatsScreenState();
-}
-
-class _ChatsScreenState extends State<ChatsScreen> {
-  final TextEditingController _searchController = TextEditingController();
-
-  final List<_ChatItemData> _allChats = const [
-    _ChatItemData(
-      name: 'Maria',
-      lastMessage: 'Te he visto en el reto de antes 👀',
-      time: '21:14',
-      unreadCount: 2,
-      statusColor: Color(0xFFEF4444),
-    ),
-    _ChatItemData(
-      name: 'Juan',
-      lastMessage: 'Luego hablamos dentro',
-      time: '20:58',
-      unreadCount: 0,
-      statusColor: Color(0xFF22C55E),
-    ),
-    _ChatItemData(
-      name: 'Anna',
-      lastMessage: 'Jajaj sí, ha sido buenísimo',
-      time: '20:41',
-      unreadCount: 1,
-      statusColor: Color(0xFFEAB308),
-    ),
-    _ChatItemData(
-      name: 'Lucas',
-      lastMessage: '¿Has escaneado ya mi QR?',
-      time: '20:10',
-      unreadCount: 0,
-      statusColor: Color(0xFF22C55E),
-    ),
-    _ChatItemData(
-      name: 'Paula',
-      lastMessage: 'Estoy cerca de la barra',
-      time: '19:53',
-      unreadCount: 4,
-      statusColor: Color(0xFFEAB308),
-    ),
-    _ChatItemData(
-      name: 'Luna',
-      lastMessage: 'Luego hacemos el reto si quieres',
-      time: '19:20',
-      unreadCount: 0,
-      statusColor: Color(0xFFEF4444),
-    ),
-  ];
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  List<_ChatItemData> get _filteredChats {
-    final query = _searchController.text.trim().toLowerCase();
-
-    if (query.isEmpty) return _allChats;
-
-    return _allChats.where((chat) {
-      return chat.name.toLowerCase().contains(query) ||
-          chat.lastMessage.toLowerCase().contains(query);
-    }).toList();
-  }
-
-  void _openPlaceholder(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
-    );
-  }
+class ChatsScreen extends StatelessWidget {
+  const ChatsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final chats = _filteredChats;
+    final appState = context.watch<AppState>();
+    final isHost = appState.isHost;
+
+    void openPlaceholder(String text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(text)),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -111,68 +42,28 @@ class _ChatsScreenState extends State<ChatsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Chats',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    _SquareHeaderButton(
-                      icon: Icons.edit_outlined,
-                      onTap: () => _openPlaceholder('Aquí irá crear chat'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.isHost
-                      ? 'Habla con tus invitados y sigue la actividad de la sala.'
-                      : 'Habla con la gente de la sala y coordina retos.',
+                const Text(
+                  'Chats',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.68),
-                    fontSize: 14,
-                    height: 1.35,
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
                   ),
-                ),
-                const SizedBox(height: 20),
-                _SearchInput(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 18),
                 Expanded(
-                  child: chats.isEmpty
-                      ? const _EmptyChatsState()
-                      : ListView.separated(
-                          itemCount: chats.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final chat = chats[index];
+                  child: ListView.separated(
+                    itemCount: mockChats.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final ChatModel chat = mockChats[index];
 
-                            return _ChatCard(
-                              data: chat,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ChatConversationScreen(
-                                      isHost: widget.isHost,
-                                      chatName: chat.name,
-                                      statusColor: chat.statusColor,
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
+                      return _ChatCard(
+                        chat: chat,
+                        isHost: isHost,
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: 10),
                 VooBottomNavBar(
@@ -182,17 +73,17 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => HomeScreen(isHost: widget.isHost),
+                          builder: (_) => const HomeScreen(),
                         ),
                       );
                     } else if (index == 1) {
                       return;
                     } else if (index == 2) {
-                      _openPlaceholder('Aquí irá Ranking');
+                      openPlaceholder('Aquí irá Ranking');
                     } else if (index == 3) {
-                      _openPlaceholder('Aquí irá Retos');
+                      openPlaceholder('Aquí irá Retos');
                     } else if (index == 4) {
-                      _openPlaceholder('Aquí irá Ajustes');
+                      openPlaceholder('Aquí irá Ajustes');
                     }
                   },
                 ),
@@ -205,259 +96,56 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 }
 
-class _ChatItemData {
-  final String name;
-  final String lastMessage;
-  final String time;
-  final int unreadCount;
-  final Color statusColor;
-
-  const _ChatItemData({
-    required this.name,
-    required this.lastMessage,
-    required this.time,
-    required this.unreadCount,
-    required this.statusColor,
-  });
-}
-
-class _SquareHeaderButton extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SquareHeaderButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<_SquareHeaderButton> createState() => _SquareHeaderButtonState();
-}
-
-class _SquareHeaderButtonState extends State<_SquareHeaderButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    const color = Color(0xFF9C4DFF);
-
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: const Color(0xFF151515),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: color,
-            width: 2,
-          ),
-          boxShadow: _pressed
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.4),
-                    blurRadius: 16,
-                    spreadRadius: 1.4,
-                  ),
-                ]
-              : [],
-        ),
-        child: Icon(
-          widget.icon,
-          color: color,
-          size: 24,
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchInput extends StatefulWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _SearchInput({
-    required this.controller,
-    required this.onChanged,
-  });
-
-  @override
-  State<_SearchInput> createState() => _SearchInputState();
-}
-
-class _SearchInputState extends State<_SearchInput> {
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Focus(
-      onFocusChange: (value) {
-        setState(() {
-          _focused = value;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: _focused
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF9C4DFF).withOpacity(0.22),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
-        ),
-        child: TextField(
-          controller: widget.controller,
-          onChanged: widget.onChanged,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-          ),
-          decoration: InputDecoration(
-            hintText: 'Buscar chat',
-            hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.42),
-            ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: Color(0xFF9C4DFF),
-            ),
-            filled: true,
-            fillColor: const Color(0xFF151525),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 16,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(22),
-              borderSide: BorderSide(
-                color: const Color(0xFF9C4DFF).withOpacity(0.38),
-                width: 1.6,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(22),
-              borderSide: const BorderSide(
-                color: Color(0xFF9C4DFF),
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatCard extends StatefulWidget {
-  final _ChatItemData data;
-  final VoidCallback onTap;
+class _ChatCard extends StatelessWidget {
+  final ChatModel chat;
+  final bool isHost;
 
   const _ChatCard({
-    required this.data,
-    required this.onTap,
+    required this.chat,
+    required this.isHost,
   });
 
   @override
-  State<_ChatCard> createState() => _ChatCardState();
-}
-
-class _ChatCardState extends State<_ChatCard> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final data = widget.data;
-
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatConversationScreen(
+              isHost: isHost,
+              chatName: chat.userName,
+              statusColor: chat.statusColor,
+            ),
+          ),
+        );
       },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: const Color(0xFF151525),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFFD78BFF).withOpacity(_pressed ? 0.9 : 0.45),
-            width: _pressed ? 1.8 : 1.4,
+            color: const Color(0xFFD78BFF).withOpacity(0.5),
+            width: 1.4,
           ),
-          boxShadow: _pressed
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF9C4DFF).withOpacity(0.22),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
         ),
         child: Row(
           children: [
-            Stack(
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: data.statusColor,
-                      width: 2.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                  ),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: chat.statusColor,
+                  width: 2.4,
                 ),
-                if (data.unreadCount > 0)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      constraints: const BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF22C55E),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${data.unreadCount}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+              ),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -465,7 +153,7 @@ class _ChatCardState extends State<_ChatCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data.name,
+                    chat.userName,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -474,13 +162,12 @@ class _ChatCardState extends State<_ChatCard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    data.lastMessage,
+                    chat.lastMessage,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.62),
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -491,73 +178,35 @@ class _ChatCardState extends State<_ChatCard> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  data.time,
+                  chat.time,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.55),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 10),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.white38,
-                  size: 22,
-                ),
+                if (chat.unreadCount > 0) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF22C55E),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${chat.unreadCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyChatsState extends StatelessWidget {
-  const _EmptyChatsState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 22,
-          vertical: 24,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFF151525),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: const Color(0xFF9C4DFF).withOpacity(0.35),
-            width: 1.4,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: Color(0xFF9C4DFF),
-              size: 38,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'No hay chats',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Cuando empieces a hablar con gente de la sala, aparecerá aquí.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.62),
-                fontSize: 13,
-                height: 1.35,
-              ),
             ),
           ],
         ),
