@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/message_model.dart';
+import '../../state/app_state.dart';
 
 class ChatConversationScreen extends StatefulWidget {
   final bool isHost;
+  final String chatId;
   final String chatName;
   final Color statusColor;
 
   const ChatConversationScreen({
     super.key,
     required this.isHost,
+    required this.chatId,
     required this.chatName,
     required this.statusColor,
   });
@@ -20,34 +26,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _messageFocusNode = FocusNode();
-
-  final List<_ChatMessage> _messages = [
-    const _ChatMessage(
-      text: 'Holaa',
-      isMine: false,
-      time: '20:41',
-    ),
-    const _ChatMessage(
-      text: 'Ey, qué tal?',
-      isMine: true,
-      time: '20:42',
-    ),
-    const _ChatMessage(
-      text: 'Te he visto en el reto de antes jajaj',
-      isMine: false,
-      time: '20:43',
-    ),
-    const _ChatMessage(
-      text: 'Sí, ha estado guapo 😂',
-      isMine: true,
-      time: '20:44',
-    ),
-    const _ChatMessage(
-      text: 'Luego hacemos otro si quieres',
-      isMine: false,
-      time: '20:45',
-    ),
-  ];
 
   bool _showScrollToBottomButton = false;
 
@@ -105,21 +83,19 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
-  void _addMessage({
-    required String text,
-    required bool isMine,
-  }) {
+  void _sendMessage() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
     final shouldStickToBottom = _isNearBottom();
 
-    setState(() {
-      _messages.add(
-        _ChatMessage(
+    context.read<AppState>().sendChatMessage(
+          chatId: widget.chatId,
           text: text,
-          isMine: isMine,
-          time: _currentTimeString(),
-        ),
-      );
-    });
+          isMine: true,
+        );
+
+    _messageController.clear();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (shouldStickToBottom) {
@@ -127,43 +103,17 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       } else {
         _handleScroll();
       }
-    });
-  }
 
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-
-    _messageController.clear();
-
-    _addMessage(
-      text: text,
-      isMine: true,
-    );
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _messageFocusNode.requestFocus();
       }
     });
   }
 
-  String _currentTimeString() {
-    final now = DateTime.now();
-    final h = now.hour.toString().padLeft(2, '0');
-    final m = now.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
-  void _simulateIncomingMessage() {
-    _addMessage(
-      text: 'Mensaje recibido de prueba 👀',
-      isMine: false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final messages = context.watch<AppState>().getMessagesForChat(widget.chatId);
+
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
       body: Container(
@@ -229,21 +179,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                         ],
                       ),
                     ),
-                    _HeaderActionButton(
-                      icon: Icons.add_comment_outlined,
-                      onTap: _simulateIncomingMessage,
-                    ),
-                    const SizedBox(width: 8),
-                    _HeaderActionButton(
-                      icon: Icons.more_horiz_rounded,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Aquí irán más opciones del chat'),
-                          ),
-                        );
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -253,7 +188,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                     ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      itemCount: _messages.length + 1,
+                      itemCount: messages.length + 1,
                       itemBuilder: (context, index) {
                         if (index == 0) {
                           return const Padding(
@@ -266,7 +201,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                           );
                         }
 
-                        final message = _messages[index - 1];
+                        final MessageModel message = messages[index - 1];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _MessageBubble(message: message),
@@ -317,18 +252,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   }
 }
 
-class _ChatMessage {
-  final String text;
-  final bool isMine;
-  final String time;
-
-  const _ChatMessage({
-    required this.text,
-    required this.isMine,
-    required this.time,
-  });
-}
-
 class _ConversationBadge extends StatelessWidget {
   final String text;
 
@@ -364,7 +287,7 @@ class _ConversationBadge extends StatelessWidget {
 }
 
 class _MessageBubble extends StatelessWidget {
-  final _ChatMessage message;
+  final MessageModel message;
 
   const _MessageBubble({
     required this.message,
@@ -433,8 +356,8 @@ class _MessageBubble extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   message.text,
-                  style: TextStyle(
-                    color: message.isMine ? Colors.white : Colors.white,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 14,
                     height: 1.35,
                     fontWeight: FontWeight.w500,
@@ -502,6 +425,7 @@ class _MessageInputState extends State<_MessageInput> {
           controller: widget.controller,
           focusNode: widget.focusNode,
           onSubmitted: widget.onSubmitted,
+          textInputAction: TextInputAction.send,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 15,
@@ -699,64 +623,6 @@ class _BackButtonState extends State<_BackButton> {
           Icons.arrow_back_ios_new,
           color: Colors.white,
           size: 20,
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderActionButton extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _HeaderActionButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<_HeaderActionButton> createState() => _HeaderActionButtonState();
-}
-
-class _HeaderActionButtonState extends State<_HeaderActionButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    const color = Color(0xFF9C4DFF);
-
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xFF151515),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: color,
-            width: 2,
-          ),
-          boxShadow: _pressed
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.35),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
-        ),
-        child: Icon(
-          widget.icon,
-          color: color,
-          size: 22,
         ),
       ),
     );

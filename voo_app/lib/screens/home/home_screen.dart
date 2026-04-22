@@ -11,8 +11,15 @@ import '../../widgets/voo_bottom_nav_bar.dart';
 import '../chats/chats_screen.dart';
 import 'profile_qr_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _seededDemo = false;
 
   String _requestTypeLabel(RequestType type) {
     switch (type) {
@@ -29,11 +36,29 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
+    if (!_seededDemo) {
+      _seededDemo = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<AppState>().seedDemoIncomingRequestIfNeeded();
+      });
+    }
+
     final bool isHost = appState.isHost;
     final String saludo = appState.userName ?? 'Usuario';
     final String codigoSala = appState.roomCode ?? '---';
     final String tituloLista =
         isHost ? 'Tus invitados' : 'Invitados de la sala';
+
+    final visibleUsers = mockUsers
+        .where((user) => !appState.shouldHideUserFromHome(user.id))
+        .toList();
+
+    final RequestModel? blockingIncoming = appState.blockingIncomingRequest;
+    final RequestModel? activeAccepted = appState.activeAcceptedRequest;
+
+    final bool lockHome =
+        blockingIncoming != null || activeAccepted != null;
 
     void openPlaceholder(String text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,6 +67,8 @@ class HomeScreen extends StatelessWidget {
     }
 
     Future<void> openInteractionPopup(UserModel user) async {
+      if (lockHome) return;
+
       final existingPending = appState.getPendingRequestForUser(user.id);
       if (existingPending != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -54,8 +81,8 @@ class HomeScreen extends StatelessWidget {
         return;
       }
 
-      final _DialogRequestResult? result =
-          await showDialog<_DialogRequestResult>(
+      final DialogRequestResult? result =
+          await showDialog<DialogRequestResult>(
         context: context,
         barrierDismissible: true,
         builder: (_) => UserInteractionDialog(
@@ -75,33 +102,27 @@ class HomeScreen extends StatelessWidget {
         content: result.content,
       );
 
-      String title;
-      String subtitle;
-
-      switch (result.type) {
-        case RequestType.truth:
-          title = 'Verdad enviada';
-          subtitle =
-              'Tu solicitud de verdad se ha enviado a ${result.targetUserName}';
-          break;
-        case RequestType.dare:
-          title = 'Reto enviado';
-          subtitle =
-              'Tu solicitud de reto se ha enviado a ${result.targetUserName}';
-          break;
-        case RequestType.messageRequest:
-          title = 'Mensaje enviado';
-          subtitle =
-              'Tu solicitud de mensaje se ha enviado a ${result.targetUserName}';
-          break;
-      }
+      final dialogData = switch (result.type) {
+        RequestType.truth => (
+            'Verdad enviada',
+            'Tu solicitud de verdad se ha enviado a ${result.targetUserName}',
+          ),
+        RequestType.dare => (
+            'Reto enviado',
+            'Tu solicitud de reto se ha enviado a ${result.targetUserName}',
+          ),
+        RequestType.messageRequest => (
+            'Mensaje enviado',
+            'Tu solicitud de mensaje se ha enviado a ${result.targetUserName}',
+          ),
+      };
 
       await showDialog<void>(
         context: context,
         barrierDismissible: true,
         builder: (_) => SentRequestDialog(
-          title: title,
-          subtitle: subtitle,
+          title: dialogData.$1,
+          subtitle: dialogData.$2,
         ),
       );
     }
@@ -121,83 +142,526 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _TopHeader(
-                  saludo: 'Hola $saludo!',
-                  codigoSala: codigoSala,
-                  onQrTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProfileQrScreen(
-                          isHost: isHost,
-                          userName: saludo,
-                          roomCode: codigoSala,
+          child: Stack(
+            children: [
+              IgnorePointer(
+                ignoring: lockHome,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _TopHeader(
+                        saludo: 'Hola $saludo!',
+                        codigoSala: codigoSala,
+                        onQrTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProfileQrScreen(
+                                isHost: isHost,
+                                userName: saludo,
+                                roomCode: codigoSala,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        tituloLista,
+                        style: const TextStyle(
+                          color: Color(0xFFD78BFF),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  tituloLista,
-                  style: const TextStyle(
-                    color: Color(0xFFD78BFF),
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: visibleUsers.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No hay más invitados disponibles ahora mismo',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.60),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                physics: lockHome
+                                    ? const NeverScrollableScrollPhysics()
+                                    : const BouncingScrollPhysics(),
+                                itemCount: visibleUsers.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  final UserModel user = visibleUsers[index];
+                                  final pendingRequest =
+                                      appState.getPendingRequestForUser(user.id);
+
+                                  return _GuestCard(
+                                    name: user.name,
+                                    age: user.age,
+                                    statusColor: user.statusColor,
+                                    pendingLabel: pendingRequest == null
+                                        ? null
+                                        : '${_requestTypeLabel(pendingRequest.type)} pendiente',
+                                    onTap: () => openInteractionPopup(user),
+                                  );
+                                },
+                              ),
+                      ),
+                      const SizedBox(height: 10),
+                      VooBottomNavBar(
+                        currentIndex: 0,
+                        onTap: (index) {
+                          if (lockHome) return;
+
+                          if (index == 0) {
+                            return;
+                          } else if (index == 1) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ChatsScreen(),
+                              ),
+                            );
+                          } else if (index == 2) {
+                            openPlaceholder('Aquí irá Ranking');
+                          } else if (index == 3) {
+                            openPlaceholder('Aquí irá Retos');
+                          } else if (index == 4) {
+                            openPlaceholder('Aquí irá Ajustes');
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: mockUsers.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final UserModel user = mockUsers[index];
-                      final pendingRequest =
-                          appState.getPendingRequestForUser(user.id);
+              ),
+              if (lockHome)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.45),
+                  ),
+                ),
+              if (blockingIncoming != null)
+                Center(
+                  child: _IncomingRequestPopup(
+                    request: blockingIncoming,
+                    onReject: () {
+                      context
+                          .read<AppState>()
+                          .rejectIncomingRequest(blockingIncoming.id);
+                    },
+                    onAccept: () {
+                      context
+                          .read<AppState>()
+                          .acceptIncomingRequest(blockingIncoming.id);
+                    },
+                  ),
+                ),
+              if (activeAccepted != null)
+                Center(
+                  child: _AcceptedRequestResponsePopup(
+                    request: activeAccepted,
+                    onBack: () {
+                      context.read<AppState>().restoreAcceptedRequestToPending();
+                    },
+                    onSendResponse: (responseText) async {
+                      context
+                          .read<AppState>()
+                          .finishAcceptedRequestResponse(responseText);
 
-                      return _GuestCard(
-                        name: user.name,
-                        age: user.age,
-                        statusColor: user.statusColor,
-                        pendingLabel: pendingRequest == null
-                            ? null
-                            : '${_requestTypeLabel(pendingRequest.type)} pendiente',
-                        onTap: () => openInteractionPopup(user),
+                      if (!mounted) return;
+
+                      await showDialog<void>(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (_) => const SentRequestDialog(
+                          title: 'Respuesta enviada',
+                          subtitle:
+                              'La conversación ya está en el apartado de chats.',
+                        ),
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 10),
-                VooBottomNavBar(
-                  currentIndex: 0,
-                  onTap: (index) {
-                    if (index == 0) {
-                      return;
-                    } else if (index == 1) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChatsScreen(),
-                        ),
-                      );
-                    } else if (index == 2) {
-                      openPlaceholder('Aquí irá Ranking');
-                    } else if (index == 3) {
-                      openPlaceholder('Aquí irá Retos');
-                    } else if (index == 4) {
-                      openPlaceholder('Aquí irá Ajustes');
-                    }
-                  },
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IncomingRequestPopup extends StatelessWidget {
+  final RequestModel request;
+  final VoidCallback onReject;
+  final VoidCallback onAccept;
+
+  const _IncomingRequestPopup({
+    required this.request,
+    required this.onReject,
+    required this.onAccept,
+  });
+
+  String _title() {
+    switch (request.type) {
+      case RequestType.truth:
+        return '${request.targetUserName} te ha invitado a jugar verdad o reto';
+      case RequestType.dare:
+        return '${request.targetUserName} te ha invitado a jugar verdad o reto';
+      case RequestType.messageRequest:
+        return '${request.targetUserName} quiere hablar contigo';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 300,
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF171727),
+              Color(0xFF10101A),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: const Color(0xFF9C4DFF),
+            width: 2.4,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(0.22),
+              blurRadius: 24,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _title(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                height: 1.25,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF18183A),
+                    Color(0xFF101028),
+                  ],
+                ),
+                border: Border.all(
+                  color: const Color(0xFF22C55E),
+                  width: 4,
+                ),
+              ),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 72,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Acepta o rechaza antes de seguir viendo los invitados.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.72),
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _DecisionButton(
+                  color: const Color(0xFFFF3B5C),
+                  icon: Icons.close_rounded,
+                  onTap: onReject,
+                ),
+                _DecisionButton(
+                  color: const Color(0xFF66D63E),
+                  icon: Icons.check_rounded,
+                  onTap: onAccept,
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AcceptedRequestResponsePopup extends StatefulWidget {
+  final RequestModel request;
+  final VoidCallback onBack;
+  final ValueChanged<String> onSendResponse;
+
+  const _AcceptedRequestResponsePopup({
+    required this.request,
+    required this.onBack,
+    required this.onSendResponse,
+  });
+
+  @override
+  State<_AcceptedRequestResponsePopup> createState() =>
+      _AcceptedRequestResponsePopupState();
+}
+
+class _AcceptedRequestResponsePopupState
+    extends State<_AcceptedRequestResponsePopup> {
+  final TextEditingController _responseController = TextEditingController();
+
+  @override
+  void dispose() {
+    _responseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canSend = _responseController.text.trim().isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 300,
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF171727),
+              Color(0xFF10101A),
+            ],
           ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: const Color(0xFF9C4DFF),
+            width: 2.4,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(0.22),
+              blurRadius: 24,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: widget.onBack,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF1B2C4B),
+                    border: Border.all(
+                      color: const Color(0xFF52A9FF),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Color(0xFF52A9FF),
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${widget.request.targetUserName}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF22C55E),
+                  width: 3,
+                ),
+              ),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF181818),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: const Color(0xFFEAB308),
+                  width: 2,
+                ),
+              ),
+              child: Text(
+                widget.request.content,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFEAB308),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF101018),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.18),
+                  width: 1.3,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _responseController,
+                      onChanged: (_) => setState(() {}),
+                      onSubmitted: (_) {
+                        if (canSend) {
+                          widget.onSendResponse(
+                            _responseController.text.trim(),
+                          );
+                        }
+                      },
+                      textInputAction: TextInputAction.send,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Responde a ${widget.request.targetUserName}',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withOpacity(0.35),
+                        ),
+                        isDense: true,
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: canSend
+                        ? () => widget.onSendResponse(
+                              _responseController.text.trim(),
+                            )
+                        : null,
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: canSend
+                          ? const Color(0xFF52A9FF)
+                          : const Color(0xFF52A9FF).withOpacity(0.35),
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DecisionButton extends StatefulWidget {
+  final Color color;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _DecisionButton({
+    required this.color,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  State<_DecisionButton> createState() => _DecisionButtonState();
+}
+
+class _DecisionButtonState extends State<_DecisionButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 76,
+        height: 76,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: widget.color,
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withOpacity(_pressed ? 0.45 : 0.25),
+              blurRadius: _pressed ? 18 : 12,
+              spreadRadius: _pressed ? 1.5 : 0.5,
+            ),
+          ],
+        ),
+        child: Icon(
+          widget.icon,
+          color: Colors.white,
+          size: 40,
         ),
       ),
     );
@@ -391,5 +855,3 @@ class _GuestCard extends StatelessWidget {
     );
   }
 }
-
-typedef _DialogRequestResult = dynamic;

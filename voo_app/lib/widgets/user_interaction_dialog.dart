@@ -4,7 +4,21 @@ import 'package:flutter/material.dart';
 
 import '../mock/mock_dares.dart';
 import '../mock/mock_truths.dart';
-import '../models/interaction_request_model.dart';
+import '../models/request_model.dart';
+
+class DialogRequestResult {
+  final String targetUserId;
+  final String targetUserName;
+  final RequestType type;
+  final String content;
+
+  const DialogRequestResult({
+    required this.targetUserId,
+    required this.targetUserName,
+    required this.type,
+    required this.content,
+  });
+}
 
 class UserInteractionDialog extends StatefulWidget {
   final String targetUserId;
@@ -59,10 +73,10 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
   void _sendTruth() {
     Navigator.pop(
       context,
-      InteractionRequestModel(
+      DialogRequestResult(
         targetUserId: widget.targetUserId,
         targetUserName: widget.targetUserName,
-        type: InteractionType.truth,
+        type: RequestType.truth,
         content: _randomTruth(),
       ),
     );
@@ -71,10 +85,10 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
   void _sendDare() {
     Navigator.pop(
       context,
-      InteractionRequestModel(
+      DialogRequestResult(
         targetUserId: widget.targetUserId,
         targetUserName: widget.targetUserName,
-        type: InteractionType.dare,
+        type: RequestType.dare,
         content: _randomDare(),
       ),
     );
@@ -86,10 +100,10 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
 
     Navigator.pop(
       context,
-      InteractionRequestModel(
+      DialogRequestResult(
         targetUserId: widget.targetUserId,
         targetUserName: widget.targetUserName,
-        type: InteractionType.messageRequest,
+        type: RequestType.messageRequest,
         content: text,
       ),
     );
