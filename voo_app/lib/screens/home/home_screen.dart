@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/voo_bottom_nav_bar.dart';
+import '../chats/chats_screen.dart';
 import 'profile_qr_screen.dart';
+import 'user_profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final bool isHost;
@@ -27,6 +31,12 @@ class HomeScreen extends StatelessWidget {
     final saludo = isHost ? 'Hola Maxi!' : 'Hola Mogi!';
     final codigoSala = 'x420011';
     final tituloLista = isHost ? 'Tus invitados' : 'Invitados de la sala';
+
+    void openPlaceholder(String text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(text)),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -85,45 +95,44 @@ class HomeScreen extends StatelessWidget {
                         name: invitado.$1,
                         age: invitado.$2,
                         statusColor: invitado.$3,
-                        isHost: isHost,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => UserProfileScreen(
+                                name: invitado.$1,
+                                age: invitado.$2,
+                                statusColor: invitado.$3,
+                                isHostViewer: isHost,
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
                 ),
                 const SizedBox(height: 10),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _NavItem(
-                        icon: Icons.home_rounded,
-                        label: 'Home',
-                        selected: true,
-                      ),
-                      _NavItem(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        label: 'Chats',
-                      ),
-                      _NavItem(
-                        icon: Icons.emoji_events_outlined,
-                        label: 'Ranking',
-                      ),
-                      _NavItem(
-                        icon: Icons.star_outline_rounded,
-                        label: 'Retos',
-                      ),
-                      _NavItem(
-                        icon: Icons.settings_outlined,
-                        label: 'Ajustes',
-                      ),
-                    ],
-                  ),
+                VooBottomNavBar(
+                  currentIndex: 0,
+                  onTap: (index) {
+                    if (index == 0) {
+                      return;
+                    } else if (index == 1) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatsScreen(isHost: isHost),
+                        ),
+                      );
+                    } else if (index == 2) {
+                      openPlaceholder('Aquí irá Ranking');
+                    } else if (index == 3) {
+                      openPlaceholder('Aquí irá Retos');
+                    } else if (index == 4) {
+                      openPlaceholder('Aquí irá Ajustes');
+                    }
+                  },
                 ),
               ],
             ),
@@ -238,108 +247,68 @@ class _GuestCard extends StatelessWidget {
   final String name;
   final int age;
   final Color statusColor;
-  final bool isHost;
+  final VoidCallback onTap;
 
   const _GuestCard({
     required this.name,
     required this.age,
     required this.statusColor,
-    required this.isHost,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF151525),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFD78BFF).withOpacity(0.5),
-          width: 1.4,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: statusColor,
-                width: 2.4,
-              ),
-            ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-            ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF151525),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFD78BFF).withOpacity(0.5),
+            width: 1.4,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              '$name, $age',
-              style: const TextStyle(
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: statusColor,
+                  width: 2.4,
+                ),
+              ),
+              child: const Icon(
+                Icons.person,
                 color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          if (isHost)
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                '$name, $age',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
             const Icon(
               Icons.chevron_right_rounded,
               color: Colors.white54,
               size: 24,
             ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.selected = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFD78BFF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(
-            icon,
-            color: Colors.black,
-            size: 22,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }

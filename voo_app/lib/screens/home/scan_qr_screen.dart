@@ -46,6 +46,18 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
             _statusText = 'Apunta al QR dentro del recuadro';
           });
         },
+        onConfirm: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reto confirmado'),
+            ),
+          );
+          setState(() {
+            _handledResult = false;
+            _statusText = 'Apunta al QR dentro del recuadro';
+          });
+        },
       ),
     );
   }
@@ -169,7 +181,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                       ),
                     ),
                     child: const Text(
-                      'Escanea el QR de otro usuario o de una dinámica para continuar.',
+                      'Escanea el QR de otro perfil para completar retos y dinámicas.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -353,15 +365,37 @@ class _ScanResultDialog extends StatelessWidget {
   final String qrValue;
   final VoidCallback onClose;
   final VoidCallback onScanAgain;
+  final VoidCallback onConfirm;
 
   const _ScanResultDialog({
     required this.qrValue,
     required this.onClose,
     required this.onScanAgain,
+    required this.onConfirm,
   });
+
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'soltero':
+        return const Color(0xFF22C55E);
+      case 'haciendo amigos':
+        return const Color(0xFFEAB308);
+      case 'en pareja':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF9C4DFF);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    const detectedName = 'Ana';
+    const detectedAge = 20;
+    const detectedStatus = 'Soltero';
+    const detectedPoints = 25;
+
+    final statusColor = _statusColor(detectedStatus);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -399,23 +433,92 @@ class _ScanResultDialog extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             const Text(
-              'QR detectado',
+              'Perfil detectado',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 20,
+                fontSize: 21,
                 height: 1.3,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF151525),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: const Color(0xFF9C4DFF).withOpacity(0.35),
+                  width: 1.4,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: statusColor,
+                        width: 2.4,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$detectedName, $detectedAge',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Estado: $detectedStatus',
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Puntos: $detectedPoints',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.62),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             Text(
-              qrValue,
+              'QR leído: $qrValue',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.75),
-                fontSize: 13,
-                height: 1.35,
+                color: Colors.white.withOpacity(0.42),
+                fontSize: 11,
+                height: 1.3,
               ),
             ),
             const SizedBox(height: 24),
@@ -423,17 +526,29 @@ class _ScanResultDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _DialogButton(
-                  label: 'Cerrar',
+                  label: 'Otra vez',
                   color: const Color(0xFFEF4444),
-                  onTap: onClose,
+                  onTap: onScanAgain,
                 ),
                 const SizedBox(width: 14),
                 _DialogButton(
-                  label: 'Escanear otra vez',
+                  label: 'Confirmar reto',
                   color: const Color(0xFF22C55E),
-                  onTap: onScanAgain,
+                  onTap: onConfirm,
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: onClose,
+              child: Text(
+                'Cerrar',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
