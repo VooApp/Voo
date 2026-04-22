@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Alumno\\Voo\\VooApi\\VooApi.csproj": {}
+    "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Alumno\\Voo\\VooApi\\VooApi.csproj": {
+    "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Alumno\\Voo\\VooApi\\VooApi.csproj",
+        "projectUniqueName": "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj",
         "projectName": "VooApi",
-        "projectPath": "C:\\Users\\Alumno\\Voo\\VooApi\\VooApi.csproj",
-        "packagesPath": "C:\\Users\\Alumno\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Alumno\\Voo\\VooApi\\obj\\",
+        "projectPath": "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj",
+        "packagesPath": "C:\\Users\\jeane\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\jeane\\Voo\\VooApi\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Alumno\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\jeane\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],

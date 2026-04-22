@@ -9,8 +9,11 @@ namespace VooApi.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        public string? Texto { get; set; }
-
-        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+        public string ChatId { get; set; } = string.Empty;      // FK → Chat
+        public string Tipo { get; set; } = string.Empty;        // "texto", "verdad", "reto"
+        public string EmisorId { get; set; } = string.Empty;    // FK → Usuario
+        public string Contenido { get; set; } = string.Empty;
+        public DateTime FechaHora { get; set; } = DateTime.UtcNow;
+        public bool Leido { get; set; } = false;
     }
 }
