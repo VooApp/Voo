@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'chat_preview_state.dart';
 
 class ChatModel {
   final String id;
@@ -7,6 +8,7 @@ class ChatModel {
   final String time;
   final int unreadCount;
   final Color statusColor;
+  final ChatPreviewState previewState;
 
   const ChatModel({
     required this.id,
@@ -15,5 +17,26 @@ class ChatModel {
     required this.time,
     required this.unreadCount,
     required this.statusColor,
+    this.previewState = ChatPreviewState.normal,
   });
+
+  ChatModel copyWith({
+    String? id,
+    String? userName,
+    String? lastMessage,
+    String? time,
+    int? unreadCount,
+    Color? statusColor,
+    ChatPreviewState? previewState,
+  }) {
+    return ChatModel(
+      id: id ?? this.id,
+      userName: userName ?? this.userName,
+      lastMessage: lastMessage ?? this.lastMessage,
+      time: time ?? this.time,
+      unreadCount: unreadCount ?? this.unreadCount,
+      statusColor: statusColor ?? this.statusColor,
+      previewState: previewState ?? this.previewState,
+    );
+  }
 }

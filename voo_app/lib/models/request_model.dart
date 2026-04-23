@@ -8,6 +8,7 @@ enum RequestStatus {
   pending,
   accepted,
   rejected,
+  answered,
 }
 
 class RequestModel {

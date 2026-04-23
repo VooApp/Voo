@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'screens/welcome/welcome_screen.dart';
 import 'state/app_state.dart';
-import 'screens/home/home_screen.dart';
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(const VooApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class VooApp extends StatelessWidget {
+  const VooApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomeScreen(), // luego será splash/login
+    return ChangeNotifierProvider(
+      create: (_) => AppState(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'VOO',
+        theme: ThemeData(
+          useMaterial3: true,
+          fontFamily: 'Roboto',
+          scaffoldBackgroundColor: const Color(0xFF05051C),
+        ),
+        home: const WelcomeScreen(),
+      ),
     );
   }
 }

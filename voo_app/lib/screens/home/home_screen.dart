@@ -10,6 +10,7 @@ import '../../widgets/user_interaction_dialog.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../chats/chats_screen.dart';
 import 'profile_qr_screen.dart';
+import '../retos/retos_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -100,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
         targetUserName: result.targetUserName,
         type: result.type,
         content: result.content,
+        statusColor: user.statusColor,
       );
 
       final dialogData = switch (result.type) {
@@ -152,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _TopHeader(
-                        saludo: 'Hola $saludo!',
+                        saludo: 'Es ahora o Nunca!',
                         codigoSala: codigoSala,
                         onQrTap: () {
                           Navigator.push(
@@ -167,16 +169,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        tituloLista,
-                        style: const TextStyle(
-                          color: Color(0xFFD78BFF),
-                          fontSize: 22,
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Tus chats',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       Expanded(
                         child: visibleUsers.isEmpty
                             ? Center(
@@ -232,7 +234,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           } else if (index == 2) {
                             openPlaceholder('Aquí irá Ranking');
                           } else if (index == 3) {
-                            openPlaceholder('Aquí irá Retos');
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RetosScreen(),
+                              ),
+                            );
                           } else if (index == 4) {
                             openPlaceholder('Aquí irá Ajustes');
                           }
@@ -690,18 +697,18 @@ class _TopHeader extends StatelessWidget {
               Text(
                 saludo,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFD78BFF),
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               Text(
                 codigoSala,
                 style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF52A9FF),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],

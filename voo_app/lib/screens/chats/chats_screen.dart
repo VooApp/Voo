@@ -3,13 +3,26 @@ import 'package:provider/provider.dart';
 
 import '../../mock/mock_chats.dart';
 import '../../models/chat_model.dart';
+import '../../models/chat_preview_state.dart';
 import '../../state/app_state.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import 'chat_conversation_screen.dart';
+import '../retos/retos_screen.dart';
 
 class ChatsScreen extends StatelessWidget {
   const ChatsScreen({super.key});
+
+  Color _previewColor(ChatPreviewState state) {
+    switch (state) {
+      case ChatPreviewState.normal:
+        return Colors.white54;
+      case ChatPreviewState.missionBusy:
+        return const Color(0xFFFF8FB1);
+      case ChatPreviewState.answeredRequest:
+        return const Color(0xFF52A9FF);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,19 +53,37 @@ class ChatsScreen extends StatelessWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Chats',
+                  'Es ahora o Nunca!',
+                  style: TextStyle(
+                    color: Color(0xFFD78BFF),
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  appState.roomCode ?? '---',
+                  style: const TextStyle(
+                    color: Color(0xFF52A9FF),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Tus chats',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 30,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
                 Expanded(
                   child: chats.isEmpty
                       ? Center(
@@ -67,16 +98,20 @@ class ChatsScreen extends StatelessWidget {
                         )
                       : ListView.separated(
                           itemCount: chats.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, __) => Container(
+                            height: 1,
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            color: Colors.white.withOpacity(0.08),
+                          ),
                           itemBuilder: (context, index) {
                             final ChatModel chat = chats[index];
-                            final bool isPendingBlocked =
-                                appState.isPendingOutgoingChat(chat.id);
 
                             return _ChatCard(
                               chat: chat,
                               isHost: isHost,
-                              isPendingBlocked: isPendingBlocked,
+                              previewColor: _previewColor(chat.previewState),
+                              showBlueDot:
+                                  chat.previewState == ChatPreviewState.answeredRequest,
                             );
                           },
                         ),
@@ -97,7 +132,12 @@ class ChatsScreen extends StatelessWidget {
                     } else if (index == 2) {
                       openPlaceholder('Aquí irá Ranking');
                     } else if (index == 3) {
-                      openPlaceholder('Aquí irá Retos');
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RetosScreen(),
+                        ),
+                      );
                     } else if (index == 4) {
                       openPlaceholder('Aquí irá Ajustes');
                     }
@@ -115,19 +155,21 @@ class ChatsScreen extends StatelessWidget {
 class _ChatCard extends StatelessWidget {
   final ChatModel chat;
   final bool isHost;
-  final bool isPendingBlocked;
+  final Color previewColor;
+  final bool showBlueDot;
 
   const _ChatCard({
     required this.chat,
     required this.isHost,
-    required this.isPendingBlocked,
+    required this.previewColor,
+    required this.showBlueDot,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (isPendingBlocked) {
+        if (chat.previewState == ChatPreviewState.missionBusy) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -136,6 +178,10 @@ class _ChatCard extends StatelessWidget {
             ),
           );
           return;
+        }
+
+        if (chat.previewState == ChatPreviewState.answeredRequest) {
+          context.read<AppState>().markAnsweredRequestAsSeen(chat.id);
         }
 
         Navigator.push(
@@ -150,102 +196,63 @@ class _ChatCard extends StatelessWidget {
           ),
         );
       },
-      child: Opacity(
-        opacity: isPendingBlocked ? 0.85 : 1,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF151525),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFFD78BFF).withOpacity(0.5),
-              width: 1.4,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        color: Colors.transparent,
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: chat.statusColor,
+                  width: 2.4,
+                ),
+              ),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: chat.statusColor,
-                    width: 2.4,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      chat.userName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      chat.lastMessage,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isPendingBlocked
-                            ? const Color(0xFFEAB308)
-                            : Colors.white.withOpacity(0.62),
-                        fontSize: 13,
-                        fontWeight:
-                            isPendingBlocked ? FontWeight.w700 : FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    chat.time,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.55),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                    chat.userName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  if (chat.unreadCount > 0) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF22C55E),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${chat.unreadCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                  const SizedBox(height: 2),
+                  Text(
+                    chat.lastMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: previewColor,
+                      fontSize: 13,
+                      fontWeight: chat.previewState == ChatPreviewState.normal
+                          ? FontWeight.w500
+                          : FontWeight.w700,
                     ),
-                  ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            if (showBlueDot)
+              const CircleAvatar(
+                radius: 4,
+                backgroundColor: Color(0xFF52A9FF),
+              ),
+          ],
         ),
       ),
     );

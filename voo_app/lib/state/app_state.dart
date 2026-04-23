@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/chat_model.dart';
+import '../models/chat_preview_state.dart';
 import '../models/message_model.dart';
 import '../models/request_model.dart';
 
@@ -68,14 +69,17 @@ class AppState extends ChangeNotifier {
     required String targetUserName,
     required RequestType type,
     required String content,
+    required Color statusColor,
   }) {
-    final hasPending = _sentRequests.any(
+    final hasBlockingState = _sentRequests.any(
       (request) =>
           request.targetUserId == targetUserId &&
-          request.status == RequestStatus.pending,
+          (request.status == RequestStatus.pending ||
+              request.status == RequestStatus.answered ||
+              request.status == RequestStatus.rejected),
     );
 
-    if (hasPending) return;
+    if (hasBlockingState) return;
 
     final request = RequestModel(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -88,6 +92,24 @@ class AppState extends ChangeNotifier {
     );
 
     _sentRequests.insert(0, request);
+
+    final alreadyInChats = _dynamicChats.any((chat) => chat.id == targetUserId);
+    if (!alreadyInChats) {
+      _dynamicChats.insert(
+        0,
+        ChatModel(
+          id: targetUserId,
+          userName: targetUserName,
+          lastMessage:
+              '$targetUserName está en una misión ahora mismo ¡intenta con otro!',
+          time: _formatNow(),
+          unreadCount: 0,
+          statusColor: statusColor,
+          previewState: ChatPreviewState.missionBusy,
+        ),
+      );
+    }
+
     notifyListeners();
   }
 
@@ -103,31 +125,18 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  bool hasPendingRequestForUser(String userId) {
-    return getPendingRequestForUser(userId) != null;
-  }
-
   bool shouldHideUserFromHome(String userId) {
-    final hasPendingOutgoing = _sentRequests.any(
+    final hasOutgoingState = _sentRequests.any(
       (request) =>
           request.targetUserId == userId &&
-          request.status == RequestStatus.pending,
+          (request.status == RequestStatus.pending ||
+              request.status == RequestStatus.answered ||
+              request.status == RequestStatus.rejected),
     );
 
     final hasChat = _dynamicChats.any((chat) => chat.id == userId);
 
-    return hasPendingOutgoing || hasChat;
-  }
-
-  void updateRequestStatus({
-    required String requestId,
-    required RequestStatus status,
-  }) {
-    final index = _sentRequests.indexWhere((request) => request.id == requestId);
-    if (index == -1) return;
-
-    _sentRequests[index] = _sentRequests[index].copyWith(status: status);
-    notifyListeners();
+    return hasOutgoingState || hasChat;
   }
 
   void addIncomingRequest({
@@ -195,9 +204,23 @@ class AppState extends ChangeNotifier {
     final request = _activeAcceptedRequest;
     if (request == null) return;
 
-    final existingIndex = _dynamicChats.indexWhere(
+    final sentIndex = _sentRequests.indexWhere(
+      (r) => r.targetUserId == request.targetUserId,
+    );
+
+    if (sentIndex != -1) {
+      _sentRequests[sentIndex] = _sentRequests[sentIndex].copyWith(
+        status: RequestStatus.accepted,
+      );
+    }
+
+    final existingChatIndex = _dynamicChats.indexWhere(
       (chat) => chat.id == request.targetUserId,
     );
+
+    final previousColor = existingChatIndex != -1
+        ? _dynamicChats[existingChatIndex].statusColor
+        : _statusColorFromType(request.type);
 
     final chat = ChatModel(
       id: request.targetUserId,
@@ -205,41 +228,117 @@ class AppState extends ChangeNotifier {
       lastMessage: responseText,
       time: _formatNow(),
       unreadCount: 0,
-      statusColor: _statusColorFromType(request.type),
+      statusColor: previousColor,
+      previewState: ChatPreviewState.normal,
     );
 
-    if (existingIndex == -1) {
+    if (existingChatIndex == -1) {
       _dynamicChats.insert(0, chat);
     } else {
-      _dynamicChats.removeAt(existingIndex);
+      _dynamicChats.removeAt(existingChatIndex);
       _dynamicChats.insert(0, chat);
     }
-
-    final initialIncomingMessage = MessageModel(
-      id: '${request.targetUserId}_incoming_${DateTime.now().microsecondsSinceEpoch}',
-      chatId: request.targetUserId,
-      text: request.content,
-      isMine: false,
-      time: _formatNow(),
-    );
-
-    final initialResponseMessage = MessageModel(
-      id: '${request.targetUserId}_mine_${DateTime.now().microsecondsSinceEpoch + 1}',
-      chatId: request.targetUserId,
-      text: responseText,
-      isMine: true,
-      time: _formatNow(),
-    );
 
     final alreadyHasMessages =
         _messages.any((message) => message.chatId == request.targetUserId);
 
     if (!alreadyHasMessages) {
-      _messages.add(initialIncomingMessage);
-      _messages.add(initialResponseMessage);
+      _messages.add(
+        MessageModel(
+          id: '${request.targetUserId}_incoming_${DateTime.now().microsecondsSinceEpoch}',
+          chatId: request.targetUserId,
+          text: request.content,
+          isMine: false,
+          time: _formatNow(),
+        ),
+      );
+
+      _messages.add(
+        MessageModel(
+          id: '${request.targetUserId}_mine_${DateTime.now().microsecondsSinceEpoch + 1}',
+          chatId: request.targetUserId,
+          text: responseText,
+          isMine: true,
+          time: _formatNow(),
+        ),
+      );
     }
 
     _activeAcceptedRequest = null;
+    notifyListeners();
+  }
+
+  void registerIncomingAnswer({
+    required String chatId,
+    required String answerText,
+  }) {
+    final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex == -1) return;
+
+    final oldChat = _dynamicChats[chatIndex];
+
+    _messages.add(
+      MessageModel(
+        id: '${chatId}_incoming_answer_${DateTime.now().microsecondsSinceEpoch}',
+        chatId: chatId,
+        text: answerText,
+        isMine: false,
+        time: _formatNow(),
+      ),
+    );
+
+    _dynamicChats.removeAt(chatIndex);
+    _dynamicChats.insert(
+      0,
+      oldChat.copyWith(
+        lastMessage: answerText,
+        time: _formatNow(),
+        unreadCount: oldChat.unreadCount + 1,
+        previewState: ChatPreviewState.answeredRequest,
+      ),
+    );
+
+    notifyListeners();
+  }
+
+  void markAnsweredRequestAsSeen(String chatId) {
+    final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex != -1) {
+      final oldChat = _dynamicChats[chatIndex];
+      _dynamicChats[chatIndex] = oldChat.copyWith(
+        previewState: ChatPreviewState.normal,
+        unreadCount: 0,
+      );
+    }
+
+    notifyListeners();
+  }
+
+  void rejectOutgoingRequestSilently(String targetUserId) {
+    final sentIndex = _sentRequests.indexWhere(
+      (request) =>
+          request.targetUserId == targetUserId &&
+          (request.status == RequestStatus.pending ||
+              request.status == RequestStatus.answered),
+    );
+
+    if (sentIndex != -1) {
+      _sentRequests[sentIndex] = _sentRequests[sentIndex].copyWith(
+        status: RequestStatus.rejected,
+      );
+    }
+
+    final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == targetUserId);
+    if (chatIndex != -1) {
+      final oldChat = _dynamicChats[chatIndex];
+      _dynamicChats[chatIndex] = oldChat.copyWith(
+        lastMessage:
+            '${oldChat.userName} está en una misión ahora mismo ¡intenta con otro!',
+        previewState: ChatPreviewState.missionBusy,
+        unreadCount: 0,
+      );
+    }
+
     notifyListeners();
   }
 
@@ -265,13 +364,11 @@ class AppState extends ChangeNotifier {
     final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == chatId);
     if (chatIndex != -1) {
       final oldChat = _dynamicChats[chatIndex];
-      final updatedChat = ChatModel(
-        id: oldChat.id,
-        userName: oldChat.userName,
+      final updatedChat = oldChat.copyWith(
         lastMessage: text,
         time: message.time,
         unreadCount: isMine ? 0 : oldChat.unreadCount + 1,
-        statusColor: oldChat.statusColor,
+        previewState: isMine ? ChatPreviewState.normal : oldChat.previewState,
       );
 
       _dynamicChats.removeAt(chatIndex);
@@ -282,35 +379,10 @@ class AppState extends ChangeNotifier {
   }
 
   List<ChatModel> buildChatsList(List<ChatModel> mockChats) {
-    final pendingOutgoingIds = _sentRequests
-        .where((request) => request.status == RequestStatus.pending)
-        .map((request) => request.targetUserId)
-        .toSet();
-
-    final pendingChatPlaceholders = _sentRequests
-        .where((request) =>
-            request.status == RequestStatus.pending &&
-            !_dynamicChats.any((chat) => chat.id == request.targetUserId))
-        .map(
-          (request) => ChatModel(
-            id: request.targetUserId,
-            userName: request.targetUserName,
-            lastMessage:
-                '${request.targetUserName} está en una misión ahora mismo ¡intenta con otro!',
-            time: _formatNow(),
-            unreadCount: 0,
-            statusColor: _statusColorFromType(request.type),
-          ),
-        )
-        .toList();
-
     return [
       ..._dynamicChats,
-      ...pendingChatPlaceholders,
       ...mockChats.where(
-        (mock) =>
-            !_dynamicChats.any((c) => c.id == mock.id) &&
-            !pendingOutgoingIds.contains(mock.id),
+        (mock) => !_dynamicChats.any((c) => c.id == mock.id),
       ),
     ];
   }
