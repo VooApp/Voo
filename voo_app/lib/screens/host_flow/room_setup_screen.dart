@@ -96,6 +96,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
 
       final result = await ApiService.registrarHost(
         nombre: appState.userName!,
+        sexo: appState.sexo!,
         fechaNacimiento: appState.birthDate!,
         foto: appState.profilePhoto ?? '',
         instagram: appState.instagram,

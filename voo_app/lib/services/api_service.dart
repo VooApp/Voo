@@ -13,6 +13,7 @@ class ApiService {
 
   static Future<RegistroHostResponse> registrarHost({
     required String nombre,
+    required bool sexo,
     required DateTime fechaNacimiento,
     required String foto,
     required String? instagram,
@@ -35,6 +36,7 @@ class ApiService {
       },
       body: jsonEncode({
         'nombre': nombre,
+        'sexo': sexo,
         'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
         'foto': foto,
         'ig': instagram,
