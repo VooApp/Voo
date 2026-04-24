@@ -4,19 +4,28 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
 
+import '../../state/app_state.dart';
+import '../home/home_screen.dart';
+
 class RoomCodeScreen extends StatefulWidget {
-  const RoomCodeScreen({super.key});
+  final String roomCode;
+
+  const RoomCodeScreen({
+    super.key,
+    required this.roomCode,
+  });
 
   @override
   State<RoomCodeScreen> createState() => _RoomCodeScreenState();
 }
 
 class _RoomCodeScreenState extends State<RoomCodeScreen> {
-  static const String roomCode = 'CV 7624X5';
+  String get roomCode => widget.roomCode;
 
   final GlobalKey _downloadCardKey = GlobalKey();
 
@@ -25,19 +34,13 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
   bool _downloading = false;
 
   Future<void> _copyCode() async {
-    await Clipboard.setData(const ClipboardData(text: roomCode));
+    await Clipboard.setData(ClipboardData(text: roomCode));
 
     if (!mounted) return;
 
     setState(() {
       _copied = true;
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Código copiado'),
-      ),
-    );
 
     await Future.delayed(const Duration(seconds: 1));
 
@@ -56,21 +59,13 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
     });
 
     try {
-      final result = await SharePlus.instance.share(
+      await SharePlus.instance.share(
         ShareParams(
           text: 'Únete a mi sala de VOO con este código: $roomCode',
           subject: 'Código de sala VOO',
           title: 'Compartir código de sala',
         ),
       );
-
-      if (mounted && result.status == ShareResultStatus.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Código compartido'),
-          ),
-        );
-      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,19 +116,11 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
       final blob = html.Blob([pngBytes], 'image/png');
       final url = html.Url.createObjectUrlFromBlob(blob);
 
-      final anchor = html.AnchorElement(href: url)
+      html.AnchorElement(href: url)
         ..setAttribute('download', 'codigo_sala_voo.png')
         ..click();
 
       html.Url.revokeObjectUrl(url);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tarjeta PNG descargada'),
-        ),
-      );
     } catch (_) {
       if (!mounted) return;
 
@@ -151,22 +138,53 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
     }
   }
 
+  void _goHome() {
+    context.read<AppState>().setUser(
+      isHost: true,
+      userName: context.read<AppState>().userName ?? 'Host',
+      roomCode: roomCode,
+      userId: context.read<AppState>().userId,
+      salaId: context.read<AppState>().salaId,
+    );
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Color accentColor = _copied
-        ? const Color.fromARGB(255, 44, 245, 117)
-        : const Color(0xFFD78BFF);
+    final Color accentColor =
+        _copied ? const Color(0xFF22C55E) : const Color(0xFF9C4DFF);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
+      backgroundColor: const Color(0xFF05051C),
       body: Stack(
         children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topCenter,
+                radius: 1.25,
+                colors: [
+                  Color(0xFF171128),
+                  Color(0xFF0C0A18),
+                  Color(0xFF05051C),
+                ],
+              ),
+            ),
+          ),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
+                  constraints: const BoxConstraints(maxWidth: 430),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -175,69 +193,80 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 30,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFD78BFF),
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Comparte el código o el QR con tus invitados.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.68),
+                          fontSize: 14,
+                          height: 1.35,
                         ),
                       ),
                       const SizedBox(height: 24),
-
                       GestureDetector(
                         onTap: _copyCode,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 220),
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 28,
+                            horizontal: 22,
+                            vertical: 24,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF151515),
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(30),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF1A1A28),
+                                Color(0xFF11111B),
+                              ],
+                            ),
                             border: Border.all(
                               color: accentColor,
                               width: 2,
                             ),
-                            boxShadow: _copied
-                                ? [
-                                    BoxShadow(
-                                      color: const Color.fromARGB(
-                                        255,
-                                        44,
-                                        245,
-                                        117,
-                                      ).withOpacity(0.45),
-                                      blurRadius: 18,
-                                      spreadRadius: 2,
-                                    ),
-                                  ]
-                                : [],
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentColor.withOpacity(
+                                  _copied ? 0.30 : 0.12,
+                                ),
+                                blurRadius: _copied ? 26 : 14,
+                                spreadRadius: _copied ? 1.5 : 0.2,
+                              ),
+                            ],
                           ),
                           child: Column(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: QrImageView(
                                   data: roomCode,
                                   version: QrVersions.auto,
-                                  size: 140,
+                                  size: 180,
                                   backgroundColor: Colors.white,
                                 ),
                               ),
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 20),
                               Text(
                                 _copied ? 'Copiado ✔' : 'Tu código de sala',
                                 style: TextStyle(
                                   color: _copied
-                                      ? const Color.fromARGB(255, 44, 245, 117)
+                                      ? const Color(0xFF22C55E)
                                       : Colors.white70,
                                   fontSize: 15,
                                   fontWeight: _copied
                                       ? FontWeight.w700
-                                      : FontWeight.w400,
+                                      : FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -245,77 +274,60 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                 roomCode,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: const Color.fromARGB(255, 44, 245, 117),
-                                  fontSize: 28,
+                                  color: Color(0xFF22C55E),
+                                  fontSize: 30,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 2,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: _copied
-                                      ? const Color.fromARGB(255, 44, 245, 117)
-                                      : Colors.white54,
+                                  letterSpacing: 2.5,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 12),
                               Text(
                                 _copied
                                     ? 'El código se ha copiado al portapapeles'
                                     : 'Toca el QR o el código para copiarlo',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: _copied ? Colors.white : Colors.white54,
+                                  color: Colors.white.withOpacity(0.56),
                                   fontSize: 13,
+                                  height: 1.35,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 26),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      const SizedBox(height: 22),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 12,
+                        runSpacing: 12,
                         children: [
-                          _ActionButton(
-                            icon: _downloading
-                                ? Icons.hourglass_top
-                                : Icons.download_outlined,
-                            label: _downloading
-                                ? 'Descargando...'
-                                : 'Descargar',
-                            color: const Color.fromARGB(255, 62, 162, 255),
-                            onTap: _downloadCodeCard,
+                          SizedBox(
+                            width: 138,
+                            child: _ActionButton(
+                              icon: _downloading
+                                  ? Icons.hourglass_top
+                                  : Icons.download_outlined,
+                              color: const Color(0xFF9C4DFF),
+                              onTap: _downloadCodeCard,
+                            ),
                           ),
-                          const SizedBox(width: 16),
-                          _ActionButton(
-                            icon: _sharing
-                                ? Icons.hourglass_top
-                                : Icons.share_outlined,
-                            label: _sharing
-                                ? 'Compartiendo...'
-                                : 'Compartir',
-                            color: const Color.fromARGB(255, 44, 245, 117),
-                            onTap: _shareCode,
+                          SizedBox(
+                            width: 138,
+                            child: _ActionButton(
+                              icon: _sharing
+                                  ? Icons.hourglass_top
+                                  : Icons.share_outlined,
+                              color: const Color(0xFF9C4DFF),
+                              onTap: _shareCode,
+                            ),
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 16),
-
-                      _ActionButton(
-                        icon: Icons.copy_all_outlined,
-                        label: _copied ? 'Copiado' : 'Copiar código',
-                        color: const Color.fromARGB(255, 44, 245, 117),
-                        onTap: _copyCode,
-                      ),
-
                       const SizedBox(height: 28),
-
                       _MainButton(
                         label: 'Ir al inicio',
-                        onTap: () {
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        },
+                        onTap: _goHome,
                       ),
                     ],
                   ),
@@ -323,8 +335,6 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
               ),
             ),
           ),
-
-          // Tarjeta oculta para generar el PNG
           Positioned(
             left: -10000,
             top: 0,
@@ -333,123 +343,149 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
               child: RepaintBoundary(
                 key: _downloadCardKey,
                 child: Container(
-                  width: 400,
-                  height: 800,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 32,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0B0B0B),
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: const Color(0xFFD78BFF),
-                      width: 3,
+                  width: 430,
+                  padding: const EdgeInsets.fromLTRB(28, 34, 28, 30),
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.topCenter,
+                      radius: 1.15,
+                      colors: [
+                        Color(0xFF171128),
+                        Color(0xFF0C0A18),
+                        Color(0xFF05051C),
+                      ],
                     ),
                   ),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Column(
-                        children: [
-                          RichText(
-                            text: const TextSpan(
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 66,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                            height: 1,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'V',
                               style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'V',
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 44, 245, 117),
+                                color: const Color(0xFF22C55E),
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFF22C55E)
+                                        .withOpacity(0.65),
+                                    blurRadius: 18,
                                   ),
-                                ),
-                                TextSpan(
-                                  text: 'O',
-                                  style: TextStyle(
-                                    color: Color(0xFFEAB308),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: 'O',
-                                  style: TextStyle(
-                                    color: Color(0xFFEF4444),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Código de Sala',
-                            style: TextStyle(
-                              color: Color(0xFFD78BFF),
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF151515),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: const Color.fromARGB(255, 44, 245, 117),
-                                width: 3,
+                                ],
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(18),
+                            TextSpan(
+                              text: 'O',
+                              style: TextStyle(
+                                color: const Color(0xFFEAB308),
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFFEAB308)
+                                        .withOpacity(0.65),
+                                    blurRadius: 18,
                                   ),
-                                  child: QrImageView(
-                                    data: roomCode,
-                                    version: QrVersions.auto,
-                                    size: 220,
-                                    backgroundColor: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                                const Text(
-                                  'Únete con este código',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                const Text(
-                                  roomCode,
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 44, 245, 117),
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 4,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            TextSpan(
+                              text: 'O',
+                              style: TextStyle(
+                                color: const Color(0xFFEF4444),
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFFEF4444)
+                                        .withOpacity(0.65),
+                                    blurRadius: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-
+                      const SizedBox(height: 16),
                       const Text(
+                        'Código de Sala',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
                         'Comparte esta tarjeta con tus invitados',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.60),
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 28,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(34),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF1A1A28),
+                              Color(0xFF11111B),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: const Color(0xFF9C4DFF),
+                            width: 2.4,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: QrImageView(
+                                data: roomCode,
+                                version: QrVersions.auto,
+                                size: 230,
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Tu código de acceso',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              roomCode,
+                              style: TextStyle(
+                                color: Color(0xFF22C55E),
+                                fontSize: 38,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -466,13 +502,11 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
 
 class _ActionButton extends StatefulWidget {
   final IconData icon;
-  final String label;
   final Color color;
   final VoidCallback onTap;
 
   const _ActionButton({
     required this.icon,
-    required this.label,
     required this.color,
     required this.onTap,
   });
@@ -495,7 +529,8 @@ class _ActionButtonState extends State<_ActionButton> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF151515),
           borderRadius: BorderRadius.circular(999),
@@ -506,27 +541,15 @@ class _ActionButtonState extends State<_ActionButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.55),
+                    color: widget.color.withOpacity(0.45),
                     blurRadius: 16,
-                    spreadRadius: 2,
+                    spreadRadius: 1.5,
                   ),
                 ]
               : [],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(widget.icon, color: widget.color, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              widget.label,
-              style: TextStyle(
-                color: widget.color,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+        child: Center(
+          child: Icon(widget.icon, color: widget.color, size: 20),
         ),
       ),
     );
@@ -551,7 +574,7 @@ class _MainButtonState extends State<_MainButton> {
 
   @override
   Widget build(BuildContext context) {
-    const color = Color.fromARGB(255, 44, 245, 117);
+    const color = Color(0xFF22C55E);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -573,16 +596,16 @@ class _MainButtonState extends State<_MainButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.55),
+                    color: color.withOpacity(0.45),
                     blurRadius: 18,
-                    spreadRadius: 2,
+                    spreadRadius: 1.5,
                   ),
                 ]
               : [],
         ),
-        child: const Text(
-          'Ir al inicio',
-          style: TextStyle(
+        child: Text(
+          widget.label,
+          style: const TextStyle(
             color: color,
             fontSize: 15,
             fontWeight: FontWeight.w600,

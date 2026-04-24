@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../host_flow/register_host_screen.dart';
-import '../guest_flow/join_room_screen.dart';
+import '../guest_flow/register_guest_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -8,84 +8,71 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) {
-                      return const LinearGradient(
-                        colors: [
-                          Color(0xFFF0D7FF),
-                          Color(0xFFD78BFF),
-                          Color(0xFFB85BFF),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ).createShader(bounds);
-                    },
-                    child: const Text(
+      backgroundColor: const Color(0xFF05051C),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.25,
+            colors: [
+              Color(0xFF130F22),
+              Color(0xFF0A0917),
+              Color(0xFF05051C),
+            ],
+            stops: [0.0, 0.45, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    Text(
                       'Bienvenido',
-                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 0.6,
-                        shadows: [
-                          Shadow(
-                            color: Color(0x55D78BFF),
-                            blurRadius: 14,
-                          ),
-                        ],
+                        color: Colors.white.withOpacity(0.78),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.4,
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  const _GlowingVooTitle(),
-
-                  const SizedBox(height: 44),
-
-                  _WelcomeBubbleButton(
-                    title: 'Crear sala',
-                    subtitle: 'Organiza tu propia experiencia',
-                    icon: Icons.add_circle_outline,
-                    color: const Color.fromARGB(255, 62, 162, 255),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const RegisterHostScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  _WelcomeBubbleButton(
-                    title: 'Entrar a la sala',
-                    subtitle: 'Únete con tu código',
-                    icon: Icons.qr_code_2_outlined,
-                    color: const Color.fromARGB(255, 44, 245, 117),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const JoinRoomScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    const _BigGlowingVooTitle(),
+                    const SizedBox(height: 56),
+                    _WelcomeActionButton(
+                      title: 'Crear sala',
+                      icon: Icons.add,
+                      color: const Color(0xFF63B3FF),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterHostScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    _WelcomeActionButton(
+                      title: 'Entrar a la sala',
+                      icon: Icons.qr_code_2_rounded,
+                      color: const Color(0xFF9C4DFF),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterGuestScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Spacer(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -95,25 +82,25 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-class _GlowingVooTitle extends StatelessWidget {
-  const _GlowingVooTitle();
+class _BigGlowingVooTitle extends StatelessWidget {
+  const _BigGlowingVooTitle();
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: const [
-        _GlowingLetter(
+        _VooLetter(
           letter: 'V',
-          color: Color.fromARGB(255, 44, 245, 117),
+          color: Color(0xFF22C55E),
         ),
-        SizedBox(width: 6),
-        _GlowingLetter(
+        SizedBox(width: 8),
+        _VooLetter(
           letter: 'O',
           color: Color(0xFFEAB308),
         ),
-        SizedBox(width: 6),
-        _GlowingLetter(
+        SizedBox(width: 8),
+        _VooLetter(
           letter: 'O',
           color: Color(0xFFEF4444),
         ),
@@ -122,11 +109,11 @@ class _GlowingVooTitle extends StatelessWidget {
   }
 }
 
-class _GlowingLetter extends StatelessWidget {
+class _VooLetter extends StatelessWidget {
   final String letter;
   final Color color;
 
-  const _GlowingLetter({
+  const _VooLetter({
     required this.letter,
     required this.color,
   });
@@ -136,18 +123,19 @@ class _GlowingLetter extends StatelessWidget {
     return Text(
       letter,
       style: TextStyle(
-        fontSize: 72,
+        fontSize: 96,
         fontWeight: FontWeight.w900,
         color: color,
-        letterSpacing: 1,
+        height: 0.92,
+        letterSpacing: 1.0,
         shadows: [
           Shadow(
             color: color.withOpacity(0.95),
-            blurRadius: 12,
+            blurRadius: 10,
           ),
           Shadow(
-            color: color.withOpacity(0.7),
-            blurRadius: 26,
+            color: color.withOpacity(0.65),
+            blurRadius: 24,
           ),
           Shadow(
             color: color.withOpacity(0.35),
@@ -159,143 +147,162 @@ class _GlowingLetter extends StatelessWidget {
   }
 }
 
-class _WelcomeBubbleButton extends StatefulWidget {
+class _WelcomeActionButton extends StatefulWidget {
   final String title;
-  final String subtitle;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _WelcomeBubbleButton({
+  const _WelcomeActionButton({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.color,
     required this.onTap,
   });
 
   @override
-  State<_WelcomeBubbleButton> createState() => _WelcomeBubbleButtonState();
+  State<_WelcomeActionButton> createState() => _WelcomeActionButtonState();
 }
 
-class _WelcomeBubbleButtonState extends State<_WelcomeBubbleButton> {
+class _WelcomeActionButtonState extends State<_WelcomeActionButton>
+    with SingleTickerProviderStateMixin {
   bool _pressed = false;
+  late final AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final darkLeft = Color.lerp(Colors.black, widget.color, 0.28)!;
-    final darkMid = Color.lerp(Colors.black, widget.color, 0.48)!;
-    final brightRight = Color.lerp(Colors.white, widget.color, 0.88)!;
-    final borderColor = Color.lerp(Colors.black, widget.color, 0.62)!;
+    const darkButton = Color(0xFF17172A);
+    const darkButton2 = Color(0xFF202036);
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: [
-              darkLeft,
-              darkMid,
-              widget.color,
-              brightRight,
-            ],
-            stops: const [0.0, 0.28, 0.72, 1.0],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          border: Border.all(
-            color: borderColor,
-            width: 2.4,
-          ),
-          boxShadow: [
-            if (_pressed)
-              BoxShadow(
-                color: widget.color.withOpacity(0.85),
-                blurRadius: 30,
-                spreadRadius: 2,
-              )
-            else
-              BoxShadow(
-                color: widget.color.withOpacity(0.22),
-                blurRadius: 14,
-                spreadRadius: 1,
-              ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 10,
-              spreadRadius: 1,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black.withOpacity(0.18),
-                border: Border.all(
-                  color: Colors.black.withOpacity(0.35),
-                  width: 2,
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, child) {
+        final pulse = _glowController.value;
+        final glowOpacity = _pressed ? 0.36 : 0.14 + (pulse * 0.08);
+        final borderOpacity = _pressed ? 0.95 : 0.42 + (pulse * 0.16);
+        final scale = _pressed ? 0.975 : 1.0;
+
+        return AnimatedScale(
+          scale: scale,
+          duration: const Duration(milliseconds: 120),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(30),
+              splashColor: widget.color.withOpacity(0.10),
+              highlightColor: widget.color.withOpacity(0.05),
+              onHighlightChanged: (value) {
+                if (mounted) {
+                  setState(() {
+                    _pressed = value;
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOut,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 20,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.color.withOpacity(0.25),
-                    blurRadius: 10,
-                    spreadRadius: 1,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      darkButton2,
+                      darkButton,
+                    ],
                   ),
-                ],
-              ),
-              child: Icon(
-                widget.icon,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                  border: Border.all(
+                    color: widget.color.withOpacity(borderOpacity),
+                    width: _pressed ? 2.4 : 1.6,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withOpacity(glowOpacity),
+                      blurRadius: _pressed ? 28 : 18 + (pulse * 10),
+                      spreadRadius: _pressed ? 1.6 : 0.3 + (pulse * 0.8),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.subtitle,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      height: 1.3,
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.24),
+                      blurRadius: 14,
+                      offset: const Offset(0, 8),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.04),
+                        border: Border.all(
+                          color: widget.color.withOpacity(
+                            _pressed ? 0.90 : 0.46,
+                          ),
+                          width: 1.4,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.color.withOpacity(
+                              _pressed ? 0.24 : 0.10,
+                            ),
+                            blurRadius: _pressed ? 18 : 10,
+                            spreadRadius: _pressed ? 1.2 : 0,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        widget.icon,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          height: 1.05,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white.withOpacity(0.75),
+                      size: 18,
+                    ),
+                  ],
+                ),
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Colors.white,
-              size: 28,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
