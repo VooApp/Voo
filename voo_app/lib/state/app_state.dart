@@ -18,6 +18,7 @@ class AppState extends ChangeNotifier {
   String? _profilePhoto;
   String? _estado;
   List<String> _respuestas = [];
+  bool? _sexo;
 
   final List<RequestModel> _sentRequests = [];
   final List<RequestModel> _receivedRequests = [];
@@ -28,6 +29,7 @@ class AppState extends ChangeNotifier {
 
   bool get isHost => _isHost;
   String? get userName => _userName;
+  bool? get sexo => _sexo;
   String? get roomCode => _roomCode;
   String? get userId => _userId;
   String? get salaId => _salaId;
@@ -76,6 +78,7 @@ class AppState extends ChangeNotifier {
   void clear() {
     _isHost = false;
     _userName = null;
+    _sexo = null;
     _roomCode = null;
     _sentRequests.clear();
     _receivedRequests.clear();
@@ -145,11 +148,13 @@ class AppState extends ChangeNotifier {
     required String userName,
     required DateTime birthDate,
     required String profilePhoto,
+    required bool sexo,
     String? instagram,
   }) {
     _userName = userName;
     _birthDate = birthDate;
     _profilePhoto = profilePhoto;
+    _sexo = sexo;
     _instagram = instagram;
     notifyListeners();
   }

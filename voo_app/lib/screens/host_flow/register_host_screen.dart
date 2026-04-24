@@ -1,15 +1,14 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
+import '../../state/app_state.dart';
 import '../shared_flow/camera_screen.dart';
 import 'host_status_screen.dart';
-
-import 'dart:convert';
-import 'package:provider/provider.dart';
-import '../../state/app_state.dart';
 
 class RegisterHostScreen extends StatefulWidget {
   const RegisterHostScreen({super.key});
@@ -26,15 +25,17 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
   final ImagePicker _picker = ImagePicker();
 
   Uint8List? _profileImageBytes;
+  bool? selectedSex;
+
   bool _isPickingImage = false;
   bool _requestingCameraPermission = false;
 
   bool get canContinue {
-  return nameController.text.trim().isNotEmpty &&
-      birthDateController.text.trim().isNotEmpty &&
-      selectedSex != null &&
-      _profileImageBytes != null;
-}
+    return nameController.text.trim().isNotEmpty &&
+        selectedSex != null &&
+        birthDateController.text.trim().isNotEmpty &&
+        _profileImageBytes != null;
+  }
 
   @override
   void dispose() {
@@ -212,13 +213,15 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
         );
 
         context.read<AppState>().setRegisterData(
-          userName: nameController.text.trim(),
-          birthDate: birthDate,
-          profilePhoto: base64Encode(_profileImageBytes!),
-          instagram: instagramController.text.trim().isEmpty
-              ? null
-              : instagramController.text.trim(),
-        );
+              userName: nameController.text.trim(),
+              birthDate: birthDate,
+              profilePhoto: base64Encode(_profileImageBytes!),
+              sexo: selectedSex!,
+              instagram: instagramController.text.trim().isEmpty
+                  ? null
+                  : instagramController.text.trim(),
+            );
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -369,7 +372,20 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
                     prefixIcon: Icons.person_outline,
                     onChanged: (_) => setState(() {}),
                   ),
+
                   const SizedBox(height: 14),
+
+                  _SexSelector(
+                    selectedSex: selectedSex,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedSex = value;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 14),
+
                   _StyledInput(
                     controller: birthDateController,
                     hintText: 'Fecha de nacimiento',
@@ -379,7 +395,9 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
                     onTap: _pickBirthDate,
                     onChanged: (_) => setState(() {}),
                   ),
+
                   const SizedBox(height: 18),
+
                   _StyledInput(
                     controller: instagramController,
                     hintText: 'Instagram (opcional)',
@@ -393,7 +411,7 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        'Completa nombre, fecha de nacimiento y foto de perfil para continuar.',
+                        'Completa nombre, sexo, fecha de nacimiento y foto de perfil para continuar.',
                         style: TextStyle(
                           color: Colors.white54,
                           fontSize: 13,
@@ -417,6 +435,105 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SexSelector extends StatelessWidget {
+  final bool? selectedSex;
+  final ValueChanged<bool> onChanged;
+
+  const _SexSelector({
+    required this.selectedSex,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SexButton(
+            label: 'Hombre',
+            icon: Icons.male_rounded,
+            selected: selectedSex == true,
+            onTap: () => onChanged(true),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _SexButton(
+            label: 'Mujer',
+            icon: Icons.female_rounded,
+            selected: selectedSex == false,
+            onTap: () => onChanged(false),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SexButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SexButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        selected ? const Color(0xFF9C4DFF) : const Color(0xFF4A267D);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 170),
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          color: const Color(0xFF181835),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: borderColor,
+            width: selected ? 2.4 : 1.6,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF9C4DFF).withOpacity(0.24),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: selected ? const Color(0xFFB15CFF) : Colors.white54,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.white60,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -632,15 +749,12 @@ class _MainGradientButtonState extends State<_MainGradientButton> {
   Widget build(BuildContext context) {
     final enabled = widget.enabled;
 
-    final leftColor = enabled
-        ? const Color(0xFF4B175E)
-        : const Color(0xFF2E2E38);
-    final rightColor = enabled
-        ? const Color(0xFF2A083D)
-        : const Color(0xFF24242C);
-    final borderColor = enabled
-        ? const Color(0xFF7E2BE8)
-        : const Color(0xFF4A4A54);
+    final leftColor =
+        enabled ? const Color(0xFF4B175E) : const Color(0xFF2E2E38);
+    final rightColor =
+        enabled ? const Color(0xFF2A083D) : const Color(0xFF24242C);
+    final borderColor =
+        enabled ? const Color(0xFF7E2BE8) : const Color(0xFF4A4A54);
 
     return GestureDetector(
       onTapDown: (_) {
