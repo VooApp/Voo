@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'room_code_screen.dart';
 
+import 'package:provider/provider.dart';
+import '../../services/api_service.dart';
+import '../../state/app_state.dart';
+
 class RoomSetupScreen extends StatefulWidget {
   const RoomSetupScreen({super.key});
 
@@ -20,6 +24,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
 
   String? selectedContext;
   String? selectedCapacity;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -48,6 +53,98 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
     setState(() {
       flashPrizeControllers.add(TextEditingController());
     });
+  }
+
+  int _capacityToInt(String value) {
+    switch (value) {
+      case '15_30':
+        return 30;
+      case '30_50':
+        return 50;
+      case '50_plus':
+        return 60;
+      default:
+        return 30;
+    }
+  }
+
+  Future<void> _createRoom() async {
+    final appState = context.read<AppState>();
+
+    if (_loading) return;
+
+    if (appState.userName == null ||
+        appState.birthDate == null ||
+        appState.estado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Faltan datos del registro del host'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      final premiosFlash = flashPrizeControllers
+          .map((c) => c.text.trim())
+          .where((text) => text.isNotEmpty)
+          .toList();
+
+      final result = await ApiService.registrarHost(
+        nombre: appState.userName!,
+        fechaNacimiento: appState.birthDate!,
+        foto: appState.profilePhoto ?? '',
+        instagram: appState.instagram,
+        estado: appState.estado!,
+        respuestas: appState.respuestas,
+        nombreSala: roomNameController.text.trim(),
+        contexto: selectedContext!,
+        aforo: _capacityToInt(selectedCapacity!),
+        direccion: addressController.text.trim(),
+        codigoPostal: int.parse(cpController.text.trim()),
+        latitudSala: 41.3874,
+        longitudSala: 2.1686,
+        premioMayor: grandPrizeController.text.trim(),
+        premiosFlash: premiosFlash,
+      );
+
+      if (!mounted) return;
+
+      appState.setUser(
+        isHost: true,
+        userName: result.nombreUsuario,
+        roomCode: result.codigoSala,
+        userId: result.usuarioId,
+        salaId: result.salaId,
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RoomCodeScreen(
+            roomCode: result.codigoSala,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creando sala: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   void _removeFlashPrizeField(int index) {
@@ -291,16 +388,12 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                           ),
                           const SizedBox(width: 20),
                           _NextButton(
-                            enabled: canContinue,
+                            enabled: canContinue && !_loading,
+                            label: _loading ? 'Creando...' : 'Siguiente',
                             onTap: () {
-                              if (!canContinue) return;
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const RoomCodeScreen(),
-                                ),
-                              );
+                              print('CLICK BOTON');
+                              if (!canContinue || _loading) return;
+                              _createRoom();
                             },
                           ),
                         ],
@@ -566,10 +659,12 @@ class _RoundBackButtonState extends State<_RoundBackButton> {
 
 class _NextButton extends StatefulWidget {
   final bool enabled;
+  final String label;
   final VoidCallback onTap;
 
   const _NextButton({
     required this.enabled,
+    required this.label,
     required this.onTap,
   });
 
@@ -619,7 +714,7 @@ class _NextButtonState extends State<_NextButton> {
               : [],
         ),
         child: Text(
-          'Siguiente',
+          widget.label,
           style: TextStyle(
             color: buttonColor,
             fontSize: 15,

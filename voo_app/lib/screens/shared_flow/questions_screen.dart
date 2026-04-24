@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../host_flow/room_setup_screen.dart';
 
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
+
 class QuestionsScreen extends StatefulWidget {
   const QuestionsScreen({super.key});
 
@@ -122,6 +125,12 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                         enabled: canContinue,
                         onTap: () {
                           if (!canContinue) return;
+
+                          context.read<AppState>().setQuestionsData([
+                          question1Controller.text.trim(),
+                          question2Controller.text.trim(),
+                          question3Controller.text.trim(),
+                        ]);
 
                           Navigator.push(
                             context,

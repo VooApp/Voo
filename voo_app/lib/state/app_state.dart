@@ -10,6 +10,15 @@ class AppState extends ChangeNotifier {
   String? _userName;
   String? _roomCode;
 
+  String? _userId;
+  String? _salaId;
+
+  DateTime? _birthDate;
+  String? _instagram;
+  String? _profilePhoto;
+  String? _estado;
+  List<String> _respuestas = [];
+
   final List<RequestModel> _sentRequests = [];
   final List<RequestModel> _receivedRequests = [];
   final List<ChatModel> _dynamicChats = [];
@@ -20,6 +29,14 @@ class AppState extends ChangeNotifier {
   bool get isHost => _isHost;
   String? get userName => _userName;
   String? get roomCode => _roomCode;
+  String? get userId => _userId;
+  String? get salaId => _salaId;
+
+  DateTime? get birthDate => _birthDate;
+  String? get instagram => _instagram;
+  String? get profilePhoto => _profilePhoto;
+  String? get estado => _estado;
+  List<String> get respuestas => List.unmodifiable(_respuestas);
 
   List<RequestModel> get sentRequests => List.unmodifiable(_sentRequests);
   List<RequestModel> get receivedRequests => List.unmodifiable(_receivedRequests);
@@ -45,10 +62,14 @@ class AppState extends ChangeNotifier {
     required bool isHost,
     required String userName,
     required String roomCode,
+    String? userId,
+    String? salaId,
   }) {
     _isHost = isHost;
     _userName = userName;
     _roomCode = roomCode;
+    _userId = userId ?? _userId;
+    _salaId = salaId ?? _salaId;
     notifyListeners();
   }
 
@@ -61,6 +82,13 @@ class AppState extends ChangeNotifier {
     _dynamicChats.clear();
     _messages.clear();
     _activeAcceptedRequest = null;
+    _userId = null;
+    _salaId = null;
+    _birthDate = null;
+    _instagram = null;
+    _profilePhoto = null;
+    _estado = null;
+    _respuestas = [];
     notifyListeners();
   }
 
@@ -110,6 +138,29 @@ class AppState extends ChangeNotifier {
       );
     }
 
+    notifyListeners();
+  }
+
+  void setRegisterData({
+    required String userName,
+    required DateTime birthDate,
+    required String profilePhoto,
+    String? instagram,
+  }) {
+    _userName = userName;
+    _birthDate = birthDate;
+    _profilePhoto = profilePhoto;
+    _instagram = instagram;
+    notifyListeners();
+  }
+
+  void setStatusData(String estado) {
+    _estado = estado;
+    notifyListeners();
+  }
+
+  void setQuestionsData(List<String> respuestas) {
+    _respuestas = respuestas;
     notifyListeners();
   }
 

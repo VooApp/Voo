@@ -81,6 +81,7 @@ namespace VooApi.Services
             {
                 Tipo = "host",
                 Nombre = dto.Nombre,
+                Sexo = dto.Sexo,
                 FechaNacimiento = dto.FechaNacimiento,
                 Foto = dto.Foto,
                 Ig = dto.Ig,
@@ -172,6 +173,7 @@ namespace VooApi.Services
             {
                 Tipo = "invited",
                 Nombre = dto.Nombre,
+                Sexo = dto.Sexo,
                 FechaNacimiento = dto.FechaNacimiento,
                 Foto = dto.Foto,
                 Ig = dto.Ig,

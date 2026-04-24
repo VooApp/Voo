@@ -7,6 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 import '../shared_flow/camera_screen.dart';
 import 'host_status_screen.dart';
 
+import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
+
 class RegisterHostScreen extends StatefulWidget {
   const RegisterHostScreen({super.key});
 
@@ -26,10 +30,11 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
   bool _requestingCameraPermission = false;
 
   bool get canContinue {
-    return nameController.text.trim().isNotEmpty &&
-        birthDateController.text.trim().isNotEmpty &&
-        _profileImageBytes != null;
-  }
+  return nameController.text.trim().isNotEmpty &&
+      birthDateController.text.trim().isNotEmpty &&
+      selectedSex != null &&
+      _profileImageBytes != null;
+}
 
   @override
   void dispose() {
@@ -199,6 +204,21 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
       if (!mounted) return;
 
       if (status.isGranted) {
+        final parts = birthDateController.text.split('/');
+        final birthDate = DateTime(
+          int.parse(parts[2]),
+          int.parse(parts[1]),
+          int.parse(parts[0]),
+        );
+
+        context.read<AppState>().setRegisterData(
+          userName: nameController.text.trim(),
+          birthDate: birthDate,
+          profilePhoto: base64Encode(_profileImageBytes!),
+          instagram: instagramController.text.trim().isEmpty
+              ? null
+              : instagramController.text.trim(),
+        );
         Navigator.push(
           context,
           MaterialPageRoute(

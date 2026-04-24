@@ -13,14 +13,19 @@ import '../../state/app_state.dart';
 import '../home/home_screen.dart';
 
 class RoomCodeScreen extends StatefulWidget {
-  const RoomCodeScreen({super.key});
+  final String roomCode;
+
+  const RoomCodeScreen({
+    super.key,
+    required this.roomCode,
+  });
 
   @override
   State<RoomCodeScreen> createState() => _RoomCodeScreenState();
 }
 
 class _RoomCodeScreenState extends State<RoomCodeScreen> {
-  static const String roomCode = 'CV 7624X5';
+  String get roomCode => widget.roomCode;
 
   final GlobalKey _downloadCardKey = GlobalKey();
 
@@ -29,7 +34,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
   bool _downloading = false;
 
   Future<void> _copyCode() async {
-    await Clipboard.setData(const ClipboardData(text: roomCode));
+    await Clipboard.setData(ClipboardData(text: roomCode));
 
     if (!mounted) return;
 
@@ -138,6 +143,8 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
       isHost: true,
       userName: context.read<AppState>().userName ?? 'Host',
       roomCode: roomCode,
+      userId: context.read<AppState>().userId,
+      salaId: context.read<AppState>().salaId,
     );
 
     Navigator.pushAndRemoveUntil(
@@ -263,7 +270,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              const Text(
+                              Text(
                                 roomCode,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -469,7 +476,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                               ),
                             ),
                             const SizedBox(height: 10),
-                            const Text(
+                            Text(
                               roomCode,
                               style: TextStyle(
                                 color: Color(0xFF22C55E),

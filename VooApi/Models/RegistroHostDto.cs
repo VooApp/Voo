@@ -4,6 +4,7 @@ namespace VooApi.Models
     {
         // Datos del usuario
         public string Nombre { get; set; } = string.Empty;
+        public bool Sexo { get; set; }
         public DateTime FechaNacimiento { get; set; }
         public string Foto { get; set; } = string.Empty;      // URL de la imagen
         public string? Ig { get; set; }

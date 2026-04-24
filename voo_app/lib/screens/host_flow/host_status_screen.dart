@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../shared_flow/questions_screen.dart';
 
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
+
 class HostStatusScreen extends StatefulWidget {
   const HostStatusScreen({super.key});
 
@@ -114,6 +117,8 @@ class _HostStatusScreenState extends State<HostStatusScreen> {
                         enabled: selectedStatus != null,
                         onTap: () {
                           if (selectedStatus == null) return;
+
+                          context.read<AppState>().setStatusData(selectedStatus!);
 
                           Navigator.push(
                             context,
