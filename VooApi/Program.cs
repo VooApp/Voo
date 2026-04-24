@@ -34,7 +34,8 @@ builder.Services.AddScoped<PoderService>();
 builder.Services.AddScoped<SolicitudService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<MensajeService>();
-
+// Después de los otros Services
+builder.Services.AddScoped<RegistroService>();
 var app = builder.Build();
 
 app.UseCors();
