@@ -8,10 +8,10 @@ Necesitas instalar 3 cosas antes de poder correr el proyecto:
 
 1. .NET SDK 8
    - Ve a: https://dotnet.microsoft.com/download
-   - Descarga ".NET 8.0 SDK" e instálalo
+   - Descarga ".NET 10.0 SDK" e instálalo
    - Para verificar, abre PowerShell y escribe:
        dotnet --version
-   - Debería mostrar algo como: 8.0.x
+   - Debería mostrar algo como: 10.0.x
 
 2. Flutter SDK
    - Ve a: https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.41.6-stable.zip
@@ -19,7 +19,7 @@ Necesitas instalar 3 cosas antes de poder correr el proyecto:
      ⚠️ NO lo pongas en C:\Program Files ni en OneDrive
 
 3. Configurar Flutter
-   - Ejecutar "flutterEnv.ps1", para descargar flutter en pc
+   - Ejecutar "flutterEnv.ps1",‼️DOS VECES‼️ para descargar flutter en pc
    - ‼️ ATENCION‼️SI PC YA TIENE FLUTTER FUNCIONAL, NO EJECUTAR.
 
 ================================================
