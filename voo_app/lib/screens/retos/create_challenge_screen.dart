@@ -9,17 +9,16 @@ class CreateChallengeScreen extends StatefulWidget {
 
 class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
   final TextEditingController retoController = TextEditingController();
-  final TextEditingController horaDuracionController = TextEditingController();
+  final TextEditingController puntosController = TextEditingController();
   final TextEditingController premioController = TextEditingController();
 
   final List<String> durationOptions = ['30 min', '1 h', '2 h'];
   String selectedDuration = '30 min';
-  Color selectedColor = const Color(0xFF9C4DFF);
 
   @override
   void dispose() {
     retoController.dispose();
-    horaDuracionController.dispose();
+    puntosController.dispose();
     premioController.dispose();
     super.dispose();
   }
@@ -28,7 +27,7 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
   Widget build(BuildContext context) {
     final canCreate =
         retoController.text.trim().isNotEmpty &&
-        horaDuracionController.text.trim().isNotEmpty;
+        puntosController.text.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -46,111 +45,99 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'Tus retos ',
-                        style: TextStyle(
-                          color: Color(0xFFD78BFF),
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'V',
-                        style: TextStyle(
-                          color: Color(0xFF22C55E),
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'o',
-                        style: TextStyle(
-                          color: Color(0xFFEF4444),
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'o',
-                        style: TextStyle(
-                          color: Color(0xFFEAB308),
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
+                const Center(
+                  child: _ChallengeTitle(),
                 ),
-                const SizedBox(height: 18),
+
+                const SizedBox(height: 26),
+
                 const Text(
                   'Reto',
                   style: TextStyle(
                     color: Color(0xFFD78BFF),
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 8),
                 _StyledInput(
                   controller: retoController,
-                  maxLines: 4,
+                  maxLines: 5,
                   onChanged: (_) => setState(() {}),
                 ),
-                const SizedBox(height: 18),
+
+                const SizedBox(height: 24),
+
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _ColorSelector(
-                        selectedColor: selectedColor,
-                        onColorSelected: (color) {
-                          setState(() {
-                            selectedColor = color;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _RewardSelector(
-                        controller: premioController,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
+                    SizedBox(
+                      width: 120,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Hora de duración',
+                            'Puntos',
                             style: TextStyle(
                               color: Color(0xFFD78BFF),
                               fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 8),
                           _StyledInput(
-                            controller: horaDuracionController,
+                            controller: puntosController,
+                            keyboardType: TextInputType.number,
                             onChanged: (_) => setState(() {}),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 14),
+
+                    const Spacer(),
+
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Añade un premio',
+                          style: TextStyle(
+                            color: Color(0xFFD78BFF),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _AddPrizeButton(
+                          onTap: () {
+                            _showPrizeDialog(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Expanded(
+                      child: _StyledInput(
+                        controller: premioController,
+                        hintText: 'Premio',
+                      ),
+                    ),
+
+                    const SizedBox(width: 18),
+
+                    SizedBox(
+                      width: 130,
                       child: _DurationDropdown(
                         selectedDuration: selectedDuration,
                         options: durationOptions,
@@ -164,7 +151,9 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
                     ),
                   ],
                 ),
+
                 const Spacer(),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -178,7 +167,9 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
                       enabled: canCreate,
                       onTap: () {
                         if (!canCreate) return;
+
                         Navigator.pop(context);
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Reto creado'),
@@ -195,17 +186,120 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
       ),
     );
   }
+
+  void _showPrizeDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF151525),
+          title: const Text(
+            'Añadir premio',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            controller: premioController,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'Ej: 1 copa, elegir reto, premio especial...',
+              hintStyle: TextStyle(color: Colors.white54),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {});
+              },
+              child: const Text(
+                'Guardar',
+                style: TextStyle(color: Color(0xFF66D63E)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ChallengeTitle extends StatelessWidget {
+  const _ChallengeTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        children: [
+          const TextSpan(
+            text: 'Tus retos ',
+            style: TextStyle(
+              color: Color(0xFFD78BFF),
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          TextSpan(
+            text: 'V',
+            style: TextStyle(
+              color: const Color(0xFF66D63E),
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  color: const Color(0xFF66D63E).withOpacity(0.85),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+          ),
+          TextSpan(
+            text: 'o',
+            style: TextStyle(
+              color: const Color(0xFFEAB308),
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  color: const Color(0xFFEAB308).withOpacity(0.85),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+          ),
+          TextSpan(
+            text: 'o',
+            style: TextStyle(
+              color: const Color(0xFFFF3B5C),
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+              shadows: [
+                Shadow(
+                  color: const Color(0xFFFF3B5C).withOpacity(0.85),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _StyledInput extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String>? onChanged;
   final int maxLines;
+  final TextInputType? keyboardType;
+  final String? hintText;
 
   const _StyledInput({
     required this.controller,
     this.onChanged,
     this.maxLines = 1,
+    this.keyboardType,
+    this.hintText,
   });
 
   @override
@@ -214,11 +308,16 @@ class _StyledInput extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       maxLines: maxLines,
+      keyboardType: keyboardType,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 15,
       ),
       decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.35),
+        ),
         filled: true,
         fillColor: const Color(0xFF151525),
         contentPadding: const EdgeInsets.symmetric(
@@ -228,15 +327,15 @@ class _StyledInput extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: const Color(0xFF9C4DFF).withOpacity(0.6),
-            width: 1.6,
+            color: const Color(0xFF9C4DFF).withOpacity(0.65),
+            width: 1.8,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(
             color: Color(0xFF9C4DFF),
-            width: 2,
+            width: 2.2,
           ),
         ),
       ),
@@ -244,84 +343,34 @@ class _StyledInput extends StatelessWidget {
   }
 }
 
-class _ColorSelector extends StatelessWidget {
-  final Color selectedColor;
-  final ValueChanged<Color> onColorSelected;
+class _AddPrizeButton extends StatelessWidget {
+  final VoidCallback onTap;
 
-  const _ColorSelector({
-    required this.selectedColor,
-    required this.onColorSelected,
+  const _AddPrizeButton({
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    const colors = [
-      Color(0xFF22C55E),
-      Color(0xFFEAB308),
-      Color(0xFFEF4444),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Color',
-          style: TextStyle(
-            color: Color(0xFFD78BFF),
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF151525),
+          border: Border.all(
+            color: const Color(0xFF9C4DFF),
+            width: 2.4,
           ),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 10,
-          children: colors.map((color) {
-            final selected = selectedColor == color;
-            return GestureDetector(
-              onTap: () => onColorSelected(color),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected ? Colors.white : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
+        child: const Icon(
+          Icons.add_rounded,
+          color: Color(0xFF9C4DFF),
+          size: 30,
         ),
-      ],
-    );
-  }
-}
-
-class _RewardSelector extends StatelessWidget {
-  final TextEditingController controller;
-
-  const _RewardSelector({
-    required this.controller,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Añadir premio',
-          style: TextStyle(
-            color: Color(0xFFD78BFF),
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        _StyledInput(controller: controller),
-      ],
+      ),
     );
   }
 }
@@ -347,18 +396,19 @@ class _DurationDropdown extends StatelessWidget {
           style: TextStyle(
             color: Color(0xFFD78BFF),
             fontSize: 16,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: const Color(0xFF151525),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: const Color(0xFF9C4DFF).withOpacity(0.6),
-              width: 1.6,
+              color: const Color(0xFF9C4DFF).withOpacity(0.65),
+              width: 1.8,
             ),
           ),
           child: DropdownButtonHideUnderline(
@@ -368,8 +418,10 @@ class _DurationDropdown extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 15,
+                fontWeight: FontWeight.w700,
               ),
               iconEnabledColor: const Color(0xFFD78BFF),
+              isExpanded: true,
               items: options.map((item) {
                 return DropdownMenuItem<String>(
                   value: item,
@@ -423,19 +475,11 @@ class _CircleIconButtonState extends State<_CircleIconButton> {
             color: widget.color,
             width: 2,
           ),
-          boxShadow: _pressed
-              ? [
-                  BoxShadow(
-                    color: widget.color.withOpacity(0.28),
-                    blurRadius: 16,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
         ),
         child: Icon(
           widget.icon,
           color: widget.color,
+          size: 30,
         ),
       ),
     );
@@ -460,7 +504,7 @@ class _CreateButtonState extends State<_CreateButton> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.enabled ? const Color(0xFF22C55E) : Colors.grey;
+    final color = widget.enabled ? const Color(0xFF66D63E) : Colors.grey;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -477,30 +521,21 @@ class _CreateButtonState extends State<_CreateButton> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 13),
         decoration: BoxDecoration(
           color: const Color(0xFF151525),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: color,
-            width: 2,
+            width: 2.2,
           ),
-          boxShadow: _pressed && widget.enabled
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.35),
-                    blurRadius: 16,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
         ),
         child: Text(
           'Crear',
           style: TextStyle(
             color: color,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),

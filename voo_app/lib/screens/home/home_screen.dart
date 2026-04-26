@@ -11,6 +11,8 @@ import '../../widgets/voo_bottom_nav_bar.dart';
 import '../chats/chats_screen.dart';
 import 'profile_qr_screen.dart';
 import '../retos/retos_screen.dart';
+import '../ranking/ranking_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final bool isHost = appState.isHost;
-    final String saludo = appState.userName ?? 'Usuario';
+    final String nombrePerfil = appState.userName ?? 'Usuario';
     final String codigoSala = appState.roomCode ?? '---';
     final String tituloLista =
         isHost ? 'Tus invitados' : 'Invitados de la sala';
@@ -154,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _TopHeader(
-                        saludo: 'Es ahora o Nunca!',
+                        saludo: 'Hola $nombrePerfil!',
                         codigoSala: codigoSala,
                         onQrTap: () {
                           Navigator.push(
@@ -162,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             MaterialPageRoute(
                               builder: (_) => ProfileQrScreen(
                                 isHost: isHost,
-                                userName: saludo,
+                                userName: nombrePerfil,
                                 roomCode: codigoSala,
                               ),
                             ),
@@ -232,7 +234,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           } else if (index == 2) {
-                            openPlaceholder('Aquí irá Ranking');
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RankingScreen(),
+                              ),
+                            );
                           } else if (index == 3) {
                             Navigator.pushReplacement(
                               context,
@@ -241,7 +248,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           } else if (index == 4) {
-                            openPlaceholder('Aquí irá Ajustes');
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SettingsScreen(
+                                  isHost: isHost,
+                                ),
+                              ),
+                            );
                           }
                         },
                       ),
