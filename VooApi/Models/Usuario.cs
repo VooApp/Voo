@@ -11,8 +11,7 @@ namespace VooApi.Models
 
         public string Tipo { get; set; } = string.Empty;        // "host" o "invited"
         public string Nombre { get; set; } = string.Empty;
-        [BsonElement("sexo")]
-        public bool Sexo { get; set; }
+        public bool Sexo { get; set; } = false;
         public DateTime FechaNacimiento { get; set; }
         public string? Ig { get; set; }                         // opcional
         public string Foto { get; set; } = string.Empty;        // URL de la imagen
