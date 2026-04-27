@@ -1,11 +1,25 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:5011',
-  );
+  static String get baseUrl {
+    const envUrl = String.fromEnvironment('API_BASE_URL');
+
+    if (envUrl.isNotEmpty) return envUrl;
+
+    if (kIsWeb) {
+      return 'http://localhost:5011';
+    }
+
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:5011';
+    }
+
+    return 'http://localhost:5011';
+  }
 
   static Uri _uri(String path) {
     return Uri.parse('$baseUrl$path');
@@ -29,8 +43,10 @@ class ApiService {
     required String premioMayor,
     required List<String> premiosFlash,
   }) async {
+    final uri = _uri('/Registro/host');
+
     final response = await http.post(
-      _uri('/Registro/host'),
+      uri,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -54,11 +70,15 @@ class ApiService {
       }),
     );
 
-    print('POST: ${_uri('/Registro/host')}');
-    print('STATUS: ${response.statusCode}');
-    print('BODY: ${response.body}');
+    debugPrint('POST: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
 
-    final Map<String, dynamic> data = jsonDecode(response.body);
+    Map<String, dynamic> data = {};
+
+    if (response.body.isNotEmpty) {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(data['mensaje'] ?? 'Error al registrar host');
@@ -84,16 +104,15 @@ class RegistroHostResponse {
   });
 
   factory RegistroHostResponse.fromJson(Map<String, dynamic> json) {
-    final usuario = json['usuario'] as Map<String, dynamic>;
-    final sala = json['sala'] as Map<String, dynamic>;
+    final usuario = json['usuario'] as Map<String, dynamic>? ?? {};
+    final sala = json['sala'] as Map<String, dynamic>? ?? {};
 
     return RegistroHostResponse(
       mensaje: json['mensaje']?.toString() ?? '',
       usuarioId: usuario['id']?.toString() ?? '',
       salaId: sala['id']?.toString() ?? '',
-      codigoSala: json['codigoSala']?.toString() ??
-          sala['codigoSala']?.toString() ??
-          '',
+      codigoSala:
+          json['codigoSala']?.toString() ?? sala['codigoSala']?.toString() ?? '',
       nombreUsuario: usuario['nombre']?.toString() ?? 'Host',
     );
   }

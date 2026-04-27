@@ -10,6 +10,7 @@ import '../home/home_screen.dart';
 import 'chat_conversation_screen.dart';
 import '../retos/retos_screen.dart';
 import '../ranking/ranking_screen.dart';
+import '../settings/settings_screen.dart';
 
 class ChatsScreen extends StatelessWidget {
   const ChatsScreen({super.key});
@@ -145,7 +146,14 @@ class ChatsScreen extends StatelessWidget {
                         ),
                       );
                     } else if (index == 4) {
-                      openPlaceholder('Aquí irá Ajustes');
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SettingsScreen(
+                            isHost: isHost,
+                          ),
+                        ),
+                      );
                     }
                   },
                 ),

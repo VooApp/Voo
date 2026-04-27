@@ -233,6 +233,46 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         runSpacing: 10,
                         children: [
                           _OptionChip(
+                            label: 'Fiesta en casa',
+                            isSelected: selectedContext == 'fiesta_casa',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'fiesta_casa';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Cumpleaños',
+                            isSelected: selectedContext == 'cumpleanos',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'cumpleanos';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Discoteca',
+                            isSelected: selectedContext == 'discoteca',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'discoteca';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Cena',
+                            isSelected: selectedContext == 'cena',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'cena';
+                              });
+                            },
+                          ),
+                          _OptionChip(
                             label: 'Pool Party',
                             isSelected: selectedContext == 'pool_party',
                             color: const Color(0xFF9C4DFF),
@@ -243,22 +283,32 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                             },
                           ),
                           _OptionChip(
-                            label: 'Cena formal',
-                            isSelected: selectedContext == 'cena_formal',
+                            label: 'Previa',
+                            isSelected: selectedContext == 'previa',
                             color: const Color(0xFF9C4DFF),
                             onTap: () {
                               setState(() {
-                                selectedContext = 'cena_formal';
+                                selectedContext = 'previa';
                               });
                             },
                           ),
                           _OptionChip(
-                            label: 'Reunión informal',
-                            isSelected: selectedContext == 'reunion_informal',
+                            label: 'Evento uni',
+                            isSelected: selectedContext == 'evento_uni',
                             color: const Color(0xFF9C4DFF),
                             onTap: () {
                               setState(() {
-                                selectedContext = 'reunion_informal';
+                                selectedContext = 'evento_uni';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Afterwork',
+                            isSelected: selectedContext == 'afterwork',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'afterwork';
                               });
                             },
                           ),
@@ -392,7 +442,6 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                             enabled: canContinue && !_loading,
                             label: _loading ? 'Creando...' : 'Siguiente',
                             onTap: () {
-                              print('CLICK BOTON');
                               if (!canContinue || _loading) return;
                               _createRoom();
                             },

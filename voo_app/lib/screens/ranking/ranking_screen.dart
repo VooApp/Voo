@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../state/app_state.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import '../chats/chats_screen.dart';
 import '../retos/retos_screen.dart';
 import 'voo_powers_screen.dart';
+import '../settings/settings_screen.dart';
 
 class RankingScreen extends StatelessWidget {
   const RankingScreen({super.key});
@@ -20,6 +23,9 @@ class RankingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final bool isHost = appState.isHost;
+
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
       body: Container(
@@ -40,7 +46,6 @@ class RankingScreen extends StatelessWidget {
             child: Column(
               children: [
                 const _RankingTitle(),
-
                 const SizedBox(height: 22),
 
                 Container(
@@ -115,12 +120,12 @@ class RankingScreen extends StatelessWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final user = ranking[index];
-                      final Color color = user['color'];
+                      final Color color = user['color'] as Color;
 
                       return _RankingCard(
                         position: index + 1,
-                        name: user['name'],
-                        points: user['points'],
+                        name: user['name'] as String,
+                        points: user['points'] as int,
                         color: color,
                       );
                     },
@@ -151,6 +156,15 @@ class RankingScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const RetosScreen(),
+                        ),
+                      );
+                    } else if (index == 4) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SettingsScreen(
+                            isHost: isHost,
+                          ),
                         ),
                       );
                     }
@@ -361,9 +375,7 @@ class _RankingCard extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 12),
-
           Stack(
             children: [
               Container(
@@ -403,9 +415,7 @@ class _RankingCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Text(
               name,
@@ -416,7 +426,6 @@ class _RankingCard extends StatelessWidget {
               ),
             ),
           ),
-
           Text(
             '$points',
             style: TextStyle(
