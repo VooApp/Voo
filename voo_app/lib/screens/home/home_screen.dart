@@ -1,9 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../mock/mock_users.dart';
 import '../../models/request_model.dart';
-import '../../models/user_model.dart';
 import '../../state/app_state.dart';
 import '../../widgets/sent_request_dialog.dart';
 import '../../widgets/user_interaction_dialog.dart';
@@ -13,6 +13,7 @@ import 'profile_qr_screen.dart';
 import '../retos/retos_screen.dart';
 import '../ranking/ranking_screen.dart';
 import '../settings/settings_screen.dart';
+import '../../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,8 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final bool isHost = appState.isHost;
     final String nombrePerfil = appState.userName ?? 'Usuario';
     final String codigoSala = appState.roomCode ?? '---';
-    final String tituloLista =
-        isHost ? 'Tus invitados' : 'Invitados de la sala';
 
     final visibleUsers = appState.salaUsuarios
         .where((user) => !appState.shouldHideUserFromHome(user.id))
@@ -71,16 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final RequestModel? blockingIncoming = appState.blockingIncomingRequest;
     final RequestModel? activeAccepted = appState.activeAcceptedRequest;
 
-    final bool lockHome =
-        blockingIncoming != null || activeAccepted != null;
+    final bool lockHome = blockingIncoming != null || activeAccepted != null;
 
-    void openPlaceholder(String text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(text)),
-      );
-    }
-
-    Future<void> openInteractionPopup(UserModel user) async {
+    Future<void> openInteractionPopup(SalaUsuarioModel user) async {
       if (lockHome) return;
 
       final existingPending = appState.getPendingRequestForUser(user.id);
@@ -88,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Ya tienes una solicitud pendiente con ${user.name}',
+              'Ya tienes una solicitud pendiente con ${user.nombre}',
             ),
           ),
         );
@@ -101,9 +93,10 @@ class _HomeScreenState extends State<HomeScreen> {
         barrierDismissible: true,
         builder: (_) => UserInteractionDialog(
           targetUserId: user.id,
-          targetUserName: user.name,
-          targetUserAge: user.age,
+          targetUserName: user.nombre,
+          targetUserAge: user.edad,
           statusColor: user.statusColor,
+          targetUserFoto: user.foto,
         ),
       );
 
@@ -220,18 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   return _GuestCard(
                                     name: user.nombre,
                                     age: user.edad,
+                                    foto: user.foto,
                                     statusColor: user.statusColor,
                                     pendingLabel: pendingRequest == null
                                         ? null
                                         : '${_requestTypeLabel(pendingRequest.type)} pendiente',
-                                    onTap: () => openInteractionPopup(
-                                      UserModel(
-                                        id: user.id,
-                                        name: user.nombre,
-                                        age: user.edad,
-                                        statusColor: user.statusColor,
-                                      ),
-                                    ),
+                                    onTap: () => openInteractionPopup(user),
                                   );
                                 },
                               ),
@@ -543,7 +530,7 @@ class _AcceptedRequestResponsePopupState
             ),
             const SizedBox(height: 8),
             Text(
-              '${widget.request.targetUserName}',
+              widget.request.targetUserName,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -791,7 +778,8 @@ class _QrButtonState extends State<_QrButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.45 : 0.18),
+              color:
+                  const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.45 : 0.18),
               blurRadius: _pressed ? 20 : 12,
               spreadRadius: _pressed ? 1.2 : 0.4,
             ),
@@ -810,6 +798,7 @@ class _QrButtonState extends State<_QrButton> {
 class _GuestCard extends StatelessWidget {
   final String name;
   final int age;
+  final String? foto;
   final Color statusColor;
   final String? pendingLabel;
   final VoidCallback onTap;
@@ -817,13 +806,32 @@ class _GuestCard extends StatelessWidget {
   const _GuestCard({
     required this.name,
     required this.age,
+    required this.foto,
     required this.statusColor,
     required this.onTap,
     this.pendingLabel,
   });
 
+  ImageProvider? _profileImage() {
+    if (foto == null || foto!.trim().isEmpty) return null;
+
+    try {
+      var cleanBase64 = foto!.trim();
+
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+
+      return MemoryImage(base64Decode(cleanBase64));
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final image = _profileImage();
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -842,18 +850,39 @@ class _GuestCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
+              padding: const EdgeInsets.all(2.4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: statusColor,
                   width: 2.4,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: statusColor.withOpacity(0.25),
+                    blurRadius: 12,
+                    spreadRadius: 0.5,
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
+              child: ClipOval(
+                child: image != null
+                    ? Image(
+                        image: image,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      )
+                    : Container(
+                        color: const Color(0xFF101018),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 14),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ class UserInteractionDialog extends StatefulWidget {
   final String targetUserName;
   final int targetUserAge;
   final Color statusColor;
+  final String? targetUserFoto;
 
   const UserInteractionDialog({
     super.key,
@@ -32,6 +34,7 @@ class UserInteractionDialog extends StatefulWidget {
     required this.targetUserName,
     required this.targetUserAge,
     required this.statusColor,
+    this.targetUserFoto,
   });
 
   @override
@@ -50,6 +53,27 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
     super.dispose();
   }
 
+  String _cleanBase64(String value) {
+    if (value.contains(',')) {
+      return value.split(',').last;
+    }
+    return value;
+  }
+
+  ImageProvider? _profileImage() {
+    final foto = widget.targetUserFoto;
+
+    if (foto == null || foto.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      return MemoryImage(base64Decode(_cleanBase64(foto.trim())));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _showBigAvatar() async {
     await showDialog<void>(
       context: context,
@@ -58,6 +82,7 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
         name: widget.targetUserName,
         age: widget.targetUserAge,
         statusColor: widget.statusColor,
+        foto: widget.targetUserFoto,
       ),
     );
   }
@@ -111,6 +136,8 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final image = _profileImage();
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
@@ -162,11 +189,28 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
                     color: widget.statusColor,
                     width: 3,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.statusColor.withOpacity(0.22),
+                      blurRadius: 12,
+                      spreadRadius: 0.5,
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 30,
+                child: ClipOval(
+                  child: image != null
+                      ? Image(
+                          image: image,
+                          width: 62,
+                          height: 62,
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                        )
+                      : const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 30,
+                        ),
                 ),
               ),
             ),
@@ -472,15 +516,38 @@ class _BigAvatarDialog extends StatelessWidget {
   final String name;
   final int age;
   final Color statusColor;
+  final String? foto;
 
   const _BigAvatarDialog({
     required this.name,
     required this.age,
     required this.statusColor,
+    this.foto,
   });
+
+  String _cleanBase64(String value) {
+    if (value.contains(',')) {
+      return value.split(',').last;
+    }
+    return value;
+  }
+
+  ImageProvider? _profileImage() {
+    if (foto == null || foto!.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      return MemoryImage(base64Decode(_cleanBase64(foto!.trim())));
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final image = _profileImage();
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 32),
@@ -538,15 +605,27 @@ class _BigAvatarDialog extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 110,
+              child: ClipOval(
+                child: image != null
+                    ? Image(
+                        image: image,
+                        width: 220,
+                        height: 220,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      )
+                    : const Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 110,
+                      ),
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Vista ampliada del perfil',
+              image != null
+                  ? 'Vista ampliada del perfil'
+                  : 'Este usuario no tiene foto de perfil',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.68),
                 fontSize: 14,

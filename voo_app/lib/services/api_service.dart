@@ -251,7 +251,8 @@ class SalaUsuarioModel {
   final String id;
   final String nombre;
   final DateTime fechaNacimiento;
-  final String estado; 
+  final String estado;
+  final String? foto;
   final bool esHost;
   final bool baneado;
 
@@ -262,27 +263,35 @@ class SalaUsuarioModel {
     required this.estado,
     required this.esHost,
     required this.baneado,
+    this.foto,
   });
 
   int get edad {
     final hoy = DateTime.now();
     int edad = hoy.year - fechaNacimiento.year;
+
     if (hoy.month < fechaNacimiento.month ||
         (hoy.month == fechaNacimiento.month && hoy.day < fechaNacimiento.day)) {
       edad--;
     }
+
     return edad;
   }
 
-  // Convierte el string de estado a Color para la UI
   Color get statusColor {
     switch (estado.toLowerCase()) {
       case 'verde':
+      case 'soltero':
         return const Color(0xFF22C55E);
+
       case 'amarillo':
+      case 'complicado':
         return const Color(0xFFEAB308);
+
       case 'rojo':
+      case 'pareja':
         return const Color(0xFFEF4444);
+
       default:
         return const Color(0xFF22C55E);
     }
@@ -296,6 +305,7 @@ class SalaUsuarioModel {
         json['fechaNacimiento']?.toString() ?? DateTime.now().toIso8601String(),
       ),
       estado: json['estado']?.toString() ?? 'verde',
+      foto: json['foto']?.toString(),
       esHost: json['tipo']?.toString() == 'host',
       baneado: json['baneado'] as bool? ?? false,
     );
