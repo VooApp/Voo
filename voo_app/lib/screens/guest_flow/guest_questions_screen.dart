@@ -114,21 +114,37 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                       alignment: Alignment.centerRight,
                       child: _NextButton(
                         enabled: canContinue,
-                        onTap: () {
+                        onTap: () async {
                           if (!canContinue) return;
 
-                          context.read<AppState>().setUser(
-                            isHost: false,
-                            userName: 'Invitado',
-                            roomCode: context.read<AppState>().roomCode ?? '---',
-                          );
+                          final appState = context.read<AppState>();
 
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const HomeScreen(),
-                            ),
-                          );
+                          appState.setQuestionsData([
+                            question1Controller.text.trim(),
+                            question2Controller.text.trim(),
+                            question3Controller.text.trim(),
+                          ]);
+
+                          try {
+                            await appState.registrarInvitadoEnBackend();
+
+                            if (!context.mounted) return;
+
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const HomeScreen(),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al entrar en la sala: $e'),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ),

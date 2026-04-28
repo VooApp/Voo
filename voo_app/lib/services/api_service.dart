@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
+
 class ApiService {
   static String get baseUrl {
     const envUrl = String.fromEnvironment('API_BASE_URL');
@@ -89,40 +90,53 @@ class ApiService {
   }
 
   static Future<RegistroInvitadoResponse> registrarInvitado({
-    required String nombre,
-    required bool sexo,
-    required DateTime fechaNacimiento,
-    required String foto,
-    required String? instagram,
-    required String estado,
-    required List<String> respuestas,
-    required String codigoSala,
-  }) async {
-    final response = await http.post(
-      _uri('/Registro/invitado'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'nombre': nombre,
-        'sexo': sexo,
-        'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
-        'foto': foto,
-        'ig': instagram,
-        'estado': estado,
-        'respuestas': respuestas,
-        'codigoSala': codigoSala,
-      }),
-    );
+  required String nombre,
+  required bool sexo,
+  required DateTime fechaNacimiento,
+  required String foto,
+  required String? instagram,
+  required String estado,
+  required List<String> respuestas,
+  required String codigoSala,
+  required double latitud,
+  required double longitud,
+  required double accuracy,
+  bool verificado = true,
+}) async {
+  final uri = _uri('/Registro/invitado');
 
-    print('POST: ${_uri('/Registro/invitado')}');
-    print('STATUS: ${response.statusCode}');
-    print('BODY: ${response.body}');
+  final response = await http.post(
+    uri,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'nombre': nombre,
+      'sexo': sexo,
+      'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
+      'foto': foto,
+      'ig': instagram,
+      'estado': estado,
+      'respuestas': respuestas,
+      'verificado': verificado,
+      'codigoSala': codigoSala,
+      'latitud': latitud,
+      'longitud': longitud,
+      'accuracy': accuracy,
+    }),
+  );
 
-    final Map<String, dynamic> data = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(data['mensaje'] ?? 'Error al registrar invitado');
-    }
-    return RegistroInvitadoResponse.fromJson(data);
+  debugPrint('POST: $uri');
+  debugPrint('STATUS: ${response.statusCode}');
+  debugPrint('BODY: ${response.body}');
+
+  final Map<String, dynamic> data =
+      response.body.isNotEmpty ? jsonDecode(response.body) : {};
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw Exception(data['mensaje'] ?? 'Error al registrar invitado');
   }
+
+  return RegistroInvitadoResponse.fromJson(data);
+}
 
   static Future<List<SalaUsuarioModel>> getUsuariosSala(String salaId) async {
     final response = await http.get(_uri('/Usuario/sala/$salaId'));

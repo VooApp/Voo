@@ -22,6 +22,10 @@ class AppState extends ChangeNotifier {
   List<String> _respuestas = [];
   bool? _sexo;
 
+  double? _guestLatitud;
+  double? _guestLongitud;
+  double? _guestAccuracy;
+
   final List<RequestModel> _sentRequests = [];
   final List<RequestModel> _receivedRequests = [];
   final List<ChatModel> _dynamicChats = [];
@@ -102,6 +106,9 @@ class AppState extends ChangeNotifier {
     _profilePhoto = null;
     _estado = null;
     _respuestas = [];
+    _guestLatitud = null;
+    _guestLongitud = null;
+    _guestAccuracy = null;
     notifyListeners();
   }
 
@@ -177,6 +184,55 @@ class AppState extends ChangeNotifier {
   void setQuestionsData(List<String> respuestas) {
     _respuestas = respuestas;
     notifyListeners();
+  }
+
+  void setGuestJoinData({
+    required String roomCode,
+    required double latitud,
+    required double longitud,
+    required double accuracy,
+  }) {
+    _roomCode = roomCode;
+    _guestLatitud = latitud;
+    _guestLongitud = longitud;
+    _guestAccuracy = accuracy;
+    notifyListeners();
+  }
+
+  Future<void> registrarInvitadoEnBackend() async {
+    if (_userName == null ||
+        _birthDate == null ||
+        _estado == null ||
+        _roomCode == null ||
+        _guestLatitud == null ||
+        _guestLongitud == null ||
+        _guestAccuracy == null) {
+      throw Exception('Faltan datos para registrar el invitado');
+    }
+
+    final result = await ApiService.registrarInvitado(
+      nombre: _userName!,
+      sexo: _sexo ?? false,
+      fechaNacimiento: _birthDate!,
+      foto: _profilePhoto ?? '',
+      instagram: _instagram,
+      estado: _estado!,
+      respuestas: _respuestas,
+      codigoSala: _roomCode!,
+      latitud: _guestLatitud!,
+      longitud: _guestLongitud!,
+      accuracy: _guestAccuracy!,
+    );
+
+    setUser(
+      isHost: false,
+      userName: result.nombreUsuario,
+      roomCode: _roomCode!,
+      userId: result.usuarioId,
+      salaId: result.salaId,
+    );
+
+    await cargarUsuariosSala();
   }
 
   RequestModel? getPendingRequestForUser(String userId) {
