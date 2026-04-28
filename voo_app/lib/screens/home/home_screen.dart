@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -24,16 +25,37 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _seededDemo = false;
+  Timer? _refreshTimer;
+  final Set<String> _knownUserIds = {};
 
   @override
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<AppState>().cargarUsuariosSala();
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await context.read<AppState>().cargarUsuariosSala();
+
+      if (!mounted) return;
+
+      final users = context.read<AppState>().salaUsuarios;
+      _knownUserIds.addAll(users.map((user) => user.id));
+
+      _refreshTimer = Timer.periodic(
+        const Duration(seconds: 3),
+        (_) async {
+          if (!mounted) return;
+          await context.read<AppState>().cargarUsuariosSala();
+        },
+      );
     });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   String _requestTypeLabel(RequestType type) {
@@ -47,17 +69,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Color _colorPorEstado(String estado) {
+  final value = estado.toLowerCase().trim();
+
+  if (value.contains('amigos') || value.contains('buscando amigos')) {
+    return const Color(0xFFEAB308); // amarillo
+  }
+
+  if (value.contains('pareja')) {
+    return const Color(0xFFEF4444); // rojo
+  }
+
+    return const Color(0xFF22C55E); // verde
+}
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-
-    if (!_seededDemo) {
-      _seededDemo = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.read<AppState>().seedDemoIncomingRequestIfNeeded();
-      });
-    }
 
     final bool isHost = appState.isHost;
     final String nombrePerfil = appState.userName ?? 'Usuario';
@@ -74,6 +102,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Future<void> openInteractionPopup(SalaUsuarioModel user) async {
       if (lockHome) return;
+
+      final userColor = _colorPorEstado(user.estado);
 
       final existingPending = appState.getPendingRequestForUser(user.id);
       if (existingPending != null) {
@@ -95,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
           targetUserId: user.id,
           targetUserName: user.nombre,
           targetUserAge: user.edad,
-          statusColor: user.statusColor,
+          statusColor: userColor,
           targetUserFoto: user.foto,
         ),
       );
@@ -107,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
         targetUserName: result.targetUserName,
         type: result.type,
         content: result.content,
-        statusColor: user.statusColor,
+        statusColor: userColor,
       );
 
       final dialogData = switch (result.type) {
@@ -207,18 +237,35 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
                                   final user = visibleUsers[index];
+                                  final userColor = _colorPorEstado(user.estado);
+
                                   final pendingRequest =
                                       appState.getPendingRequestForUser(user.id);
 
-                                  return _GuestCard(
-                                    name: user.nombre,
-                                    age: user.edad,
-                                    foto: user.foto,
-                                    statusColor: user.statusColor,
-                                    pendingLabel: pendingRequest == null
-                                        ? null
-                                        : '${_requestTypeLabel(pendingRequest.type)} pendiente',
-                                    onTap: () => openInteractionPopup(user),
+                                  final bool isNewUser =
+                                      !_knownUserIds.contains(user.id);
+
+                                  if (isNewUser) {
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      _knownUserIds.add(user.id);
+                                    });
+                                  }
+
+                                  return _AnimatedGuestEntry(
+                                    key: ValueKey(user.id),
+                                    animate: isNewUser,
+                                    glowColor: userColor,
+                                    child: _GuestCard(
+                                      name: user.nombre,
+                                      age: user.edad,
+                                      foto: user.foto,
+                                      statusColor: userColor,
+                                      pendingLabel: pendingRequest == null
+                                          ? null
+                                          : '${_requestTypeLabel(pendingRequest.type)} pendiente',
+                                      onTap: () => openInteractionPopup(user),
+                                    ),
                                   );
                                 },
                               ),
@@ -324,6 +371,56 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class _AnimatedGuestEntry extends StatelessWidget {
+  final Widget child;
+  final bool animate;
+  final Color glowColor;
+
+  const _AnimatedGuestEntry({
+    super.key,
+    required this.child,
+    required this.animate,
+    required this.glowColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!animate) return child;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 850),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, _) {
+        final glow = 1 - value;
+
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 26 * (1 - value)),
+            child: Transform.scale(
+              scale: 0.94 + (0.06 * value),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: glowColor.withOpacity(0.45 * glow),
+                      blurRadius: 28 * glow,
+                      spreadRadius: 3 * glow,
+                    ),
+                  ],
+                ),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _IncomingRequestPopup extends StatelessWidget {
   final RequestModel request;
   final VoidCallback onReject;
@@ -401,7 +498,7 @@ class _IncomingRequestPopup extends StatelessWidget {
                   ],
                 ),
                 border: Border.all(
-                  color: const Color(0xFF22C55E),
+                  color: Color(0xFF9C4DFF),
                   width: 4,
                 ),
               ),
@@ -544,7 +641,7 @@ class _AcceptedRequestResponsePopupState
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF22C55E),
+                  color: const Color(0xFF9C4DFF),
                   width: 3,
                 ),
               ),
