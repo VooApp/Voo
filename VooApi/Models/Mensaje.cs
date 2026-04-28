@@ -8,7 +8,6 @@ namespace VooApi.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
-
         public string ChatId { get; set; } = string.Empty;      // FK → Chat
         public string Tipo { get; set; } = string.Empty;        // "texto", "verdad", "reto"
         public string EmisorId { get; set; } = string.Empty;    // FK → Usuario

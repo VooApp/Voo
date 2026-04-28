@@ -73,5 +73,10 @@ namespace VooApi.Services
         {
             await _repository.ActualizarAsync(id, usuario);
         }
+
+        public async Task SalirDeSalaAsync(string id)
+        {
+            await _repository.SalirDeSalaAsync(id);
+        }
     }
 }

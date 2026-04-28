@@ -33,6 +33,15 @@ class _HomeScreenState extends State<HomeScreen> {
       case RequestType.messageRequest:
         return 'Mensaje';
     }
+    @override
+    void initState() {
+      super.initState();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<AppState>().cargarUsuariosSala();
+        }
+      });
+    }
   }
 
   @override
@@ -53,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final String tituloLista =
         isHost ? 'Tus invitados' : 'Invitados de la sala';
 
-    final visibleUsers = mockUsers
+    final visibleUsers = appState.salaUsuarios
         .where((user) => !appState.shouldHideUserFromHome(user.id))
         .toList();
 
@@ -207,13 +216,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                       appState.getPendingRequestForUser(user.id);
 
                                   return _GuestCard(
-                                    name: user.name,
-                                    age: user.age,
+                                    name: user.nombre,
+                                    age: user.edad,
                                     statusColor: user.statusColor,
                                     pendingLabel: pendingRequest == null
                                         ? null
                                         : '${_requestTypeLabel(pendingRequest.type)} pendiente',
-                                    onTap: () => openInteractionPopup(user),
+                                    onTap: () => openInteractionPopup(
+                                      UserModel(
+                                        id: user.id,
+                                        name: user.nombre,
+                                        age: user.edad,
+                                        statusColor: user.statusColor,
+                                    ),
                                   );
                                 },
                               ),

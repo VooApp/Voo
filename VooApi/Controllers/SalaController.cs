@@ -30,6 +30,14 @@ namespace VooApi.Controllers
             return Ok(sala);
         }
 
+        [HttpGet("codigo/{codigo}")]
+        public async Task<IActionResult> ObtenerPorCodigo(string codigo)
+        {
+            var sala = await _service.ObtenerPorCodigoAsync(codigo);
+            if (sala == null) return NotFound();
+            return Ok(sala);
+        }
+
         [HttpGet("host/{hostId}")]
         public async Task<IActionResult> ObtenerPorHost(string hostId)
         {
