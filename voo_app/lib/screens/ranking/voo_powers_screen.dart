@@ -29,24 +29,72 @@ class VooPowersScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _CircleBackButton(
-                    onTap: () => Navigator.pop(context),
-                  ),
+                Row(
+                  children: [
+                    _CircleBackButton(
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Poderes Voo',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFD78BFF),
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 54),
+                  ],
                 ),
+
+                const SizedBox(height: 18),
+
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: 'Hola ',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      TextSpan(
+                        text: userName,
+                        style: const TextStyle(
+                          color: Color(0xFFD78BFF),
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          shadows: [
+                            Shadow(
+                              color: Color(0xFF9C4DFF),
+                              blurRadius: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 8),
 
                 Text(
-                  'Hola $userName',
+                  'Consigue puntos, sube de nivel y desbloquea ventajas dentro de la sala.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFFD78BFF),
-                    fontSize: 42,
-                    fontWeight: FontWeight.w900,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.68),
+                    fontSize: 14.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 26),
 
                 Row(
                   children: [
@@ -61,6 +109,13 @@ class VooPowersScreen extends StatelessWidget {
                               color: const Color(0xFF66D63E),
                               width: 4,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF66D63E).withOpacity(0.22),
+                                blurRadius: 18,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.person,
@@ -93,11 +148,11 @@ class VooPowersScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _InfoLine(label: 'Estado:', value: estado),
+                          _InfoLine(label: 'Estado', value: estado),
                           SizedBox(height: 10),
-                          _InfoLine(label: 'Puntos:', value: '$puntos'),
+                          _InfoLine(label: 'Puntos', value: '$puntos'),
                           SizedBox(height: 10),
-                          _InfoLine(label: 'Poder:', value: poderActivo),
+                          _InfoLine(label: 'Poder activo', value: poderActivo),
                         ],
                       ),
                     ),
@@ -109,10 +164,10 @@ class VooPowersScreen extends StatelessWidget {
                 const _PowerCard(
                   borderColor: Color(0xFF66D63E),
                   icon: Icons.chat_bubble_outline_rounded,
-                  title: 'Nivel 1: EL CHISMOSO',
-                  points: '+50 pts',
+                  title: 'Nivel 1 · El Chismoso',
+                  points: '50 pts',
                   description:
-                      'Puedes ver quién ha visto tu perfil o ver las respuestas de qué le gusta antes de hablarle.',
+                      'Descubre quién ha visto tu perfil y consigue una pequeña ventaja antes de empezar una conversación.',
                 ),
 
                 const SizedBox(height: 16),
@@ -120,10 +175,10 @@ class VooPowersScreen extends StatelessWidget {
                 const _PowerCard(
                   borderColor: Color(0xFFEAB308),
                   icon: Icons.bolt_rounded,
-                  title: 'Nivel 2: EL CUPIDO',
-                  points: '+100 pts',
+                  title: 'Nivel 2 · El Cupido',
+                  points: '100 pts',
                   description:
-                      'Puedes lanzar un reto Flash anónimo sólo para 2 personas. Usuario y usuario se toman una foto.',
+                      'Lanza un reto flash anónimo para dos personas y crea el momento perfecto para romper el hielo.',
                 ),
 
                 const SizedBox(height: 16),
@@ -131,16 +186,10 @@ class VooPowersScreen extends StatelessWidget {
                 const _PowerCard(
                   borderColor: Color(0xFFFF3B5C),
                   icon: Icons.workspace_premium_rounded,
-                  title: 'Nivel 3: REY DE LA PISTA',
-                  points: '+200 pts',
+                  title: 'Nivel 3 · Rey de la pista',
+                  points: '200 pts',
                   description:
-                      'Ganas el derecho a lanzar un reto personalizado a toda la sala.',
-                ),
-
-                const Spacer(),
-
-                _CircleBackButton(
-                  onTap: () => Navigator.pop(context),
+                      'Desbloquea el poder de lanzar un reto personalizado a toda la sala y poner el juego patas arriba.',
                 ),
               ],
             ),
@@ -164,19 +213,21 @@ class _InfoLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text.rich(
       TextSpan(
-        text: '$label ',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
+        text: '$label\n',
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.58),
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          height: 1.25,
         ),
         children: [
           TextSpan(
             text: value,
             style: const TextStyle(
-              color: Color(0xFF66D63E),
+              color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w900,
+              height: 1.35,
             ),
           ),
         ],
@@ -225,7 +276,7 @@ class _PowerCard extends StatelessWidget {
           Icon(
             icon,
             color: borderColor,
-            size: 58,
+            size: 54,
             shadows: [
               Shadow(
                 color: borderColor.withOpacity(0.8),
@@ -238,34 +289,42 @@ class _PowerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: title,
-                        style: TextStyle(
-                          color: borderColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '   $points',
-                        style: TextStyle(
-                          color: borderColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: borderColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: borderColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: borderColor.withOpacity(0.7),
+                    ),
+                  ),
+                  child: Text(
+                    points,
+                    style: TextStyle(
+                      color: borderColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.88),
+                    fontSize: 14,
                     height: 1.35,
                     fontWeight: FontWeight.w600,
                   ),
@@ -279,7 +338,7 @@ class _PowerCard extends StatelessWidget {
   }
 }
 
-class _CircleBackButton extends StatelessWidget {
+class _CircleBackButton extends StatefulWidget {
   final VoidCallback onTap;
 
   const _CircleBackButton({
@@ -287,24 +346,49 @@ class _CircleBackButton extends StatelessWidget {
   });
 
   @override
+  State<_CircleBackButton> createState() => _CircleBackButtonState();
+}
+
+class _CircleBackButtonState extends State<_CircleBackButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
         width: 54,
         height: 54,
         decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3B1452),
+              Color(0xFF24103A),
+            ],
+          ),
           shape: BoxShape.circle,
-          color: const Color(0xFF101A33),
           border: Border.all(
-            color: const Color(0xFF52A9FF),
+            color: const Color(0xFF9C4DFF),
             width: 2.4,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.22),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
         ),
         child: const Icon(
-          Icons.arrow_back_rounded,
-          color: Color(0xFF52A9FF),
-          size: 30,
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 22,
         ),
       ),
     );

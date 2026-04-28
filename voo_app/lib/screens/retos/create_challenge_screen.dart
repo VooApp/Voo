@@ -23,12 +23,12 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
     super.dispose();
   }
 
+  bool get canCreate =>
+      retoController.text.trim().isNotEmpty &&
+      puntosController.text.trim().isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    final canCreate =
-        retoController.text.trim().isNotEmpty &&
-        puntosController.text.trim().isNotEmpty;
-
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
       body: Container(
@@ -47,137 +47,131 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Center(
-                  child: _ChallengeTitle(),
+                Row(
+                  children: [
+                    _PurpleBackButton(
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    const Expanded(
+                      child: _ChallengeTitle(),
+                    ),
+                    const SizedBox(width: 54),
+                  ],
                 ),
-
-                const SizedBox(height: 26),
-
-                const Text(
-                  'Reto',
+                const SizedBox(height: 10),
+                Text(
+                  'Crea un reto para animar la sala y repartir puntos.',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFFD78BFF),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withOpacity(0.66),
+                    fontSize: 14,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
-                _StyledInput(
-                  controller: retoController,
-                  maxLines: 5,
-                  onChanged: (_) => setState(() {}),
-                ),
-
                 const SizedBox(height: 24),
 
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 120,
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: _GlassCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Puntos',
-                            style: TextStyle(
-                              color: Color(0xFFD78BFF),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                            ),
+                          const _FieldLabel(
+                            text: 'Describe el reto',
+                            icon: Icons.flag_rounded,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           _StyledInput(
-                            controller: puntosController,
-                            keyboardType: TextInputType.number,
+                            controller: retoController,
+                            hintText: 'Ej: consigue una foto con alguien que no conozcas',
+                            maxLines: 5,
                             onChanged: (_) => setState(() {}),
+                          ),
+
+                          const SizedBox(height: 22),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const _FieldLabel(
+                                      text: 'Puntos',
+                                      icon: Icons.stars_rounded,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    _StyledInput(
+                                      controller: puntosController,
+                                      hintText: '50',
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _DurationDropdown(
+                                  selectedDuration: selectedDuration,
+                                  options: durationOptions,
+                                  onChanged: (value) {
+                                    if (value == null) return;
+                                    setState(() {
+                                      selectedDuration = value;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 22),
+
+                          const _FieldLabel(
+                            text: 'Premio opcional',
+                            icon: Icons.card_giftcard_rounded,
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _StyledInput(
+                                  controller: premioController,
+                                  hintText: 'Ej: una copa, elegir el siguiente reto...',
+                                  onChanged: (_) => setState(() {}),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              _AddPrizeButton(
+                                onTap: () => _showPrizeDialog(context),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-
-                    const Spacer(),
-
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Añade un premio',
-                          style: TextStyle(
-                            color: Color(0xFFD78BFF),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        _AddPrizeButton(
-                          onTap: () {
-                            _showPrizeDialog(context);
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
 
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _StyledInput(
-                        controller: premioController,
-                        hintText: 'Premio',
+                _CreateButton(
+                  enabled: canCreate,
+                  onTap: () {
+                    if (!canCreate) return;
+
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Reto creado'),
                       ),
-                    ),
-
-                    const SizedBox(width: 18),
-
-                    SizedBox(
-                      width: 130,
-                      child: _DurationDropdown(
-                        selectedDuration: selectedDuration,
-                        options: durationOptions,
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            selectedDuration = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-
-                const Spacer(),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _CircleIconButton(
-                      color: const Color(0xFF52A9FF),
-                      icon: Icons.arrow_back_rounded,
-                      onTap: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 18),
-                    _CreateButton(
-                      enabled: canCreate,
-                      onTap: () {
-                        if (!canCreate) return;
-
-                        Navigator.pop(context);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Reto creado'),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -193,9 +187,19 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
       builder: (_) {
         return AlertDialog(
           backgroundColor: const Color(0xFF151525),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(
+              color: Color(0xFF9C4DFF),
+              width: 1.6,
+            ),
+          ),
           title: const Text(
             'Añadir premio',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(
+              color: Color(0xFFD78BFF),
+              fontWeight: FontWeight.w900,
+            ),
           ),
           content: TextField(
             controller: premioController,
@@ -213,7 +217,10 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
               },
               child: const Text(
                 'Guardar',
-                style: TextStyle(color: Color(0xFF66D63E)),
+                style: TextStyle(
+                  color: Color(0xFF66D63E),
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],
@@ -232,10 +239,10 @@ class _ChallengeTitle extends StatelessWidget {
       TextSpan(
         children: [
           const TextSpan(
-            text: 'Tus retos ',
+            text: 'Crear reto ',
             style: TextStyle(
               color: Color(0xFFD78BFF),
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -243,7 +250,7 @@ class _ChallengeTitle extends StatelessWidget {
             text: 'V',
             style: TextStyle(
               color: const Color(0xFF66D63E),
-              fontSize: 34,
+              fontSize: 30,
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
@@ -257,7 +264,7 @@ class _ChallengeTitle extends StatelessWidget {
             text: 'o',
             style: TextStyle(
               color: const Color(0xFFEAB308),
-              fontSize: 34,
+              fontSize: 30,
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
@@ -271,7 +278,7 @@ class _ChallengeTitle extends StatelessWidget {
             text: 'o',
             style: TextStyle(
               color: const Color(0xFFFF3B5C),
-              fontSize: 34,
+              fontSize: 30,
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
@@ -283,6 +290,71 @@ class _ChallengeTitle extends StatelessWidget {
           ),
         ],
       ),
+      textAlign: TextAlign.center,
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  final IconData icon;
+
+  const _FieldLabel({
+    required this.text,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: const Color(0xFFD78BFF),
+          size: 20,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFFD78BFF),
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlassCard extends StatelessWidget {
+  final Widget child;
+
+  const _GlassCard({
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF151525),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: const Color(0xFF9C4DFF).withOpacity(0.55),
+          width: 1.6,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9C4DFF).withOpacity(0.12),
+            blurRadius: 22,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
@@ -312,14 +384,16 @@ class _StyledInput extends StatelessWidget {
       style: const TextStyle(
         color: Colors.white,
         fontSize: 15,
+        fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(
           color: Colors.white.withOpacity(0.35),
+          fontSize: 14,
         ),
         filled: true,
-        fillColor: const Color(0xFF151525),
+        fillColor: const Color(0xFF101020),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -327,8 +401,8 @@ class _StyledInput extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: const Color(0xFF9C4DFF).withOpacity(0.65),
-            width: 1.8,
+            color: const Color(0xFF9C4DFF).withOpacity(0.45),
+            width: 1.5,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -355,19 +429,30 @@ class _AddPrizeButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF151525),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3B1452),
+              Color(0xFF24103A),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: const Color(0xFF9C4DFF),
-            width: 2.4,
+            width: 2.2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(0.22),
+              blurRadius: 16,
+            ),
+          ],
         ),
         child: const Icon(
           Icons.add_rounded,
-          color: Color(0xFF9C4DFF),
+          color: Colors.white,
           size: 30,
         ),
       ),
@@ -391,24 +476,20 @@ class _DurationDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Duración',
-          style: TextStyle(
-            color: Color(0xFFD78BFF),
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
+        const _FieldLabel(
+          text: 'Duración',
+          icon: Icons.timer_rounded,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Container(
           height: 52,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF151525),
+            color: const Color(0xFF101020),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: const Color(0xFF9C4DFF).withOpacity(0.65),
-              width: 1.8,
+              color: const Color(0xFF9C4DFF).withOpacity(0.45),
+              width: 1.5,
             ),
           ),
           child: DropdownButtonHideUnderline(
@@ -418,7 +499,7 @@ class _DurationDropdown extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
               iconEnabledColor: const Color(0xFFD78BFF),
               isExpanded: true,
@@ -437,22 +518,18 @@ class _DurationDropdown extends StatelessWidget {
   }
 }
 
-class _CircleIconButton extends StatefulWidget {
-  final Color color;
-  final IconData icon;
+class _PurpleBackButton extends StatefulWidget {
   final VoidCallback onTap;
 
-  const _CircleIconButton({
-    required this.color,
-    required this.icon,
+  const _PurpleBackButton({
     required this.onTap,
   });
 
   @override
-  State<_CircleIconButton> createState() => _CircleIconButtonState();
+  State<_PurpleBackButton> createState() => _PurpleBackButtonState();
 }
 
-class _CircleIconButtonState extends State<_CircleIconButton> {
+class _PurpleBackButtonState extends State<_PurpleBackButton> {
   bool _pressed = false;
 
   @override
@@ -469,17 +546,29 @@ class _CircleIconButtonState extends State<_CircleIconButton> {
         width: 54,
         height: 54,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF151525),
-          border: Border.all(
-            color: widget.color,
-            width: 2,
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF3B1452),
+              Color(0xFF24103A),
+            ],
           ),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: const Color(0xFF9C4DFF),
+            width: 2.4,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.22),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
         ),
-        child: Icon(
-          widget.icon,
-          color: widget.color,
-          size: 30,
+        child: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 22,
         ),
       ),
     );
@@ -521,7 +610,8 @@ class _CreateButtonState extends State<_CreateButton> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 13),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
           color: const Color(0xFF151525),
           borderRadius: BorderRadius.circular(999),
@@ -529,9 +619,19 @@ class _CreateButtonState extends State<_CreateButton> {
             color: color,
             width: 2.2,
           ),
+          boxShadow: _pressed && widget.enabled
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.34),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
         ),
         child: Text(
-          'Crear',
+          'Crear reto',
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: color,
             fontSize: 16,

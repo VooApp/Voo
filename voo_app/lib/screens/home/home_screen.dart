@@ -24,6 +24,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _seededDemo = false;
 
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AppState>().cargarUsuariosSala();
+      }
+    });
+  }
+
   String _requestTypeLabel(RequestType type) {
     switch (type) {
       case RequestType.truth:
@@ -32,15 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Reto';
       case RequestType.messageRequest:
         return 'Mensaje';
-    }
-    @override
-    void initState() {
-      super.initState();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          context.read<AppState>().cargarUsuariosSala();
-        }
-      });
     }
   }
 
@@ -211,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
-                                  final UserModel user = visibleUsers[index];
+                                  final user = visibleUsers[index];
                                   final pendingRequest =
                                       appState.getPendingRequestForUser(user.id);
 
@@ -228,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         name: user.nombre,
                                         age: user.edad,
                                         statusColor: user.statusColor,
+                                      ),
                                     ),
                                   );
                                 },
