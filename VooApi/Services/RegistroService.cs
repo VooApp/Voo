@@ -1,5 +1,7 @@
 using VooApi.Models;
 using VooApi.Data;
+using Microsoft.AspNetCore.SignalR;
+using VooApi.Hubs;
 
 namespace VooApi.Services
 {
@@ -8,15 +10,18 @@ namespace VooApi.Services
         private readonly UsuarioRepository _usuarioRepository;
         private readonly SalaRepository _salaRepository;
         private readonly PremioRepository _premioRepository;
+        private readonly IHubContext<SalaHub> _hubContext;
 
         public RegistroService(
             UsuarioRepository usuarioRepository,
             SalaRepository salaRepository,
-            PremioRepository premioRepository)
+            PremioRepository premioRepository,
+            IHubContext<SalaHub> hubContext)
         {
             _usuarioRepository = usuarioRepository;
             _salaRepository = salaRepository;
             _premioRepository = premioRepository;
+            _hubContext = hubContext;
         }
 
         public async Task<RegistroResultado> RegistrarHostAsync(RegistroHostDto dto)
@@ -166,12 +171,8 @@ namespace VooApi.Services
                 Ig = dto.Ig,
                 Estado = dto.Estado,
                 Respuestas = dto.Respuestas,
-
-                // Ya no bloqueamos por accuracy.
-                // Si es <= 200m lo consideramos dentro de una precisión aceptable.
                 Verificado = dto.Verificado,
                 DentroRadio = dto.Accuracy <= 200,
-
                 UltimaVerificacion = DateTime.UtcNow,
                 SalaId = sala.Id,
                 Puntos = 0,
@@ -182,6 +183,17 @@ namespace VooApi.Services
 
             sala.Invitados += 1;
             await _salaRepository.ActualizarAsync(sala.Id!, sala);
+
+            await _hubContext.Clients.Group(sala.Id!).SendAsync("UsuarioEntrado", new
+            {
+                id = usuario.Id,
+                nombre = usuario.Nombre,
+                fechaNacimiento = usuario.FechaNacimiento,
+                estado = usuario.Estado,
+                foto = usuario.Foto,
+                tipo = usuario.Tipo,
+                baneado = usuario.Baneado
+            });
 
             return new RegistroResultado
             {

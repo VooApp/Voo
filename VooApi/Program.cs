@@ -1,6 +1,7 @@
 using VooApi.Database;
 using VooApi.Data;
 using VooApi.Services;
+using VooApi.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,9 +37,11 @@ builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<MensajeService>();
 // Después de los otros Services
 builder.Services.AddScoped<RegistroService>();
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 app.UseCors();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();
+app.MapHub<SalaHub>("/salaHub");

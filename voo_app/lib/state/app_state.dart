@@ -6,14 +6,17 @@ import '../models/message_model.dart';
 import '../models/request_model.dart';
 
 import '../services/api_service.dart';
+import '../services/signalr_service.dart';
 
 class AppState extends ChangeNotifier {
+  bool _registrandoInvitado = false;
   bool _isHost = false;
   String? _userName;
   String? _roomCode;
 
   String? _userId;
   String? _salaId;
+  final SignalRService _signalRService = SignalRService();
 
   DateTime? _birthDate;
   String? _instagram;
@@ -74,6 +77,34 @@ class AppState extends ChangeNotifier {
   bool get hasBlockingIncomingRequest => blockingIncomingRequest != null;
   bool get isRespondingToAcceptedRequest => _activeAcceptedRequest != null;
 
+  Future<void> iniciarSignalR() async {
+    final salaIdActual = _salaId;
+    final userIdActual = _userId;
+
+    if (salaIdActual == null || userIdActual == null) return;
+
+    await _signalRService.connect(
+      baseUrl: ApiService.baseUrl,
+      salaId: salaIdActual,
+      onUserJoined: (data) {
+        if (data is! Map) return;
+
+        final nuevoUsuario = SalaUsuarioModel.fromJson(
+          Map<String, dynamic>.from(data),
+        );
+
+        if (nuevoUsuario.id == _userId) return;
+        if (nuevoUsuario.baneado) return;
+
+        final yaExiste = _salaUsuarios.any((u) => u.id == nuevoUsuario.id);
+        if (yaExiste) return;
+
+        _salaUsuarios.insert(0, nuevoUsuario);
+        notifyListeners();
+      },
+    );
+  }
+
   void setUser({
     required bool isHost,
     required String userName,
@@ -86,10 +117,12 @@ class AppState extends ChangeNotifier {
     _roomCode = roomCode;
     _userId = userId ?? _userId;
     _salaId = salaId ?? _salaId;
+    iniciarSignalR();
     notifyListeners();
   }
 
   void clear() {
+    _signalRService.disconnect();
     _isHost = false;
     _userName = null;
     _sexo = null;
@@ -200,39 +233,49 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> registrarInvitadoEnBackend() async {
-    if (_userName == null ||
-        _birthDate == null ||
-        _estado == null ||
-        _roomCode == null ||
-        _guestLatitud == null ||
-        _guestLongitud == null ||
-        _guestAccuracy == null) {
-      throw Exception('Faltan datos para registrar el invitado');
+    if (_registrandoInvitado) return;
+
+    _registrandoInvitado = true;
+    notifyListeners();
+
+    try {
+      if (_userName == null ||
+          _birthDate == null ||
+          _estado == null ||
+          _roomCode == null ||
+          _guestLatitud == null ||
+          _guestLongitud == null ||
+          _guestAccuracy == null) {
+        throw Exception('Faltan datos para registrar el invitado');
+      }
+
+      final result = await ApiService.registrarInvitado(
+        nombre: _userName!,
+        sexo: _sexo ?? false,
+        fechaNacimiento: _birthDate!,
+        foto: _profilePhoto ?? '',
+        instagram: _instagram,
+        estado: _estado!,
+        respuestas: _respuestas,
+        codigoSala: _roomCode!,
+        latitud: _guestLatitud!,
+        longitud: _guestLongitud!,
+        accuracy: _guestAccuracy!,
+      );
+
+      setUser(
+        isHost: false,
+        userName: result.nombreUsuario,
+        roomCode: _roomCode!,
+        userId: result.usuarioId,
+        salaId: result.salaId,
+      );
+
+      await cargarUsuariosSala();
+    } finally {
+      _registrandoInvitado = false;
+      notifyListeners();
     }
-
-    final result = await ApiService.registrarInvitado(
-      nombre: _userName!,
-      sexo: _sexo ?? false,
-      fechaNacimiento: _birthDate!,
-      foto: _profilePhoto ?? '',
-      instagram: _instagram,
-      estado: _estado!,
-      respuestas: _respuestas,
-      codigoSala: _roomCode!,
-      latitud: _guestLatitud!,
-      longitud: _guestLongitud!,
-      accuracy: _guestAccuracy!,
-    );
-
-    setUser(
-      isHost: false,
-      userName: result.nombreUsuario,
-      roomCode: _roomCode!,
-      userId: result.usuarioId,
-      salaId: result.salaId,
-    );
-
-    await cargarUsuariosSala();
   }
 
   RequestModel? getPendingRequestForUser(String userId) {
@@ -517,16 +560,6 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  void seedDemoIncomingRequestIfNeeded() {
-    if (_receivedRequests.isNotEmpty || _activeAcceptedRequest != null) return;
-
-    addIncomingRequest(
-      fromUserId: 'demo_maria',
-      fromUserName: 'Maria',
-      type: RequestType.truth,
-      content: '¿Qué pensaste al ver mi foto?',
-    );
-  }
 
   Color _statusColorFromType(RequestType type) {
     switch (type) {
@@ -547,25 +580,35 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> cargarUsuariosSala() async {
-    final id = _salaId;
-    if (id == null) return;
+  final id = _salaId;
+  if (id == null) return;
 
-    _loadingUsuarios = true;
-    _loadingError = null;
-    notifyListeners();
+  _loadingUsuarios = true;
+  _loadingError = null;
+  notifyListeners();
 
-    try {
-      final usuarios = await ApiService.getUsuariosSala(id);
-      _salaUsuarios = usuarios
-          .where((u) => u.id != _userId && !u.baneado)
-          .toList();
-    } catch (e) {
-      _loadingError = e.toString();
-    } finally {
-      _loadingUsuarios = false;
-      notifyListeners();
+  try {
+    final usuarios = await ApiService.getUsuariosSala(id);
+
+    final Map<String, SalaUsuarioModel> usuariosUnicos = {};
+
+    for (final usuario in usuarios) {
+      final esMiUsuario = usuario.id == _userId;
+
+      if (esMiUsuario) continue;
+      if (usuario.baneado) continue;
+
+      usuariosUnicos[usuario.id] = usuario;
     }
+
+    _salaUsuarios = usuariosUnicos.values.toList();
+  } catch (e) {
+    _loadingError = e.toString();
+  } finally {
+    _loadingUsuarios = false;
+    notifyListeners();
   }
+}
 
   Future<void> banearUsuario(String usuarioId) async {
     await ApiService.banearUsuario(usuarioId);

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -24,8 +23,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _seededDemo = false;
-  Timer? _refreshTimer;
   final Set<String> _knownUserIds = {};
 
   @override
@@ -42,20 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final users = context.read<AppState>().salaUsuarios;
       _knownUserIds.addAll(users.map((user) => user.id));
 
-      _refreshTimer = Timer.periodic(
-        const Duration(seconds: 3),
-        (_) async {
-          if (!mounted) return;
-          await context.read<AppState>().cargarUsuariosSala();
-        },
-      );
+      await context.read<AppState>().iniciarSignalR();
     });
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
   }
 
   String _requestTypeLabel(RequestType type) {
@@ -207,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 18),
                       const Text(
-                        'Tus chats',
+                        'Invitados en la sala',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
