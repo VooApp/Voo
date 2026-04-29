@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isHost ? 'Tus invitados' : 'Invitados de la sala';
 
     final visibleUsers = appState.salaUsuarios
-        .where((user) => !appState.shouldHideUserFromHome(user.id))
+        .where((user) => !user.baneado && !appState.shouldHideUserFromHome(user.id))
         .toList();
 
     final RequestModel? blockingIncoming = appState.blockingIncomingRequest;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../state/app_state.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import '../chats/chats_screen.dart';
@@ -7,16 +9,110 @@ import '../ranking/ranking_screen.dart';
 import '../retos/retos_screen.dart';
 import 'banned_users_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
-  final bool isHost;
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
 
-  const SettingsScreen({
-    super.key,
-    this.isHost = true,
-  });
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+
+  Future<void> _confirmarCerrarSala(AppState appState) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF151525),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFF9C4DFF), width: 1.5),
+        ),
+        title: const Text(
+          '¿Cerrar la sala?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Se eliminará la sala y todos los datos. Esta acción no se puede deshacer.',
+          style: TextStyle(color: Colors.white.withOpacity(0.65)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar',
+                style: TextStyle(color: Color(0xFFD78BFF))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cerrar sala',
+                style: TextStyle(color: Color(0xFFFF3B5C))),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      await appState.cerrarSala();
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error al cerrar sala: $e')));
+    }
+  }
+
+  Future<void> _confirmarSalirSala(AppState appState) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF151525),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFF9C4DFF), width: 1.5),
+        ),
+        title: const Text(
+          '¿Salir de la sala?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Perderás tu progreso y acceso a los chats activos.',
+          style: TextStyle(color: Colors.white.withOpacity(0.65)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar',
+                style: TextStyle(color: Color(0xFFD78BFF))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Salir',
+                style: TextStyle(color: Color(0xFFFF3B5C))),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      await appState.salirDeSala();
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error al salir: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final bool isHost = appState.isHost;
+
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
       body: Container(
@@ -45,7 +141,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _ProfileCard(isHost: isHost),
+                _ProfileCard(isHost: isHost, appState: appState),
                 const SizedBox(height: 20),
                 _SectionCard(
                   title: 'Ayuda',
@@ -63,7 +159,7 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                _RoomCard(isHost: isHost),
+                _RoomCard(isHost: isHost, appState: appState),
                 const Spacer(),
                 if (isHost)
                   Row(
@@ -85,7 +181,7 @@ class SettingsScreen extends StatelessWidget {
                       _ActionButton(
                         text: 'Cerrar sala',
                         color: const Color(0xFFFF3B5C),
-                        onTap: () {},
+                        onTap: () => _confirmarCerrarSala(context, appState),
                       ),
                     ],
                   )
@@ -93,7 +189,7 @@ class SettingsScreen extends StatelessWidget {
                   _ActionButton(
                     text: 'Salir de la sala',
                     color: const Color(0xFFFF3B5C),
-                    onTap: () {},
+                    onTap: () => _confirmarSalirSala(context, appState),
                   ),
                 const SizedBox(height: 16),
                 VooBottomNavBar(
@@ -142,14 +238,37 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  final bool isHost;
+  final AppState appState;
 
   const _ProfileCard({
-    required this.isHost,
+    required this.appState
   });
 
   @override
   Widget build(BuildContext context) {
+    final nombre = appState.userName ?? 'Usuario';
+    final nivel = appState.nivelId ?? 'Ninguno';
+    final premios = appState.premios;
+
+    String edadStr = '—';
+    final bd = appState.birthDate;
+    if (bd != null) {
+      final hoy = DateTime.now();
+      int edad = hoy.year - bd.year;
+      if (hoy.month < bd.month || (hoy.month == bd.month && hoy.day < bd.day)) {edad--;}
+      edadStr = '$edad años';
+    }
+
+    Color estadoColor = const Color(0xFF22C55E);
+    switch (appState.estado?.toLowerCase()) {
+      case 'amarillo':
+        estadoColor = const Color(0xFFEAB308);
+        break;
+      case 'rojo':
+        estadoColor = const Color(0xFFEF4444);
+        break;
+    }
+
     return _GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,9 +325,9 @@ class _ProfileCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _ProfileInfo(title: 'Maxi', subtitle: '27 años'),
-                    _ProfileInfo(title: 'Chismoso', subtitle: 'Nivel'),
-                    _ProfileInfo(title: '0', subtitle: 'Premios'),
+                    _ProfileInfo(title: nombre, subtitle: edadStr),
+                    _ProfileInfo(title: nivel, subtitle: 'Nivel'),
+                    _ProfileInfo(title: '${premios.length}', subtitle: 'Premios'),
                   ],
                 ),
               ),
@@ -258,14 +377,20 @@ class _ProfileInfo extends StatelessWidget {
 }
 
 class _RoomCard extends StatelessWidget {
-  final bool isHost;
+  final AppState appState;
 
   const _RoomCard({
-    required this.isHost,
+    required this.appState
   });
 
   @override
   Widget build(BuildContext context) {
+    final isHost = appState.isHost;
+    final codigo = appState.roomCode ?? '---';
+    final invitados = appState.salaUsuarios.where((u) => !u.baneado).length;
+    final baneados = appState.baneadosCount;
+    final matches = appState.matchCount;
+    
     return _GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,10 +407,10 @@ class _RoomCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const _RoomInfo(title: 'XY200K', subtitle: 'Código'),
-              const _RoomInfo(title: '29', subtitle: 'Invitados'),
+              _RoomInfo(title: codigo, subtitle: 'Código'),
+              _RoomInfo(title: '$invitados', subtitle: 'Invitados'),
               _RoomInfo(
-                title: '3',
+                title: isHost ? '$baneados' : '$matches',
                 subtitle: isHost ? 'Baneados' : 'Match',
               ),
             ],

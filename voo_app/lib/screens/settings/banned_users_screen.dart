@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../state/app_state.dart';
+import '../../services/api_service.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import '../chats/chats_screen.dart';
@@ -15,20 +18,15 @@ class BannedUsersScreen extends StatefulWidget {
 
 class _BannedUsersScreenState extends State<BannedUsersScreen> {
   final TextEditingController searchController = TextEditingController();
-
-  final List<Map<String, dynamic>> users = [
-    {'name': 'Alex', 'color': const Color(0xFF66D63E), 'banned': false},
-    {'name': 'Marta', 'color': const Color(0xFFEAB308), 'banned': false},
-    {'name': 'Dani', 'color': const Color(0xFF66D63E), 'banned': false},
-    {'name': 'Sergio', 'color': const Color(0xFFFF3B5C), 'banned': false},
-    {'name': 'Laura', 'color': const Color(0xFF66D63E), 'banned': false},
-    {'name': 'Pau', 'color': const Color(0xFFEAB308), 'banned': false},
-    {'name': 'Nerea', 'color': const Color(0xFFEAB308), 'banned': false},
-    {'name': 'Júlia', 'color': const Color(0xFF66D63E), 'banned': false},
-    {'name': 'Marc', 'color': const Color(0xFFFF3B5C), 'banned': false},
-  ];
-
   String searchText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AppState>().cargarUsuariosSala();
+    });
+  }
 
   @override
   void dispose() {
@@ -36,22 +34,31 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
     super.dispose();
   }
 
-  void _toggleBan(int realIndex) {
-    final bool isBanned = users[realIndex]['banned'] as bool;
+  Future<void> _toggleBan(SalaUsuarioModel user) async {
+    final appState = context.read<AppState>();
+    final bool isBanned = user.baneado;
 
-    setState(() {
-      users[realIndex]['banned'] = !isBanned;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isBanned
-              ? '${users[realIndex]['name']} ya no está baneado'
-              : '${users[realIndex]['name']} ha sido baneado',
+    try {
+      if (!isBanned) {
+        await appState.banearUsuario(user.id);
+      }
+      // No hay unban por ahora — el backend no lo expone
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBanned
+                ? '${user.nombre} ya no está baneado'
+                : '${user.nombre} ha sido baneado',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
   }
 
   List<int> get _filteredIndexes {
@@ -72,7 +79,10 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredIndexes = _filteredIndexes;
+    final appState = context.watch<AppState>();
+    final query = searchText.trim().toLowerCase();
+    final allUsers = appState.salaUsuarios;
+    final filtered = allUsers.where((u) => query.isEmpty || u.nombre.toLowerCase().contains(query)).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -183,11 +193,9 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 10),
                           itemBuilder: (context, index) {
-                            final realIndex = filteredIndexes[index];
-                            final user = users[realIndex];
-
-                            final bool isBanned = user['banned'] as bool;
-                            final Color avatarColor = user['color'] as Color;
+                            final user = filtered[index];
+                            final bool isBanned = user.baneado;
+                            final Color avatarColor = user.statusColor;
 
                             return Container(
                               padding: const EdgeInsets.symmetric(
@@ -233,16 +241,15 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          user['name'].toString(),
+                                          user.nombre,
                                           style: TextStyle(
                                             color: isBanned
                                                 ? Colors.white.withOpacity(0.55)
                                                 : Colors.white,
                                             fontSize: 16,
                                             fontWeight: FontWeight.w800,
-                                            decoration: isBanned
-                                                ? TextDecoration.lineThrough
-                                                : TextDecoration.none,
+                                            decoration:
+                                                isBanned ? TextDecoration.lineThrough : null,
                                           ),
                                         ),
                                         const SizedBox(height: 3),
@@ -262,7 +269,7 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                                     ),
                                   ),
                                   GestureDetector(
-                                    onTap: () => _toggleBan(realIndex),
+                                    onTap: isBanned ? null : () => _toggleBan(user),
                                     child: Container(
                                       width: 42,
                                       height: 42,

@@ -501,7 +501,7 @@ class AppState extends ChangeNotifier {
     try {
       final usuarios = await ApiService.getUsuariosSala(id);
       _salaUsuarios = usuarios
-          .where((u) => u.id != _userId && !u.baneado)
+          .where((u) => u.id != _userId) //  "&& !u.baneado" en caso de que no se quieran ver los baneados
           .toList();
     } catch (e) {
       _loadingError = e.toString();
@@ -526,5 +526,14 @@ class AppState extends ChangeNotifier {
     final id = _salaId;
     if (id != null) await ApiService.cerrarSala(id);
     clear();
+  }
+
+  List<String> get premios => []; // ampliar cuando el backend devuelva premios
+  int get matchCount => _dynamicChats.where((c) => c.previewState == ChatPreviewState.normal).length;
+  int get baneadosCount => _salaUsuarios.where((u) => u.baneado).length;
+  String? get nivelId => _estado != null ? _calcularNivel() : null;
+
+  String _calcularNivel() {
+    return 'Ninguno';
   }
 }
