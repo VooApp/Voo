@@ -4,7 +4,27 @@ using VooApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errores = context.ModelState
+                .Where(e => e.Value?.Errors.Count > 0)
+                .SelectMany(e => e.Value!.Errors)
+                .Select(e => e.ErrorMessage)
+                .ToList();
+
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new
+            {
+                mensaje = "Datos inválidos",
+                errores = errores
+            });
+        };
+    });
+
+// SignalR para notificaciones en tiempo real
+builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
 {
@@ -47,5 +67,6 @@ var app = builder.Build();
 
 app.UseCors();
 app.UseHttpsRedirection();
+app.MapHub<VooApi.Hubs.SalaHub>("/hubs/sala");
 app.MapControllers();
 app.Run();

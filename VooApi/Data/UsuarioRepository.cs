@@ -64,7 +64,7 @@ namespace VooApi.Data
         {
             var update = Builders<Usuario>.Update
                 .Set(u => u.DentroRadio, dentroRadio)
-                .Set(u => u.UltimaVerificacion, ultimaVerificacion);
+                .Set(u => u.UltimaVerificacion, ultimaVerificacion);}
         public async Task SalirDeSalaAsync(string id)
         {
             var update = Builders<Usuario>.Update.Set(u => u.SalaId, (string?)null);
