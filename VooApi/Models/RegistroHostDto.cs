@@ -61,5 +61,17 @@ namespace VooApi.Models
         public string PremioMayor { get; set; } = string.Empty;
 
         public List<string> PremiosFlash { get; set; } = new();
+
+        [Range(typeof(bool), "true", "true",
+    ErrorMessage = "Debes aceptar los términos y condiciones")]
+        public bool AceptaTerminos { get; set; }
+
+        [Range(typeof(bool), "true", "true",
+            ErrorMessage = "Debes aceptar la política de privacidad")]
+        public bool AceptaPrivacidad { get; set; }
+
+        [Range(typeof(bool), "true", "true",
+            ErrorMessage = "Debes aceptar el tratamiento de datos biométricos")]
+        public bool AceptaBiometria { get; set; }
     }
 }

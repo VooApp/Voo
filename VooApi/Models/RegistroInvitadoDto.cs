@@ -45,5 +45,17 @@ namespace VooApi.Models
 
         [Range(0, 100, ErrorMessage = "La precisión del GPS no es válida")]
         public double Accuracy { get; set; }
+
+        [Range(typeof(bool), "true", "true",
+    ErrorMessage = "Debes aceptar los términos y condiciones")]
+        public bool AceptaTerminos { get; set; }
+
+        [Range(typeof(bool), "true", "true",
+            ErrorMessage = "Debes aceptar la política de privacidad")]
+        public bool AceptaPrivacidad { get; set; }
+
+        [Range(typeof(bool), "true", "true",
+            ErrorMessage = "Debes aceptar el tratamiento de datos biométricos")]
+        public bool AceptaBiometria { get; set; }
     }
 }

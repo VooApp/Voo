@@ -14,8 +14,13 @@ namespace VooApi.Models
         public bool Sexo { get; set; } = false;
         public DateTime FechaNacimiento { get; set; }
         public string? Ig { get; set; }                         // opcional
-        public string Foto { get; set; } = string.Empty;        // URL de la imagen
+        public string Foto { get; set; } = string.Empty;       
+         // URL de la imagen
         public bool Verificado { get; set; } = false;
+        public bool AceptaTerminos { get; set; } = false;
+        public bool AceptaPrivacidad { get; set; } = false;
+        public bool AceptaBiometria { get; set; } = false;
+        public DateTime? FechaAceptacionTerminos { get; set; }
         public bool DentroRadio { get; set; } = true;
         public DateTime? UltimaVerificacion { get; set; }
         public string Estado { get; set; } = string.Empty;      // "verde", "amarillo", "rojo"

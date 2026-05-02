@@ -42,6 +42,14 @@ namespace VooApi.Services
                 Mensaje = "Debes tener al menos 16 años para usar Voo"
             };
 
+            // Validar que aceptó todos los términos
+            if (!dto.AceptaTerminos || !dto.AceptaPrivacidad || !dto.AceptaBiometria)
+                return new RegistroResultado
+                {
+                    Exito = false,
+                    Mensaje = "Debes aceptar los términos, la política de privacidad y el tratamiento de datos biométricos para continuar"
+                };
+
             if (dto.Aforo > 30)
             {
                 return new RegistroResultado
@@ -99,7 +107,7 @@ namespace VooApi.Services
 
             await _salaRepository.InsertarAsync(sala);
 
-            var usuario = new Usuario
+           var usuario = new Usuario
             {
                 Tipo = "host",
                 Nombre = dto.Nombre,
@@ -113,7 +121,11 @@ namespace VooApi.Services
                 DentroRadio = true,
                 SalaId = sala.Id,
                 Puntos = 0,
-                Baneado = false
+                Baneado = false,
+                AceptaTerminos = dto.AceptaTerminos,
+                AceptaPrivacidad = dto.AceptaPrivacidad,
+                AceptaBiometria = dto.AceptaBiometria,
+                FechaAceptacionTerminos = DateTime.UtcNow
             };
 
             await _usuarioRepository.InsertarAsync(usuario);
@@ -138,6 +150,14 @@ namespace VooApi.Services
                 Exito = false,
                 Mensaje = "Debes tener al menos 16 años para usar Voo"
             };
+
+            // Validar que aceptó todos los términos
+            if (!dto.AceptaTerminos || !dto.AceptaPrivacidad || !dto.AceptaBiometria)
+                return new RegistroResultado
+                {
+                    Exito = false,
+                    Mensaje = "Debes aceptar los términos, la política de privacidad y el tratamiento de datos biométricos para continuar"
+                };
             if (!dto.Verificado)
             {
                 return new RegistroResultado
@@ -198,7 +218,11 @@ namespace VooApi.Services
                 UltimaVerificacion = DateTime.UtcNow,
                 SalaId = sala.Id,
                 Puntos = 0,
-                Baneado = false
+                Baneado = false,
+                AceptaTerminos = dto.AceptaTerminos,
+                AceptaPrivacidad = dto.AceptaPrivacidad,
+                AceptaBiometria = dto.AceptaBiometria,
+                FechaAceptacionTerminos = DateTime.UtcNow
             };
 
             await _usuarioRepository.InsertarAsync(usuario);
