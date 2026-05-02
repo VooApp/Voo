@@ -141,7 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _ProfileCard(isHost: isHost, appState: appState),
+                _ProfileCard(appState: appState),
                 const SizedBox(height: 20),
                 _SectionCard(
                   title: 'Ayuda',
@@ -159,7 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                _RoomCard(isHost: isHost, appState: appState),
+                _RoomCard(appState: appState),
                 const Spacer(),
                 if (isHost)
                   Row(
@@ -181,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _ActionButton(
                         text: 'Cerrar sala',
                         color: const Color(0xFFFF3B5C),
-                        onTap: () => _confirmarCerrarSala(context, appState),
+                        onTap: () => _confirmarCerrarSala(appState),
                       ),
                     ],
                   )
@@ -189,7 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _ActionButton(
                     text: 'Salir de la sala',
                     color: const Color(0xFFFF3B5C),
-                    onTap: () => _confirmarSalirSala(context, appState),
+                    onTap: () => _confirmarSalirSala(appState),
                   ),
                 const SizedBox(height: 16),
                 VooBottomNavBar(
@@ -321,7 +321,7 @@ class _ProfileCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 18),
-              const Expanded(
+              Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

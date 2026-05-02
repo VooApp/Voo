@@ -100,7 +100,7 @@ class ChatsScreen extends StatelessWidget {
                         )
                       : ListView.separated(
                           itemCount: chats.length,
-                          separatorBuilder: (_, __) => Container(
+                          separatorBuilder: (_, _) => Container(
                             height: 1,
                             margin: const EdgeInsets.symmetric(vertical: 4),
                             color: Colors.white.withOpacity(0.08),
@@ -149,9 +149,7 @@ class ChatsScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => SettingsScreen(
-                            isHost: isHost,
-                          ),
+                          builder: (_) => const SettingsScreen(),
                         ),
                       );
                     }

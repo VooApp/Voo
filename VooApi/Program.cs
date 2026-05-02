@@ -43,6 +43,8 @@ builder.Services.AddScoped<PresenciaService>();
 // BackgroundService
 builder.Services.AddHostedService<PresenciaBackgroundService>();
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 app.UseCors();

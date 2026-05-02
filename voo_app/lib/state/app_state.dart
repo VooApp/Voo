@@ -21,6 +21,7 @@ class AppState extends ChangeNotifier {
   String? _estado;
   List<String> _respuestas = [];
   bool? _sexo;
+  
 
   final List<RequestModel> _sentRequests = [];
   final List<RequestModel> _receivedRequests = [];
@@ -56,6 +57,11 @@ class AppState extends ChangeNotifier {
   List<MessageModel> get messages => List.unmodifiable(_messages);
 
   RequestModel? get activeAcceptedRequest => _activeAcceptedRequest;
+
+  double? _latitudGuest;
+  double? _longitudGuest;  
+  double? get latitudGuest => _latitudGuest;
+  double? get longitudGuest => _longitudGuest;
 
   RequestModel? get blockingIncomingRequest {
     try {
@@ -103,6 +109,8 @@ class AppState extends ChangeNotifier {
     _estado = null;
     _respuestas = [];
     notifyListeners();
+    _latitudGuest = null;
+    _longitudGuest = null;
   }
 
   void sendRequest({
@@ -531,9 +539,51 @@ class AppState extends ChangeNotifier {
   List<String> get premios => []; // ampliar cuando el backend devuelva premios
   int get matchCount => _dynamicChats.where((c) => c.previewState == ChatPreviewState.normal).length;
   int get baneadosCount => _salaUsuarios.where((u) => u.baneado).length;
-  String? get nivelId => _estado != null ? _calcularNivel() : null;
+  String? get nivelId => _estado != null ? calcularNivel() : null;
 
-  String _calcularNivel() {
+  String calcularNivel() {
     return 'Ninguno';
+  }
+
+  Future<void> iniciarSignalR() async {
+  // TODO: implementar conexión SignalR cuando esté disponible en backend
+  }
+
+  // ── Guardar datos de unirse a sala (invitado) ──
+  void setGuestJoinData({
+    required String roomCode,
+    required double latitud,
+    required double longitud,
+    required double accuracy,
+  }) {
+    _roomCode = roomCode;
+    // Guardamos lat/long por si el backend los necesita al registrar
+    _latitudGuest = latitud;
+    _longitudGuest = longitud;
+    notifyListeners();
+  }
+
+  Future<void> registrarInvitadoEnBackend() async {
+    try {
+      final response = await ApiService.registrarInvitado(
+        nombre: _userName ?? '',
+        sexo: _sexo ?? true,
+        fechaNacimiento: _birthDate ?? DateTime.now(),
+        foto: _profilePhoto ?? '',
+        instagram: _instagram,
+        estado: _estado ?? 'verde',
+        respuestas: _respuestas,
+        codigoSala: _roomCode ?? '',
+        latitud: _latitudGuest ?? 0.0,
+        longitud: _longitudGuest ?? 0.0,
+        accuracy: 0.0,
+      );
+      _userId = response.usuarioId;
+      _salaId = response.salaId;
+      _userName = response.nombreUsuario;
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
   }
 }

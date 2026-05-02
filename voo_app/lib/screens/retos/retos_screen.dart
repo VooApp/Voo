@@ -97,7 +97,7 @@ class RetosScreen extends StatelessWidget {
                   child: ListView.separated(
                     padding: const EdgeInsets.only(top: 4, bottom: 12),
                     itemCount: challenges.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const SizedBox(height: 22), // 👈 ESPACIADO
                     itemBuilder: (context, index) {
                       return _WideChallengeCard(
@@ -140,9 +140,7 @@ class RetosScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => SettingsScreen(
-                            isHost: isHost,
-                          ),
+                          builder: (_) => const SettingsScreen(),
                         ),
                       );
                     }

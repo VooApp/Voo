@@ -218,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? const NeverScrollableScrollPhysics()
                                     : const BouncingScrollPhysics(),
                                 itemCount: visibleUsers.length,
-                                separatorBuilder: (_, __) =>
+                                separatorBuilder: (_, _) =>
                                     const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
                                   final user = visibleUsers[index];
@@ -288,9 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => SettingsScreen(
-                                  isHost: isHost,
-                                ),
+                                builder: (_) => const SettingsScreen(),
                               ),
                             );
                           }

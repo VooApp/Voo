@@ -61,22 +61,6 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
     }
   }
 
-  List<int> get _filteredIndexes {
-    final query = searchText.trim().toLowerCase();
-
-    final indexes = <int>[];
-
-    for (int i = 0; i < users.length; i++) {
-      final name = users[i]['name'].toString().toLowerCase();
-
-      if (query.isEmpty || name.contains(query)) {
-        indexes.add(i);
-      }
-    }
-
-    return indexes;
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -175,7 +159,7 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                 const SizedBox(height: 18),
 
                 Expanded(
-                  child: filteredIndexes.isEmpty
+                  child: filtered.isEmpty
                       ? Center(
                           child: Text(
                             'No se ha encontrado ningún invitado',
@@ -189,8 +173,8 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                         )
                       : ListView.separated(
                           physics: const BouncingScrollPhysics(),
-                          itemCount: filteredIndexes.length,
-                          separatorBuilder: (_, __) =>
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final user = filtered[index];

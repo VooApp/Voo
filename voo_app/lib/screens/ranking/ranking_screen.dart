@@ -117,7 +117,7 @@ class RankingScreen extends StatelessWidget {
                   child: ListView.separated(
                     physics: const BouncingScrollPhysics(),
                     itemCount: ranking.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final user = ranking[index];
                       final Color color = user['color'] as Color;
@@ -162,9 +162,7 @@ class RankingScreen extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => SettingsScreen(
-                            isHost: isHost,
-                          ),
+                          builder: (_) => const SettingsScreen(),
                         ),
                       );
                     }

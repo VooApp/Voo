@@ -161,7 +161,6 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            dialogBackgroundColor: const Color(0xFF14142E),
             colorScheme: const ColorScheme.dark(
               primary: Color(0xFF9C4DFF),
               surface: Color(0xFF14142E),
@@ -171,7 +170,7 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFFB15CFF),
               ),
-            ),
+            ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF14142E)),
           ),
           child: child!,
         );
