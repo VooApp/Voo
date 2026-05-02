@@ -15,32 +15,46 @@ namespace VooApi.Controllers
             _service = service;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Crear([FromBody] Chat chat)
-        {
-            var creado = await _service.CrearAsync(chat);
-            return Ok(creado);
-        }
-
+        // GET /chat/usuario/{usuarioId}
+        // Flutter llama a esto para mostrar la lista de chats
         [HttpGet("usuario/{usuarioId}")]
-        public async Task<IActionResult> ObtenerPorUsuario(string usuarioId)
+        public async Task<IActionResult> ObtenerChats(string usuarioId)
         {
-            var lista = await _service.ObtenerPorUsuarioAsync(usuarioId);
-            return Ok(lista);
+            var chats = await _service.ObtenerChatsDeUsuarioAsync(usuarioId);
+            return Ok(chats);
         }
 
-        [HttpGet("participantes/{emisorId}/{receptorId}")]
-        public async Task<IActionResult> ObtenerPorParticipantes(string emisorId, string receptorId)
+        // GET /chat/{chatId}/mensajes/{usuarioId}
+        // Flutter llama a esto cuando abre un chat
+        // También marca los mensajes como leídos automáticamente
+        [HttpGet("{chatId}/mensajes/{usuarioId}")]
+        public async Task<IActionResult> ObtenerMensajes(string chatId, string usuarioId)
         {
-            var chat = await _service.ObtenerPorParticipantesAsync(emisorId, receptorId);
-            if (chat == null) return NotFound();
-            return Ok(chat);
+            var mensajes = await _service.ObtenerMensajesAsync(chatId, usuarioId);
+            return Ok(mensajes);
         }
 
-        [HttpPatch("{id}/desactivar")]
-        public async Task<IActionResult> Desactivar(string id)
+        // POST /chat/mensaje
+        // Flutter llama a esto cuando el usuario envía un mensaje
+        [HttpPost("mensaje")]
+        public async Task<IActionResult> EnviarMensaje([FromBody] EnviarMensajeDto dto)
         {
-            await _service.DesactivarAsync(id);
+            var resultado = await _service.EnviarMensajeAsync(dto);
+            if (!resultado.Exito)
+                return BadRequest(new { mensaje = resultado.Mensaje });
+
+            return Ok(new
+            {
+                mensaje = resultado.Mensaje,
+                mensajeEnviado = resultado.MensajeEnviado
+            });
+        }
+
+        // PATCH /chat/{chatId}/desactivar
+        [HttpPatch("{chatId}/desactivar")]
+        public async Task<IActionResult> Desactivar(string chatId)
+        {
+            await _service.DesactivarChatAsync(chatId);
             return Ok(new { mensaje = "Chat desactivado" });
         }
     }
