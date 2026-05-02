@@ -5,6 +5,8 @@ import '../models/chat_preview_state.dart';
 import '../models/message_model.dart';
 import '../models/request_model.dart';
 
+import '../services/api_service.dart';
+
 class AppState extends ChangeNotifier {
   bool _isHost = false;
   String? _userName;
@@ -24,6 +26,14 @@ class AppState extends ChangeNotifier {
   final List<RequestModel> _receivedRequests = [];
   final List<ChatModel> _dynamicChats = [];
   final List<MessageModel> _messages = [];
+
+  List<SalaUsuarioModel> _salaUsuarios = [];
+  bool _loadingUsuarios = false;
+  String? _loadingError;
+
+  List<SalaUsuarioModel> get salaUsuarios => List.unmodifiable(_salaUsuarios);
+  bool get loadingUsuarios => _loadingUsuarios;
+  String? get loadingError => _loadingError;
 
   RequestModel? _activeAcceptedRequest;
 
@@ -478,5 +488,52 @@ class AppState extends ChangeNotifier {
     final h = now.hour.toString().padLeft(2, '0');
     final m = now.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+
+  Future<void> cargarUsuariosSala() async {
+    final id = _salaId;
+    if (id == null) return;
+
+    _loadingUsuarios = true;
+    _loadingError = null;
+    notifyListeners();
+
+    try {
+      final usuarios = await ApiService.getUsuariosSala(id);
+      _salaUsuarios = usuarios
+          .where((u) => u.id != _userId) //  "&& !u.baneado" en caso de que no se quieran ver los baneados
+          .toList();
+    } catch (e) {
+      _loadingError = e.toString();
+    } finally {
+      _loadingUsuarios = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> banearUsuario(String usuarioId) async {
+    await ApiService.banearUsuario(usuarioId);
+    await cargarUsuariosSala();
+  }
+
+  Future<void> salirDeSala() async {
+    final id = _userId;
+    if (id != null) await ApiService.salirDeSala(id);
+    clear();
+  }
+
+  Future<void> cerrarSala() async {
+    final id = _salaId;
+    if (id != null) await ApiService.cerrarSala(id);
+    clear();
+  }
+
+  List<String> get premios => []; // ampliar cuando el backend devuelva premios
+  int get matchCount => _dynamicChats.where((c) => c.previewState == ChatPreviewState.normal).length;
+  int get baneadosCount => _salaUsuarios.where((u) => u.baneado).length;
+  String? get nivelId => _estado != null ? _calcularNivel() : null;
+
+  String _calcularNivel() {
+    return 'Ninguno';
   }
 }

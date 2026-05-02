@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
+import '../../state/app_state.dart';
 import '../shared_flow/camera_screen.dart';
 import 'join_room_screen.dart';
 
@@ -22,6 +25,7 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
   final ImagePicker _picker = ImagePicker();
 
   Uint8List? _profileImageBytes;
+  DateTime? _selectedBirthDate;
   bool _isPickingImage = false;
   bool _requestingCameraPermission = false;
 
@@ -182,6 +186,7 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
         '${pickedDate.year}';
 
     setState(() {
+      _selectedBirthDate = pickedDate;
       birthDateController.text = formatted;
     });
   }
@@ -199,6 +204,25 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
       if (!mounted) return;
 
       if (status.isGranted) {
+        if (_selectedBirthDate == null || _profileImageBytes == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Completa tu fecha y tu foto para continuar.'),
+            ),
+          );
+          return;
+        }
+
+        context.read<AppState>().setRegisterData(
+              userName: nameController.text.trim(),
+              birthDate: _selectedBirthDate!,
+              profilePhoto: base64Encode(_profileImageBytes!),
+              sexo: false,
+              instagram: instagramController.text.trim().isEmpty
+                  ? null
+                  : instagramController.text.trim(),
+            );
+
         Navigator.push(
           context,
           MaterialPageRoute(

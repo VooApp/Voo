@@ -23,6 +23,11 @@ namespace VooApi.Services
             return await _repository.ObtenerPorIdAsync(id);
         }
 
+        public async Task<Sala?> ObtenerPorCodigoAsync(string codigo)
+        {
+            return await _repository.ObtenerPorCodigoAsync(codigo);
+        }
+
         public async Task<Sala?> ObtenerPorHostAsync(string hostId)
         {
             return await _repository.ObtenerPorHostAsync(hostId);

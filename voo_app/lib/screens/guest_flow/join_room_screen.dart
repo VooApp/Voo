@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+
+import '../../state/app_state.dart';
 import 'guest_status_screen.dart';
 
 class JoinRoomScreen extends StatefulWidget {
@@ -38,14 +41,48 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
     // Si ya tiene permiso, no mostramos popup y pasa directo
     if (permission == LocationPermission.always ||
         permission == LocationPermission.whileInUse) {
-      if (!mounted) return;
+      setState(() {
+        _requestingLocation = true;
+      });
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const GuestStatusScreen(),
-        ),
-      );
+      try {
+        final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Activa la ubicación del dispositivo para continuar'),
+            ),
+          );
+          return;
+        }
+
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+
+        if (!mounted) return;
+
+        context.read<AppState>().setGuestJoinData(
+              roomCode: _codeController.text.trim().toUpperCase(),
+              latitud: position.latitude,
+              longitud: position.longitude,
+              accuracy: position.accuracy,
+            );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const GuestStatusScreen(),
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _requestingLocation = false;
+          });
+        }
+      }
       return;
     }
 
@@ -103,11 +140,18 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
         return;
       }
 
-      await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
       if (!mounted) return;
+
+      context.read<AppState>().setGuestJoinData(
+            roomCode: _codeController.text.trim().toUpperCase(),
+            latitud: position.latitude,
+            longitud: position.longitude,
+            accuracy: position.accuracy,
+          );
 
       Navigator.push(
         context,

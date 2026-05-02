@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../state/app_state.dart';
 import 'guest_questions_screen.dart';
 
 class GuestStatusScreen extends StatefulWidget {
@@ -110,6 +113,8 @@ class _GuestStatusScreenState extends State<GuestStatusScreen> {
                         enabled: selectedStatus != null,
                         onTap: () {
                           if (selectedStatus == null) return;
+
+                          context.read<AppState>().setStatusData(selectedStatus!);
 
                           Navigator.push(
                             context,

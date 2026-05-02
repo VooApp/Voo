@@ -9,6 +9,8 @@ import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import 'chat_conversation_screen.dart';
 import '../retos/retos_screen.dart';
+import '../ranking/ranking_screen.dart';
+import '../settings/settings_screen.dart';
 
 class ChatsScreen extends StatelessWidget {
   const ChatsScreen({super.key});
@@ -130,7 +132,12 @@ class ChatsScreen extends StatelessWidget {
                     } else if (index == 1) {
                       return;
                     } else if (index == 2) {
-                      openPlaceholder('Aquí irá Ranking');
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RankingScreen(),
+                        ),
+                      );
                     } else if (index == 3) {
                       Navigator.pushReplacement(
                         context,
@@ -139,7 +146,14 @@ class ChatsScreen extends StatelessWidget {
                         ),
                       );
                     } else if (index == 4) {
-                      openPlaceholder('Aquí irá Ajustes');
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SettingsScreen(
+                            isHost: isHost,
+                          ),
+                        ),
+                      );
                     }
                   },
                 ),

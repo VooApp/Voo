@@ -28,7 +28,6 @@ namespace VooApi.Data
             return await _collection.Find(_ => true).ToListAsync();
         }
 
-        // Obtener todos los usuarios de una sala
         public async Task<List<Usuario>> ObtenerPorSalaAsync(string salaId)
         {
             return await _collection.Find(u => u.SalaId == salaId).ToListAsync();
@@ -39,16 +38,15 @@ namespace VooApi.Data
             await _collection.ReplaceOneAsync(u => u.Id == id, usuario);
         }
 
-        // Actualizar solo puntos y nivel (para la lógica de poderes)
         public async Task ActualizarPuntosAsync(string id, int puntos, string nivelId)
         {
             var update = Builders<Usuario>.Update
                 .Set(u => u.Puntos, puntos)
                 .Set(u => u.NivelId, nivelId);
+
             await _collection.UpdateOneAsync(u => u.Id == id, update);
         }
 
-        // Banear un usuario
         public async Task BanearAsync(string id)
         {
             var update = Builders<Usuario>.Update.Set(u => u.Baneado, true);
@@ -66,7 +64,10 @@ namespace VooApi.Data
         {
             var update = Builders<Usuario>.Update
                 .Set(u => u.DentroRadio, dentroRadio)
-                .Set(u => u.UltimaVerificacion, ultimaVerificacion);
+                .Set(u => u.UltimaVerificacion, ultimaVerificacion);}
+        public async Task SalirDeSalaAsync(string id)
+        {
+            var update = Builders<Usuario>.Update.Set(u => u.SalaId, (string?)null);
             await _collection.UpdateOneAsync(u => u.Id == id, update);
         }
     }

@@ -1,9 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../mock/mock_users.dart';
 import '../../models/request_model.dart';
-import '../../models/user_model.dart';
 import '../../state/app_state.dart';
 import '../../widgets/sent_request_dialog.dart';
 import '../../widgets/user_interaction_dialog.dart';
@@ -11,6 +11,9 @@ import '../../widgets/voo_bottom_nav_bar.dart';
 import '../chats/chats_screen.dart';
 import 'profile_qr_screen.dart';
 import '../retos/retos_screen.dart';
+import '../ranking/ranking_screen.dart';
+import '../settings/settings_screen.dart';
+import '../../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +23,25 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _seededDemo = false;
+  final Set<String> _knownUserIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await context.read<AppState>().cargarUsuariosSala();
+
+      if (!mounted) return;
+
+      final users = context.read<AppState>().salaUsuarios;
+      _knownUserIds.addAll(users.map((user) => user.id));
+
+      await context.read<AppState>().iniciarSignalR();
+    });
+  }
 
   String _requestTypeLabel(RequestType type) {
     switch (type) {
@@ -33,49 +54,48 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Color _colorPorEstado(String estado) {
+  final value = estado.toLowerCase().trim();
+
+  if (value.contains('amigos') || value.contains('buscando amigos')) {
+    return const Color(0xFFEAB308); // amarillo
+  }
+
+  if (value.contains('pareja')) {
+    return const Color(0xFFEF4444); // rojo
+  }
+
+    return const Color(0xFF22C55E); // verde
+}
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
-    if (!_seededDemo) {
-      _seededDemo = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.read<AppState>().seedDemoIncomingRequestIfNeeded();
-      });
-    }
-
     final bool isHost = appState.isHost;
-    final String saludo = appState.userName ?? 'Usuario';
+    final String nombrePerfil = appState.userName ?? 'Usuario';
     final String codigoSala = appState.roomCode ?? '---';
-    final String tituloLista =
-        isHost ? 'Tus invitados' : 'Invitados de la sala';
 
-    final visibleUsers = mockUsers
-        .where((user) => !appState.shouldHideUserFromHome(user.id))
+    final visibleUsers = appState.salaUsuarios
+        .where((user) => !user.baneado && !appState.shouldHideUserFromHome(user.id))
         .toList();
 
     final RequestModel? blockingIncoming = appState.blockingIncomingRequest;
     final RequestModel? activeAccepted = appState.activeAcceptedRequest;
 
-    final bool lockHome =
-        blockingIncoming != null || activeAccepted != null;
+    final bool lockHome = blockingIncoming != null || activeAccepted != null;
 
-    void openPlaceholder(String text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(text)),
-      );
-    }
-
-    Future<void> openInteractionPopup(UserModel user) async {
+    Future<void> openInteractionPopup(SalaUsuarioModel user) async {
       if (lockHome) return;
+
+      final userColor = _colorPorEstado(user.estado);
 
       final existingPending = appState.getPendingRequestForUser(user.id);
       if (existingPending != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Ya tienes una solicitud pendiente con ${user.name}',
+              'Ya tienes una solicitud pendiente con ${user.nombre}',
             ),
           ),
         );
@@ -88,9 +108,10 @@ class _HomeScreenState extends State<HomeScreen> {
         barrierDismissible: true,
         builder: (_) => UserInteractionDialog(
           targetUserId: user.id,
-          targetUserName: user.name,
-          targetUserAge: user.age,
-          statusColor: user.statusColor,
+          targetUserName: user.nombre,
+          targetUserAge: user.edad,
+          statusColor: userColor,
+          targetUserFoto: user.foto,
         ),
       );
 
@@ -101,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
         targetUserName: result.targetUserName,
         type: result.type,
         content: result.content,
-        statusColor: user.statusColor,
+        statusColor: userColor,
       );
 
       final dialogData = switch (result.type) {
@@ -154,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _TopHeader(
-                        saludo: 'Es ahora o Nunca!',
+                        saludo: 'Hola $nombrePerfil!',
                         codigoSala: codigoSala,
                         onQrTap: () {
                           Navigator.push(
@@ -162,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             MaterialPageRoute(
                               builder: (_) => ProfileQrScreen(
                                 isHost: isHost,
-                                userName: saludo,
+                                userName: nombrePerfil,
                                 roomCode: codigoSala,
                               ),
                             ),
@@ -171,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 18),
                       const Text(
-                        'Tus chats',
+                        'Invitados en la sala',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -200,18 +221,36 @@ class _HomeScreenState extends State<HomeScreen> {
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: 12),
                                 itemBuilder: (context, index) {
-                                  final UserModel user = visibleUsers[index];
+                                  final user = visibleUsers[index];
+                                  final userColor = _colorPorEstado(user.estado);
+
                                   final pendingRequest =
                                       appState.getPendingRequestForUser(user.id);
 
-                                  return _GuestCard(
-                                    name: user.name,
-                                    age: user.age,
-                                    statusColor: user.statusColor,
-                                    pendingLabel: pendingRequest == null
-                                        ? null
-                                        : '${_requestTypeLabel(pendingRequest.type)} pendiente',
-                                    onTap: () => openInteractionPopup(user),
+                                  final bool isNewUser =
+                                      !_knownUserIds.contains(user.id);
+
+                                  if (isNewUser) {
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      _knownUserIds.add(user.id);
+                                    });
+                                  }
+
+                                  return _AnimatedGuestEntry(
+                                    key: ValueKey(user.id),
+                                    animate: isNewUser,
+                                    glowColor: userColor,
+                                    child: _GuestCard(
+                                      name: user.nombre,
+                                      age: user.edad,
+                                      foto: user.foto,
+                                      statusColor: userColor,
+                                      pendingLabel: pendingRequest == null
+                                          ? null
+                                          : '${_requestTypeLabel(pendingRequest.type)} pendiente',
+                                      onTap: () => openInteractionPopup(user),
+                                    ),
                                   );
                                 },
                               ),
@@ -232,7 +271,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           } else if (index == 2) {
-                            openPlaceholder('Aquí irá Ranking');
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RankingScreen(),
+                              ),
+                            );
                           } else if (index == 3) {
                             Navigator.pushReplacement(
                               context,
@@ -241,7 +285,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           } else if (index == 4) {
-                            openPlaceholder('Aquí irá Ajustes');
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SettingsScreen(
+                                  isHost: isHost,
+                                ),
+                              ),
+                            );
                           }
                         },
                       ),
@@ -301,6 +352,56 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AnimatedGuestEntry extends StatelessWidget {
+  final Widget child;
+  final bool animate;
+  final Color glowColor;
+
+  const _AnimatedGuestEntry({
+    super.key,
+    required this.child,
+    required this.animate,
+    required this.glowColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!animate) return child;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 850),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, _) {
+        final glow = 1 - value;
+
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 26 * (1 - value)),
+            child: Transform.scale(
+              scale: 0.94 + (0.06 * value),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: glowColor.withOpacity(0.45 * glow),
+                      blurRadius: 28 * glow,
+                      spreadRadius: 3 * glow,
+                    ),
+                  ],
+                ),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -382,7 +483,7 @@ class _IncomingRequestPopup extends StatelessWidget {
                   ],
                 ),
                 border: Border.all(
-                  color: const Color(0xFF22C55E),
+                  color: Color(0xFF9C4DFF),
                   width: 4,
                 ),
               ),
@@ -511,7 +612,7 @@ class _AcceptedRequestResponsePopupState
             ),
             const SizedBox(height: 8),
             Text(
-              '${widget.request.targetUserName}',
+              widget.request.targetUserName,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -525,7 +626,7 @@ class _AcceptedRequestResponsePopupState
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF22C55E),
+                  color: const Color(0xFF9C4DFF),
                   width: 3,
                 ),
               ),
@@ -759,7 +860,8 @@ class _QrButtonState extends State<_QrButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.45 : 0.18),
+              color:
+                  const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.45 : 0.18),
               blurRadius: _pressed ? 20 : 12,
               spreadRadius: _pressed ? 1.2 : 0.4,
             ),
@@ -778,6 +880,7 @@ class _QrButtonState extends State<_QrButton> {
 class _GuestCard extends StatelessWidget {
   final String name;
   final int age;
+  final String? foto;
   final Color statusColor;
   final String? pendingLabel;
   final VoidCallback onTap;
@@ -785,13 +888,32 @@ class _GuestCard extends StatelessWidget {
   const _GuestCard({
     required this.name,
     required this.age,
+    required this.foto,
     required this.statusColor,
     required this.onTap,
     this.pendingLabel,
   });
 
+  ImageProvider? _profileImage() {
+    if (foto == null || foto!.trim().isEmpty) return null;
+
+    try {
+      var cleanBase64 = foto!.trim();
+
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+
+      return MemoryImage(base64Decode(cleanBase64));
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final image = _profileImage();
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -810,18 +932,39 @@ class _GuestCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
+              padding: const EdgeInsets.all(2.4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: statusColor,
                   width: 2.4,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: statusColor.withOpacity(0.25),
+                    blurRadius: 12,
+                    spreadRadius: 0.5,
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
+              child: ClipOval(
+                child: image != null
+                    ? Image(
+                        image: image,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      )
+                    : Container(
+                        color: const Color(0xFF101018),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 14),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'room_code_screen.dart';
-
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+
+import 'room_code_screen.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
 
@@ -55,6 +56,15 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
     });
   }
 
+  void _removeFlashPrizeField(int index) {
+    if (flashPrizeControllers.length <= 1) return;
+
+    setState(() {
+      flashPrizeControllers[index].dispose();
+      flashPrizeControllers.removeAt(index);
+    });
+  }
+
   int _capacityToInt(String value) {
     switch (value) {
       case '15_30':
@@ -66,6 +76,34 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
       default:
         return 30;
     }
+  }
+
+  Future<Position> _getHostLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if (!serviceEnabled) {
+      throw Exception('Activa la ubicación del dispositivo para crear la sala');
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied) {
+      throw Exception('Necesitamos permiso de ubicación para crear la sala');
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception(
+        'Permiso de ubicación bloqueado. Actívalo desde ajustes del dispositivo',
+      );
+    }
+
+    return Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
   }
 
   Future<void> _createRoom() async {
@@ -89,6 +127,8 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
     });
 
     try {
+      final position = await _getHostLocation();
+
       final premiosFlash = flashPrizeControllers
           .map((c) => c.text.trim())
           .where((text) => text.isNotEmpty)
@@ -96,6 +136,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
 
       final result = await ApiService.registrarHost(
         nombre: appState.userName!,
+        sexo: appState.sexo ?? false,
         fechaNacimiento: appState.birthDate!,
         foto: appState.profilePhoto ?? '',
         instagram: appState.instagram,
@@ -106,8 +147,8 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
         aforo: _capacityToInt(selectedCapacity!),
         direccion: addressController.text.trim(),
         codigoPostal: int.parse(cpController.text.trim()),
-        latitudSala: 41.3874,
-        longitudSala: 2.1686,
+        latitudSala: position.latitude,
+        longitudSala: position.longitude,
         premioMayor: grandPrizeController.text.trim(),
         premiosFlash: premiosFlash,
       );
@@ -145,15 +186,6 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
         });
       }
     }
-  }
-
-  void _removeFlashPrizeField(int index) {
-    if (flashPrizeControllers.length <= 1) return;
-
-    setState(() {
-      flashPrizeControllers[index].dispose();
-      flashPrizeControllers.removeAt(index);
-    });
   }
 
   @override
@@ -213,7 +245,6 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
                       const _SectionTitle(text: 'Nombre de la sala'),
                       const SizedBox(height: 10),
                       _VooInput(
@@ -221,9 +252,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         hintText: 'Escribe el nombre de la sala',
                         onChanged: (_) => setState(() {}),
                       ),
-
                       const SizedBox(height: 22),
-
                       const _SectionTitle(text: 'Contexto'),
                       const SizedBox(height: 12),
                       Wrap(
@@ -231,6 +260,46 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         spacing: 10,
                         runSpacing: 10,
                         children: [
+                          _OptionChip(
+                            label: 'Fiesta en casa',
+                            isSelected: selectedContext == 'fiesta_casa',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'fiesta_casa';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Cumpleaños',
+                            isSelected: selectedContext == 'cumpleanos',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'cumpleanos';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Discoteca',
+                            isSelected: selectedContext == 'discoteca',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'discoteca';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Cena',
+                            isSelected: selectedContext == 'cena',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'cena';
+                              });
+                            },
+                          ),
                           _OptionChip(
                             label: 'Pool Party',
                             isSelected: selectedContext == 'pool_party',
@@ -242,30 +311,38 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                             },
                           ),
                           _OptionChip(
-                            label: 'Cena formal',
-                            isSelected: selectedContext == 'cena_formal',
+                            label: 'Previa',
+                            isSelected: selectedContext == 'previa',
                             color: const Color(0xFF9C4DFF),
                             onTap: () {
                               setState(() {
-                                selectedContext = 'cena_formal';
+                                selectedContext = 'previa';
                               });
                             },
                           ),
                           _OptionChip(
-                            label: 'Reunión informal',
-                            isSelected: selectedContext == 'reunion_informal',
+                            label: 'Evento uni',
+                            isSelected: selectedContext == 'evento_uni',
                             color: const Color(0xFF9C4DFF),
                             onTap: () {
                               setState(() {
-                                selectedContext = 'reunion_informal';
+                                selectedContext = 'evento_uni';
+                              });
+                            },
+                          ),
+                          _OptionChip(
+                            label: 'Afterwork',
+                            isSelected: selectedContext == 'afterwork',
+                            color: const Color(0xFF9C4DFF),
+                            onTap: () {
+                              setState(() {
+                                selectedContext = 'afterwork';
                               });
                             },
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 22),
-
                       const _SectionTitle(text: 'Aforo'),
                       const SizedBox(height: 12),
                       Wrap(
@@ -305,9 +382,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 22),
-
                       const _SectionTitle(text: 'Dirección'),
                       const SizedBox(height: 10),
                       _VooInput(
@@ -315,9 +390,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         hintText: 'Escribe la dirección',
                         onChanged: (_) => setState(() {}),
                       ),
-
                       const SizedBox(height: 18),
-
                       const _SectionTitle(text: 'CP'),
                       const SizedBox(height: 10),
                       _VooInput(
@@ -326,9 +399,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         keyboardType: TextInputType.number,
                         onChanged: (_) => setState(() {}),
                       ),
-
                       const SizedBox(height: 22),
-
                       const _SectionTitle(
                         text: 'Premio mayor para el invitado ganador',
                       ),
@@ -338,12 +409,9 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         hintText: 'Ej: Sorpresa',
                         onChanged: (_) => setState(() {}),
                       ),
-
                       const SizedBox(height: 22),
-
                       const _SectionTitle(text: 'Premios para retos flash'),
                       const SizedBox(height: 10),
-
                       ...List.generate(flashPrizeControllers.length, (index) {
                         final canRemove = flashPrizeControllers.length > 1;
 
@@ -368,7 +436,6 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                           ),
                         );
                       }),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -377,9 +444,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 30),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -391,7 +456,6 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                             enabled: canContinue && !_loading,
                             label: _loading ? 'Creando...' : 'Siguiente',
                             onTap: () {
-                              print('CLICK BOTON');
                               if (!canContinue || _loading) return;
                               _createRoom();
                             },

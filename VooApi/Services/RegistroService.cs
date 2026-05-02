@@ -1,5 +1,7 @@
 using VooApi.Models;
 using VooApi.Data;
+using Microsoft.AspNetCore.SignalR;
+using VooApi.Hubs;
 
 namespace VooApi.Services
 {
@@ -8,21 +10,38 @@ namespace VooApi.Services
         private readonly UsuarioRepository _usuarioRepository;
         private readonly SalaRepository _salaRepository;
         private readonly PremioRepository _premioRepository;
+        private readonly IHubContext<SalaHub> _hubContext;
 
         public RegistroService(
             UsuarioRepository usuarioRepository,
             SalaRepository salaRepository,
-            PremioRepository premioRepository)
+            PremioRepository premioRepository,
+            IHubContext<SalaHub> hubContext)
         {
             _usuarioRepository = usuarioRepository;
             _salaRepository = salaRepository;
             _premioRepository = premioRepository;
+            _hubContext = hubContext;
         }
 
-        // ─── REGISTRO HOST ───────────────────────────────────────────
+        // Validar edad mínima de 16 años
+        private bool TieneEdadMinima(DateTime fechaNacimiento)
+        {
+            var hoy = DateTime.UtcNow;
+            int edad = hoy.Year - fechaNacimiento.Year;
+            if (fechaNacimiento.Date > hoy.AddYears(-edad)) edad--;
+            return edad >= 16;
+        }
+
         public async Task<RegistroResultado> RegistrarHostAsync(RegistroHostDto dto)
         {
-            // 1. Validar aforo — demo solo permite hasta 30
+            if (!TieneEdadMinima(dto.FechaNacimiento))
+            return new RegistroResultado
+            {
+                Exito = false,
+                Mensaje = "Debes tener al menos 16 años para usar Voo"
+            };
+
             if (dto.Aforo > 30)
             {
                 return new RegistroResultado
@@ -32,17 +51,17 @@ namespace VooApi.Services
                 };
             }
 
-            // 2. Crear el premio mayor en MongoDB
             var premioMayor = new Premio
             {
                 Nombre = dto.PremioMayor,
                 Tipo = "creado",
                 Motivo = "ranking"
             };
+
             await _premioRepository.InsertarAsync(premioMayor);
 
-            // 3. Crear premios flash si los hay
             var idsFlash = new List<string>();
+
             foreach (var nombreFlash in dto.PremiosFlash)
             {
                 var flash = new Premio
@@ -51,14 +70,17 @@ namespace VooApi.Services
                     Tipo = "creado",
                     Motivo = "reto"
                 };
+
                 await _premioRepository.InsertarAsync(flash);
-                if (flash.Id != null) idsFlash.Add(flash.Id);
+
+                if (flash.Id != null)
+                {
+                    idsFlash.Add(flash.Id);
+                }
             }
 
-            // 4. Generar código único de 6 caracteres para la sala
             var codigoSala = GenerarCodigoUnico();
 
-            // 5. Crear la sala
             var sala = new Sala
             {
                 Nombre = dto.NombreSala,
@@ -72,11 +94,11 @@ namespace VooApi.Services
                 Premios = premioMayor.Id != null
                     ? new List<string> { premioMayor.Id }.Concat(idsFlash).ToList()
                     : idsFlash,
-                Invitados = 1  // el host cuenta como invitado
+                Invitados = 1
             };
+
             await _salaRepository.InsertarAsync(sala);
 
-            // 6. Crear el usuario host
             var usuario = new Usuario
             {
                 Tipo = "host",
@@ -87,15 +109,15 @@ namespace VooApi.Services
                 Ig = dto.Ig,
                 Estado = dto.Estado,
                 Respuestas = dto.Respuestas,
-                Verificado = true,   // el host no necesita verificación facial
-                DentroRadio = true,  // el host está en la sala por definición
+                Verificado = true,
+                DentroRadio = true,
                 SalaId = sala.Id,
                 Puntos = 0,
                 Baneado = false
             };
+
             await _usuarioRepository.InsertarAsync(usuario);
 
-            // 7. Asignar el host a la sala
             sala.HostId = usuario.Id!;
             await _salaRepository.ActualizarAsync(sala.Id!, sala);
 
@@ -108,10 +130,14 @@ namespace VooApi.Services
             };
         }
 
-        // ─── REGISTRO INVITADO ───────────────────────────────────────
         public async Task<RegistroResultado> RegistrarInvitadoAsync(RegistroInvitadoDto dto)
         {
-            // 1. Comprobar verificación facial
+            if (!TieneEdadMinima(dto.FechaNacimiento))
+            return new RegistroResultado
+            {
+                Exito = false,
+                Mensaje = "Debes tener al menos 16 años para usar Voo"
+            };
             if (!dto.Verificado)
             {
                 return new RegistroResultado
@@ -121,19 +147,8 @@ namespace VooApi.Services
                 };
             }
 
-            // 2. Comprobar precisión del GPS
-            // Si accuracy es mayor de 50 metros, la ubicación no es fiable
-            if (dto.Accuracy > 50)
-            {
-                return new RegistroResultado
-                {
-                    Exito = false,
-                    Mensaje = "La ubicación no es suficientemente precisa. Intenta en otro lugar"
-                };
-            }
-
-            // 3. Buscar la sala por el código
             var sala = await _salaRepository.ObtenerPorCodigoAsync(dto.CodigoSala);
+
             if (sala == null)
             {
                 return new RegistroResultado
@@ -143,7 +158,6 @@ namespace VooApi.Services
                 };
             }
 
-            // 4. Comprobar que la sala no está llena
             if (sala.Invitados >= sala.Aforo)
             {
                 return new RegistroResultado
@@ -153,10 +167,11 @@ namespace VooApi.Services
                 };
             }
 
-            // 5. Calcular distancia entre invitado y sala
             var distanciaKm = CalcularDistanciaKm(
-                dto.Latitud, dto.Longitud,
-                sala.Latitud, sala.Longitud
+                dto.Latitud,
+                dto.Longitud,
+                sala.Latitud,
+                sala.Longitud
             );
 
             if (distanciaKm > 1.0)
@@ -168,7 +183,6 @@ namespace VooApi.Services
                 };
             }
 
-            // 6. Crear el usuario invitado
             var usuario = new Usuario
             {
                 Tipo = "invited",
@@ -180,17 +194,28 @@ namespace VooApi.Services
                 Estado = dto.Estado,
                 Respuestas = dto.Respuestas,
                 Verificado = dto.Verificado,
-                DentroRadio = true,
+                DentroRadio = dto.Accuracy <= 200,
                 UltimaVerificacion = DateTime.UtcNow,
                 SalaId = sala.Id,
                 Puntos = 0,
                 Baneado = false
             };
+
             await _usuarioRepository.InsertarAsync(usuario);
 
-            // 7. Incrementar el contador de invitados en la sala
             sala.Invitados += 1;
             await _salaRepository.ActualizarAsync(sala.Id!, sala);
+
+            await _hubContext.Clients.Group(sala.Id!).SendAsync("UsuarioEntrado", new
+            {
+                id = usuario.Id,
+                nombre = usuario.Nombre,
+                fechaNacimiento = usuario.FechaNacimiento,
+                estado = usuario.Estado,
+                foto = usuario.Foto,
+                tipo = usuario.Tipo,
+                baneado = usuario.Baneado
+            });
 
             return new RegistroResultado
             {
@@ -201,37 +226,44 @@ namespace VooApi.Services
             };
         }
 
-        // ─── HELPERS ─────────────────────────────────────────────────
-
-        // Genera un código único de 6 caracteres alfanumérico
-        // Ejemplo: "CV7624"
         private string GenerarCodigoUnico()
         {
             const string caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             var random = new Random();
-            return new string(Enumerable.Range(0, 6)
-                .Select(_ => caracteres[random.Next(caracteres.Length)])
-                .ToArray());
+
+            return new string(
+                Enumerable.Range(0, 6)
+                    .Select(_ => caracteres[random.Next(caracteres.Length)])
+                    .ToArray()
+            );
         }
 
-        // Calcula la distancia en km entre dos coordenadas GPS
-        // Usa la fórmula de Haversine, que tiene en cuenta la curvatura de la Tierra
-        private double CalcularDistanciaKm(double lat1, double lon1, double lat2, double lon2)
+        private double CalcularDistanciaKm(
+            double lat1,
+            double lon1,
+            double lat2,
+            double lon2)
         {
-            const double radioTierra = 6371; // km
+            const double radioTierra = 6371;
 
             var dLat = ToRad(lat2 - lat1);
             var dLon = ToRad(lon2 - lon1);
 
-            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                    Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2)) *
-                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            var a =
+                Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(ToRad(lat1)) *
+                Math.Cos(ToRad(lat2)) *
+                Math.Sin(dLon / 2) *
+                Math.Sin(dLon / 2);
 
             var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
             return radioTierra * c;
         }
 
-        private double ToRad(double grados) => grados * Math.PI / 180;
+        private double ToRad(double grados)
+        {
+            return grados * Math.PI / 180;
+        }
     }
 }
