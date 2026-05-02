@@ -24,8 +24,24 @@ namespace VooApi.Services
             _hubContext = hubContext;
         }
 
+        // Validar edad mínima de 16 años
+        private bool TieneEdadMinima(DateTime fechaNacimiento)
+        {
+            var hoy = DateTime.UtcNow;
+            int edad = hoy.Year - fechaNacimiento.Year;
+            if (fechaNacimiento.Date > hoy.AddYears(-edad)) edad--;
+            return edad >= 16;
+        }
+
         public async Task<RegistroResultado> RegistrarHostAsync(RegistroHostDto dto)
         {
+            if (!TieneEdadMinima(dto.FechaNacimiento))
+            return new RegistroResultado
+            {
+                Exito = false,
+                Mensaje = "Debes tener al menos 16 años para usar Voo"
+            };
+
             if (dto.Aforo > 30)
             {
                 return new RegistroResultado
@@ -116,6 +132,12 @@ namespace VooApi.Services
 
         public async Task<RegistroResultado> RegistrarInvitadoAsync(RegistroInvitadoDto dto)
         {
+            if (!TieneEdadMinima(dto.FechaNacimiento))
+            return new RegistroResultado
+            {
+                Exito = false,
+                Mensaje = "Debes tener al menos 16 años para usar Voo"
+            };
             if (!dto.Verificado)
             {
                 return new RegistroResultado
