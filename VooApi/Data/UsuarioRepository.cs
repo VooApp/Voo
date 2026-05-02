@@ -59,5 +59,15 @@ namespace VooApi.Data
         {
             await _collection.DeleteOneAsync(u => u.Id == id);
         }
+
+        // Actualizar presencia del usuario
+        public async Task ActualizarPresenciaAsync(
+            string id, bool dentroRadio, DateTime ultimaVerificacion)
+        {
+            var update = Builders<Usuario>.Update
+                .Set(u => u.DentroRadio, dentroRadio)
+                .Set(u => u.UltimaVerificacion, ultimaVerificacion);
+            await _collection.UpdateOneAsync(u => u.Id == id, update);
+        }
     }
 }

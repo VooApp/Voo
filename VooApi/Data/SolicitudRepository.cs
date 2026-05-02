@@ -48,5 +48,15 @@ namespace VooApi.Data
         {
             await _collection.DeleteOneAsync(s => s.Id == id);
         }
+        // Añadir al final de SolicitudRepository.cs
+        public async Task<Solicitud?> ObtenerPorParticipantesYEstadoAsync(
+            string emisorId, string receptorId, string estado)
+        {
+            return await _collection.Find(s =>
+                ((s.EmisorId == emisorId && s.ReceptorId == receptorId) ||
+                (s.EmisorId == receptorId && s.ReceptorId == emisorId)) &&
+                s.Estado == estado
+            ).FirstOrDefaultAsync();
+        }
     }
 }
