@@ -40,6 +40,14 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
 
     try {
       if (!isBanned) {
+        final bool? confirmar = await showDialog<bool>(
+          context: context,
+          barrierDismissible: true,
+          builder: (_) => _ConfirmBanDialog(userName: user.nombre),
+        );
+
+        if (confirmar != true) return;
+
         await appState.banearUsuario(user.id);
       }
       // No hay unban por ahora — el backend no lo expone
@@ -381,6 +389,138 @@ class _PurpleBackButtonState extends State<_PurpleBackButton> {
           Icons.arrow_back_ios_new,
           color: Colors.white,
           size: 19,
+        ),
+      ),
+    );
+  }
+}
+
+class _ConfirmBanDialog extends StatelessWidget {
+  final String userName;
+
+  const _ConfirmBanDialog({
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF151525),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: const Color(0xFFFF3B5C),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF3B5C).withOpacity(0.22),
+              blurRadius: 24,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.warning_rounded,
+              color: Color(0xFFFF3B5C),
+              size: 54,
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Vas a eliminar a un usuario del evento',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                height: 1.2,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '¿Estás seguro de que quieres banear a $userName?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.68),
+                fontSize: 14,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: _DialogActionButton(
+                    text: 'No',
+                    color: const Color(0xFF52A9FF),
+                    onTap: () => Navigator.pop(context, false),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _DialogActionButton(
+                    text: 'Sí',
+                    color: const Color(0xFFFF3B5C),
+                    onTap: () => Navigator.pop(context, true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogActionButton extends StatelessWidget {
+  final String text;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _DialogActionButton({
+    required this.text,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF101018),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: color,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.18),
+              blurRadius: 14,
+              spreadRadius: 0.5,
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );

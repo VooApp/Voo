@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj": {}
+    "C:\\Users\\pasto\\Voo\\VooApi\\VooApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj": {
+    "C:\\Users\\pasto\\Voo\\VooApi\\VooApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj",
+        "projectUniqueName": "C:\\Users\\pasto\\Voo\\VooApi\\VooApi.csproj",
         "projectName": "VooApi",
-        "projectPath": "C:\\Users\\jeane\\Voo\\VooApi\\VooApi.csproj",
-        "packagesPath": "C:\\Users\\jeane\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\jeane\\Voo\\VooApi\\obj\\",
+        "projectPath": "C:\\Users\\pasto\\Voo\\VooApi\\VooApi.csproj",
+        "packagesPath": "C:\\Users\\pasto\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\pasto\\Voo\\VooApi\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\jeane\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\pasto\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -71,6 +71,24 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.15, 9.0.15]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[9.0.15, 9.0.15]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.15, 9.0.15]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.15, 9.0.15]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -79,7 +97,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.202/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -21,7 +21,13 @@ class AppState extends ChangeNotifier {
   String? _estado;
   List<String> _respuestas = [];
   bool? _sexo;
-  
+
+  // ✅ Términos y condiciones
+  bool _aceptaTerminos = false;
+
+  bool get aceptaTerminos => _aceptaTerminos;
+  bool get aceptaPrivacidad => _aceptaTerminos;
+  bool get aceptaBiometria => _aceptaTerminos;
 
   final List<RequestModel> _sentRequests = [];
   final List<RequestModel> _receivedRequests = [];
@@ -59,7 +65,7 @@ class AppState extends ChangeNotifier {
   RequestModel? get activeAcceptedRequest => _activeAcceptedRequest;
 
   double? _latitudGuest;
-  double? _longitudGuest;  
+  double? _longitudGuest;
   double? get latitudGuest => _latitudGuest;
   double? get longitudGuest => _longitudGuest;
 
@@ -108,9 +114,10 @@ class AppState extends ChangeNotifier {
     _profilePhoto = null;
     _estado = null;
     _respuestas = [];
-    notifyListeners();
+    _aceptaTerminos = false;
     _latitudGuest = null;
     _longitudGuest = null;
+    notifyListeners();
   }
 
   void sendRequest({
@@ -167,6 +174,7 @@ class AppState extends ChangeNotifier {
     required DateTime birthDate,
     required String profilePhoto,
     required bool sexo,
+    required bool aceptaTerminos,
     String? instagram,
   }) {
     _userName = userName;
@@ -174,6 +182,7 @@ class AppState extends ChangeNotifier {
     _profilePhoto = profilePhoto;
     _sexo = sexo;
     _instagram = instagram;
+    _aceptaTerminos = aceptaTerminos;
     notifyListeners();
   }
 
@@ -319,7 +328,8 @@ class AppState extends ChangeNotifier {
     if (!alreadyHasMessages) {
       _messages.add(
         MessageModel(
-          id: '${request.targetUserId}_incoming_${DateTime.now().microsecondsSinceEpoch}',
+          id:
+              '${request.targetUserId}_incoming_${DateTime.now().microsecondsSinceEpoch}',
           chatId: request.targetUserId,
           text: request.content,
           isMine: false,
@@ -329,7 +339,8 @@ class AppState extends ChangeNotifier {
 
       _messages.add(
         MessageModel(
-          id: '${request.targetUserId}_mine_${DateTime.now().microsecondsSinceEpoch + 1}',
+          id:
+              '${request.targetUserId}_mine_${DateTime.now().microsecondsSinceEpoch + 1}',
           chatId: request.targetUserId,
           text: responseText,
           isMine: true,
@@ -509,7 +520,7 @@ class AppState extends ChangeNotifier {
     try {
       final usuarios = await ApiService.getUsuariosSala(id);
       _salaUsuarios = usuarios
-          .where((u) => u.id != _userId) //  "&& !u.baneado" en caso de que no se quieran ver los baneados
+          .where((u) => u.id != _userId)
           .toList();
     } catch (e) {
       _loadingError = e.toString();
@@ -536,9 +547,13 @@ class AppState extends ChangeNotifier {
     clear();
   }
 
-  List<String> get premios => []; // ampliar cuando el backend devuelva premios
-  int get matchCount => _dynamicChats.where((c) => c.previewState == ChatPreviewState.normal).length;
+  List<String> get premios => [];
+
+  int get matchCount =>
+      _dynamicChats.where((c) => c.previewState == ChatPreviewState.normal).length;
+
   int get baneadosCount => _salaUsuarios.where((u) => u.baneado).length;
+
   String? get nivelId => _estado != null ? calcularNivel() : null;
 
   String calcularNivel() {
@@ -546,10 +561,9 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> iniciarSignalR() async {
-  // TODO: implementar conexión SignalR cuando esté disponible en backend
+    // TODO: implementar conexión SignalR cuando esté disponible en backend
   }
 
-  // ── Guardar datos de unirse a sala (invitado) ──
   void setGuestJoinData({
     required String roomCode,
     required double latitud,
@@ -557,7 +571,6 @@ class AppState extends ChangeNotifier {
     required double accuracy,
   }) {
     _roomCode = roomCode;
-    // Guardamos lat/long por si el backend los necesita al registrar
     _latitudGuest = latitud;
     _longitudGuest = longitud;
     notifyListeners();
@@ -577,7 +590,13 @@ class AppState extends ChangeNotifier {
         latitud: _latitudGuest ?? 0.0,
         longitud: _longitudGuest ?? 0.0,
         accuracy: 0.0,
+
+        // ✅ Enviamos al backend lo que exige el RegistroService
+        aceptaTerminos: _aceptaTerminos,
+        aceptaPrivacidad: _aceptaTerminos,
+        aceptaBiometria: _aceptaTerminos,
       );
+
       _userId = response.usuarioId;
       _salaId = response.salaId;
       _userName = response.nombreUsuario;

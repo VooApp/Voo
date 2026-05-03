@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VooApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+80eff1e8d2507d3ac7a8cf7f2fa167ea94555952")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0c7b905f432ab787c3e140d019eb41f95b596810")]
 [assembly: System.Reflection.AssemblyProductAttribute("VooApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VooApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -10,6 +10,9 @@ import '../../state/app_state.dart';
 import '../shared_flow/camera_screen.dart';
 import 'host_status_screen.dart';
 
+import 'package:flutter/gestures.dart';
+import '../shared_flow/terms_screen.dart';
+
 class RegisterHostScreen extends StatefulWidget {
   const RegisterHostScreen({super.key});
 
@@ -30,11 +33,14 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
   bool _isPickingImage = false;
   bool _requestingCameraPermission = false;
 
+  bool _acceptedTerms = false;
+
   bool get canContinue {
     return nameController.text.trim().isNotEmpty &&
         selectedSex != null &&
         birthDateController.text.trim().isNotEmpty &&
-        _profileImageBytes != null;
+        _profileImageBytes != null &&
+        _acceptedTerms;
   }
 
   @override
@@ -43,6 +49,23 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
     birthDateController.dispose();
     instagramController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openTerms() async {
+    final accepted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const TermsScreen(),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (accepted == true) {
+      setState(() {
+        _acceptedTerms = true;
+      });
+    }
   }
 
   Future<void> _pickProfileImage(ImageSource source) async {
@@ -212,14 +235,15 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
         );
 
         context.read<AppState>().setRegisterData(
-              userName: nameController.text.trim(),
-              birthDate: birthDate,
-              profilePhoto: base64Encode(_profileImageBytes!),
-              sexo: selectedSex!,
-              instagram: instagramController.text.trim().isEmpty
-                  ? null
-                  : instagramController.text.trim(),
-            );
+          userName: nameController.text.trim(),
+          birthDate: birthDate,
+          profilePhoto: base64Encode(_profileImageBytes!),
+          sexo: selectedSex!,
+          instagram: instagramController.text.trim().isEmpty
+              ? null
+              : instagramController.text.trim(),
+          aceptaTerminos: true,
+        );
 
         Navigator.push(
           context,
@@ -406,11 +430,23 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
 
                   const SizedBox(height: 18),
 
+                  _TermsBox(
+                    value: _acceptedTerms,
+                    onChanged: (value) {
+                      setState(() {
+                        _acceptedTerms = value;
+                      });
+                    },
+                    onTapTerms: _openTerms,
+                  ),
+
+                  const SizedBox(height: 18),
+
                   if (!canContinue)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        'Completa nombre, sexo, fecha de nacimiento y foto de perfil para continuar.',
+                        'Completa nombre, sexo, fecha de nacimiento, foto de perfil y acepta los términos para continuar.',
                         style: TextStyle(
                           color: Colors.white54,
                           fontSize: 13,
@@ -801,6 +837,74 @@ class _MainGradientButtonState extends State<_MainGradientButton> {
             fontWeight: FontWeight.w800,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TermsBox extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onTapTerms;
+
+  const _TermsBox({
+    required this.value,
+    required this.onChanged,
+    required this.onTapTerms,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF181835),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: value ? const Color(0xFF9C4DFF) : const Color(0xFF4A267D),
+          width: value ? 2 : 1.4,
+        ),
+      ),
+      child: Row(
+        children: [
+          Checkbox(
+            value: value,
+            activeColor: const Color(0xFF9C4DFF),
+            checkColor: Colors.white,
+            side: const BorderSide(
+              color: Color(0xFF9C4DFF),
+              width: 1.6,
+            ),
+            onChanged: (checked) => onChanged(checked ?? false),
+          ),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13.5,
+                  height: 1.35,
+                ),
+                children: [
+                  const TextSpan(text: 'Acepto los '),
+                  TextSpan(
+                    text: 'términos y condiciones',
+                    style: const TextStyle(
+                      color: Color(0xFFB15CFF),
+                      fontWeight: FontWeight.w800,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()..onTap = onTapTerms,
+                  ),
+                  const TextSpan(
+                    text:
+                        ', la política de privacidad y el tratamiento de datos biométricos.',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

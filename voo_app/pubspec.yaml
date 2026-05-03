@@ -45,6 +45,7 @@ dependencies:
   mobile_scanner: ^7.2.0
   provider: ^6.1.2
   signalr_netcore: ^1.3.7
+  webview_flutter: ^4.7.0
 
 
 dev_dependencies:
@@ -58,12 +59,10 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/voo_terminos_condiciones.html
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

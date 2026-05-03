@@ -151,6 +151,9 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
         longitudSala: position.longitude,
         premioMayor: grandPrizeController.text.trim(),
         premiosFlash: premiosFlash,
+        aceptaTerminos: appState.aceptaTerminos,
+        aceptaPrivacidad: appState.aceptaPrivacidad,
+        aceptaBiometria: appState.aceptaBiometria,
       );
 
       if (!mounted) return;

@@ -13,7 +13,7 @@ namespace VooApi.Models
         public DateTime FechaNacimiento { get; set; }
 
         [Required(ErrorMessage = "La foto es obligatoria")]
-        [Url(ErrorMessage = "La foto debe ser una URL válida")]
+        [MinLength(10, ErrorMessage = "La foto no es válida")]
         public string Foto { get; set; } = string.Empty;
 
         public string? Ig { get; set; }
@@ -21,8 +21,8 @@ namespace VooApi.Models
         public bool Sexo { get; set; }
 
         [Required(ErrorMessage = "El estado es obligatorio")]
-        [RegularExpression("^(verde|amarillo|rojo)$",
-            ErrorMessage = "El estado debe ser verde, amarillo o rojo")]
+        [RegularExpression("^(soltero|amigos|pareja)$",
+            ErrorMessage = "El estado debe ser soltero, amigos o pareja")]
         public string Estado { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Las respuestas son obligatorias")]

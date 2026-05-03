@@ -44,6 +44,9 @@ class ApiService {
     required double longitudSala,
     required String premioMayor,
     required List<String> premiosFlash,
+    required bool aceptaTerminos,
+    required bool aceptaPrivacidad,
+    required bool aceptaBiometria,
   }) async {
     final uri = _uri('/Registro/host');
 
@@ -69,6 +72,9 @@ class ApiService {
         'longitudSala': longitudSala,
         'premioMayor': premioMayor,
         'premiosFlash': premiosFlash,
+        'aceptaTerminos': aceptaTerminos,
+        'aceptaPrivacidad': aceptaPrivacidad,
+        'aceptaBiometria': aceptaBiometria,
       }),
     );
 
@@ -102,6 +108,9 @@ class ApiService {
   required double longitud,
   required double accuracy,
   bool verificado = true,
+  required bool aceptaTerminos,
+  required bool aceptaPrivacidad,
+  required bool aceptaBiometria,
 }) async {
   final uri = _uri('/Registro/invitado');
 
@@ -121,6 +130,9 @@ class ApiService {
       'latitud': latitud,
       'longitud': longitud,
       'accuracy': accuracy,
+      'aceptaTerminos': aceptaTerminos,
+      'aceptaPrivacidad': aceptaPrivacidad,
+      'aceptaBiometria': aceptaBiometria,
     }),
   );
 
