@@ -6,6 +6,7 @@ import '../models/message_model.dart';
 import '../models/request_model.dart';
 
 import '../services/api_service.dart';
+import 'package:signalr_netcore/signalr_client.dart';
 
 class AppState extends ChangeNotifier {
   bool _isHost = false;
@@ -14,6 +15,7 @@ class AppState extends ChangeNotifier {
 
   String? _userId;
   String? _salaId;
+  HubConnection? _hubConnection;
 
   DateTime? _birthDate;
   String? _instagram;
@@ -120,13 +122,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void sendRequest({
+  Future<void> sendRequest({
     required String targetUserId,
     required String targetUserName,
     required RequestType type,
     required String content,
     required Color statusColor,
-  }) {
+  }) async {
     final hasBlockingState = _sentRequests.any(
       (request) =>
           request.targetUserId == targetUserId &&
@@ -167,6 +169,41 @@ class AppState extends ChangeNotifier {
     }
 
     notifyListeners();
+
+    await _hubConnection?.invoke(
+      'EnviarSolicitud',
+      args: [
+        _userId ?? '',
+        _userName ?? '',
+        targetUserId,
+        _requestTypeToString(type),
+        content,
+      ],
+    );
+  }
+
+  RequestType _requestTypeFromString(String value) {
+    switch (value) {
+      case 'truth':
+        return RequestType.truth;
+      case 'dare':
+        return RequestType.dare;
+      case 'messageRequest':
+        return RequestType.messageRequest;
+      default:
+        return RequestType.messageRequest;
+    }
+  }
+
+  String _requestTypeToString(RequestType type) {
+    switch (type) {
+      case RequestType.truth:
+        return 'truth';
+      case RequestType.dare:
+        return 'dare';
+      case RequestType.messageRequest:
+        return 'messageRequest';
+    }
   }
 
   void setRegisterData({
@@ -561,7 +598,54 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> iniciarSignalR() async {
-    // TODO: implementar conexión SignalR cuando esté disponible en backend
+    if (_hubConnection?.state == HubConnectionState.Connected) return;
+
+    final currentUserId = _userId;
+    final currentSalaId = _salaId;
+
+    if (currentUserId == null || currentUserId.isEmpty) return;
+    if (currentSalaId == null || currentSalaId.isEmpty) return;
+
+    final hubUrl = '${ApiService.baseUrl}/hubs/sala';
+
+    _hubConnection = HubConnectionBuilder()
+        .withUrl(hubUrl)
+        .withAutomaticReconnect()
+        .build();
+
+    _hubConnection!.on('SolicitudRecibida', (arguments) {
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+
+      final fromUserId = data['fromUserId']?.toString() ?? '';
+      final fromUserName = data['fromUserName']?.toString() ?? '';
+      final typeText = data['type']?.toString() ?? '';
+      final content = data['content']?.toString() ?? '';
+
+      final type = _requestTypeFromString(typeText);
+
+      if (fromUserId.isEmpty || fromUserName.isEmpty || content.isEmpty) return;
+
+      addIncomingRequest(
+        fromUserId: fromUserId,
+        fromUserName: fromUserName,
+        type: type,
+        content: content,
+      );
+    });
+
+    await _hubConnection!.start();
+
+    await _hubConnection!.invoke(
+      'JoinSala',
+      args: [currentSalaId],
+    );
+
+    await _hubConnection!.invoke(
+      'JoinUsuario',
+      args: [currentUserId],
+    );
   }
 
   void setGuestJoinData({

@@ -7,12 +7,14 @@ class ProfileQrScreen extends StatefulWidget {
   final bool isHost;
   final String userName;
   final String roomCode;
+  final String userId;
 
   const ProfileQrScreen({
     super.key,
     required this.isHost,
     required this.userName,
     required this.roomCode,
+    required this.userId,
   });
 
   @override
@@ -21,7 +23,7 @@ class ProfileQrScreen extends StatefulWidget {
 
 class _ProfileQrScreenState extends State<ProfileQrScreen> {
   String get _profileQrData {
-    return 'voo-profile:${widget.userName}:${widget.roomCode}:${widget.isHost ? "host" : "guest"}';
+    return 'voo-profile:${widget.userId}';
   }
 
   void _scanQr() {

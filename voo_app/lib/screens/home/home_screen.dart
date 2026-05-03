@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (result == null || !context.mounted) return;
 
-      appState.sendRequest(
+      await appState.sendRequest(
         targetUserId: result.targetUserId,
         targetUserName: result.targetUserName,
         type: result.type,
@@ -185,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 isHost: isHost,
                                 userName: nombrePerfil,
                                 roomCode: codigoSala,
+                                userId: appState.userId ?? '',
                               ),
                             ),
                           );

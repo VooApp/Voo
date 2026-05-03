@@ -164,6 +164,21 @@ class ApiService {
     return data.map((json) => SalaUsuarioModel.fromJson(json)).toList();
   }
 
+  static Future<SalaUsuarioModel> getUsuarioPorId(String usuarioId) async {
+    final response = await http.get(_uri('/Usuario/$usuarioId'));
+
+    debugPrint('GET: ${_uri('/Usuario/$usuarioId')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener usuario');
+    }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    return SalaUsuarioModel.fromJson(data);
+  }
+
   static Future<void> banearUsuario(String usuarioId) async {
     final response = await http.patch(
       _uri('/Usuario/$usuarioId/banear'),
@@ -267,6 +282,7 @@ class SalaUsuarioModel {
   final String? foto;
   final bool esHost;
   final bool baneado;
+  final int puntos;
 
   SalaUsuarioModel({
     required this.id,
@@ -275,6 +291,7 @@ class SalaUsuarioModel {
     required this.estado,
     required this.esHost,
     required this.baneado,
+    required this.puntos,
     this.foto,
   });
 
@@ -320,6 +337,7 @@ class SalaUsuarioModel {
       foto: json['foto']?.toString(),
       esHost: json['tipo']?.toString() == 'host',
       baneado: json['baneado'] as bool? ?? false,
+      puntos: json['puntos'] as int? ?? 0,
     );
   }
 }

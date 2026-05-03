@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../services/api_service.dart';
+import 'dart:convert';
 
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key});
@@ -19,7 +21,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   bool _handledResult = false;
   String _statusText = 'Apunta al QR dentro del recuadro';
 
-  void _onDetect(BarcodeCapture capture) {
+  Future<void> _onDetect(BarcodeCapture capture) async {
     if (_handledResult) return;
 
     final List<Barcode> barcodes = capture.barcodes;
@@ -28,38 +30,78 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
     final String? rawValue = barcodes.first.rawValue;
     if (rawValue == null || rawValue.isEmpty) return;
 
+    if (!rawValue.startsWith('voo-profile:')) {
+      setState(() {
+        _statusText = 'Este QR no es válido para Voo';
+      });
+      return;
+    }
+
+    final usuarioId = rawValue.replaceFirst('voo-profile:', '').trim();
+
+    if (usuarioId.isEmpty) {
+      setState(() {
+        _statusText = 'QR de perfil inválido';
+      });
+      return;
+    }
+
     _handledResult = true;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _ScanResultDialog(
-        qrValue: rawValue,
-        onClose: () {
-          Navigator.pop(context);
-          Navigator.pop(context);
-        },
-        onScanAgain: () {
-          Navigator.pop(context);
-          setState(() {
-            _handledResult = false;
-            _statusText = 'Apunta al QR dentro del recuadro';
-          });
-        },
-        onConfirm: () {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Reto confirmado'),
-            ),
-          );
-          setState(() {
-            _handledResult = false;
-            _statusText = 'Apunta al QR dentro del recuadro';
-          });
-        },
-      ),
-    );
+    try {
+      setState(() {
+        _statusText = 'Perfil detectado, cargando datos...';
+      });
+
+      final usuario = await ApiService.getUsuarioPorId(usuarioId);
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _ScanResultDialog(
+          usuario: usuario,
+          qrValue: rawValue,
+          onClose: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+          onScanAgain: () {
+            Navigator.pop(context);
+            setState(() {
+              _handledResult = false;
+              _statusText = 'Apunta al QR dentro del recuadro';
+            });
+          },
+          onConfirm: () {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Reto confirmado'),
+              ),
+            );
+            setState(() {
+              _handledResult = false;
+              _statusText = 'Apunta al QR dentro del recuadro';
+            });
+          },
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _handledResult = false;
+        _statusText = 'No se pudo cargar el perfil escaneado';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error cargando perfil: $e'),
+        ),
+      );
+    }
   }
 
   Future<void> _toggleTorch() async {
@@ -84,7 +126,9 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
           Positioned.fill(
             child: MobileScanner(
               controller: _controller,
-              onDetect: _onDetect,
+              onDetect: (capture) {
+                _onDetect(capture);
+              },
             ),
           ),
           Positioned.fill(
@@ -362,12 +406,14 @@ class _SquareActionButtonState extends State<_SquareActionButton> {
 }
 
 class _ScanResultDialog extends StatelessWidget {
+  final SalaUsuarioModel usuario;
   final String qrValue;
   final VoidCallback onClose;
   final VoidCallback onScanAgain;
   final VoidCallback onConfirm;
 
   const _ScanResultDialog({
+    required this.usuario,
     required this.qrValue,
     required this.onClose,
     required this.onScanAgain,
@@ -375,26 +421,48 @@ class _ScanResultDialog extends StatelessWidget {
   });
 
   Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'soltero':
-        return const Color(0xFF22C55E);
-      case 'haciendo amigos':
-        return const Color(0xFFEAB308);
-      case 'en pareja':
-        return const Color(0xFFEF4444);
-      default:
-        return const Color(0xFF9C4DFF);
+    final value = status.toLowerCase().trim();
+
+    if (value.contains('soltero')) {
+      return const Color(0xFF22C55E);
+    }
+
+    if (value.contains('amigos') || value.contains('amigo')) {
+      return const Color(0xFFEAB308);
+    }
+
+    if (value.contains('pareja')) {
+      return const Color(0xFFEF4444);
+    }
+
+    return const Color(0xFF9C4DFF);
+  }
+
+  ImageProvider? _profileImage(String? foto) {
+    if (foto == null || foto.trim().isEmpty) return null;
+
+    try {
+      var cleanBase64 = foto.trim();
+
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+
+      return MemoryImage(base64Decode(cleanBase64));
+    } catch (_) {
+      return null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const detectedName = 'Ana';
-    const detectedAge = 20;
-    const detectedStatus = 'Soltero';
-    const detectedPoints = 25;
+    final detectedName = usuario.nombre;
+    final detectedAge = usuario.edad;
+    final detectedStatus = usuario.estado;
+    final detectedPoints = usuario.puntos;
 
     final statusColor = _statusColor(detectedStatus);
+    final image = _profileImage(usuario.foto);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -462,6 +530,7 @@ class _ScanResultDialog extends StatelessWidget {
                   Container(
                     width: 54,
                     height: 54,
+                    padding: const EdgeInsets.all(2.4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
@@ -469,9 +538,22 @@ class _ScanResultDialog extends StatelessWidget {
                         width: 2.4,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
+                    child: ClipOval(
+                      child: image != null
+                          ? Image(
+                              image: image,
+                              width: 54,
+                              height: 54,
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
+                            )
+                          : Container(
+                              color: const Color(0xFF101018),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -509,16 +591,6 @@ class _ScanResultDialog extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'QR leído: $qrValue',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.42),
-                fontSize: 11,
-                height: 1.3,
               ),
             ),
             const SizedBox(height: 24),

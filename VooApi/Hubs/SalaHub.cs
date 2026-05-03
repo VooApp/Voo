@@ -13,5 +13,26 @@ namespace VooApi.Hubs
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, salaId);
         }
+
+        public async Task JoinUsuario(string userId)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+        }
+
+        public async Task EnviarSolicitud(
+            string fromUserId,
+            string fromUserName,
+            string targetUserId,
+            string type,
+            string content)
+        {
+            await Clients.Group(targetUserId).SendAsync("SolicitudRecibida", new
+            {
+                fromUserId,
+                fromUserName,
+                type,
+                content
+            });
+        }
     }
 }
