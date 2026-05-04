@@ -28,8 +28,14 @@ builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("VooCors", policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true) // 🔥 permite cualquier localhost
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
 });
 
 // Base de datos
@@ -65,7 +71,7 @@ builder.Services.AddHostedService<PresenciaBackgroundService>();
 
 var app = builder.Build();
 
-app.UseCors();
+app.UseCors("VooCors");
 app.UseHttpsRedirection();
 app.MapHub<VooApi.Hubs.SalaHub>("/hubs/sala");
 app.MapControllers();

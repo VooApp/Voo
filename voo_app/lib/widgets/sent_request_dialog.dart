@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 class SentRequestDialog extends StatefulWidget {
   final String title;
@@ -15,18 +16,32 @@ class SentRequestDialog extends StatefulWidget {
 }
 
 class _SentRequestDialogState extends State<SentRequestDialog> {
+  Timer? _timer;
+  bool _closed = false;
+
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(milliseconds: 1350), () {
-      if (mounted) Navigator.pop(context);
+    _timer = Timer(const Duration(milliseconds: 1350), () {
+      if (!mounted || _closed) return;
+
+      _closed = true;
+      Navigator.of(context, rootNavigator: true).pop();
     });
   }
 
   @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Dialog(
+    return PopScope(
+      canPop: false,
+      child: Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 34),
       child: TweenAnimationBuilder<double>(
@@ -120,6 +135,7 @@ class _SentRequestDialogState extends State<SentRequestDialog> {
           ),
         ),
       ),
+    ),
     );
   }
 }

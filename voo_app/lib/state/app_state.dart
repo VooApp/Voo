@@ -36,6 +36,7 @@ class AppState extends ChangeNotifier {
   final List<ChatModel> _dynamicChats = [];
   final List<MessageModel> _messages = [];
   bool _loadingChats = false;
+  String? _activeChatId;
   bool get loadingChats => _loadingChats;
 
   List<SalaUsuarioModel> _salaUsuarios = [];
@@ -121,6 +122,28 @@ class AppState extends ChangeNotifier {
     _aceptaTerminos = false;
     _latitudGuest = null;
     _longitudGuest = null;
+    notifyListeners();
+  }
+
+  void setActiveChat(String? chatId) {
+    _activeChatId = chatId;
+
+    if (chatId != null) {
+      marcarChatComoLeidoLocal(chatId);
+    }
+  }
+
+  void marcarChatComoLeidoLocal(String chatId) {
+    final index = _dynamicChats.indexWhere((chat) => chat.id == chatId);
+    if (index == -1) return;
+
+    final oldChat = _dynamicChats[index];
+
+    _dynamicChats[index] = oldChat.copyWith(
+      unreadCount: 0,
+      previewState: ChatPreviewState.normal,
+    );
+
     notifyListeners();
   }
 
@@ -524,12 +547,14 @@ class AppState extends ChangeNotifier {
     final myId = _userId;
     if (myId == null || myId.isEmpty) return;
 
+    final tempTime = _formatNow();
+
     final tempMessage = MessageModel(
       id: '${chatId}_local_${DateTime.now().microsecondsSinceEpoch}',
       chatId: chatId,
       text: text,
       isMine: true,
-      time: _formatNow(),
+      time: tempTime,
     );
 
     _messages.add(tempMessage);
@@ -543,7 +568,7 @@ class AppState extends ChangeNotifier {
         0,
         oldChat.copyWith(
           lastMessage: text,
-          time: tempMessage.time,
+          time: tempTime,
           unreadCount: 0,
           previewState: ChatPreviewState.normal,
         ),
@@ -558,6 +583,17 @@ class AppState extends ChangeNotifier {
         emisorId: myId,
         receptorId: targetUserId,
         contenido: text,
+      );
+
+      await _hubConnection?.invoke(
+        'EnviarMensajeChat',
+        args: [
+          chatId,
+          myId,
+          targetUserId,
+          text,
+          tempTime,
+        ],
       );
     } catch (e) {
       debugPrint('Error enviando mensaje: $e');
@@ -753,7 +789,7 @@ class AppState extends ChangeNotifier {
           oldChat.copyWith(
             lastMessage: content,
             time: time,
-            unreadCount: oldChat.unreadCount + 1,
+            unreadCount: _activeChatId == chatId ? 0 : oldChat.unreadCount + 1,
             previewState: ChatPreviewState.normal,
           ),
         );

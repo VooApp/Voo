@@ -40,7 +40,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _scrollController.addListener(_handleScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      context.read<AppState>().setActiveChat(widget.chatId);
+
       await context.read<AppState>().cargarMensajesChat(widget.chatId);
+      context.read<AppState>().marcarChatComoLeidoLocal(widget.chatId);
 
       _jumpToBottom();
       _messageFocusNode.requestFocus();
@@ -53,6 +56,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _messageFocusNode.dispose();
+    context.read<AppState>().setActiveChat(null);
     super.dispose();
   }
 
