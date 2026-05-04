@@ -314,8 +314,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           .read<AppState>()
                           .rejectIncomingRequest(blockingIncoming.id);
                     },
-                    onAccept: () {
-                      context
+                    onAccept: () async {
+                      await context
                           .read<AppState>()
                           .acceptIncomingRequest(blockingIncoming.id);
                     },
@@ -329,9 +329,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       context.read<AppState>().restoreAcceptedRequestToPending();
                     },
                     onSendResponse: (responseText) async {
-                      context
-                          .read<AppState>()
-                          .finishAcceptedRequestResponse(responseText);
+                      await context
+                        .read<AppState>()
+                        .finishAcceptedRequestResponse(responseText);
 
                       if (!mounted) return;
 
@@ -339,9 +339,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         context: context,
                         barrierDismissible: true,
                         builder: (_) => const SentRequestDialog(
-                          title: 'Respuesta enviada',
-                          subtitle:
-                              'La conversación ya está en el apartado de chats.',
+                          title: 'Mensaje enviado',
+                          subtitle: 'Ya podéis seguir hablando en vuestro chat.',
                         ),
                       );
                     },

@@ -3,11 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../../models/message_model.dart';
 import '../../state/app_state.dart';
+import 'dart:convert';
 
 class ChatConversationScreen extends StatefulWidget {
   final bool isHost;
   final String chatId;
+  final String targetUserId;
   final String chatName;
+  final String? chatFoto;
   final Color statusColor;
 
   const ChatConversationScreen({
@@ -16,6 +19,8 @@ class ChatConversationScreen extends StatefulWidget {
     required this.chatId,
     required this.chatName,
     required this.statusColor,
+    required this.targetUserId,
+    required this.chatFoto,
   });
 
   @override
@@ -34,7 +39,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     super.initState();
     _scrollController.addListener(_handleScroll);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<AppState>().cargarMensajesChat(widget.chatId);
+
       _jumpToBottom();
       _messageFocusNode.requestFocus();
     });
@@ -83,19 +90,21 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
     final shouldStickToBottom = _isNearBottom();
 
-    context.read<AppState>().sendChatMessage(
+    await context.read<AppState>().sendChatMessage(
           chatId: widget.chatId,
+          targetUserId: widget.targetUserId,
           text: text,
           isMine: true,
         );
 
     _messageController.clear();
+    _animateToBottom();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (shouldStickToBottom) {
@@ -110,9 +119,59 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     });
   }
 
+  ImageProvider? _profileImage() {
+    final foto = widget.chatFoto;
+
+    if (foto == null || foto.trim().isEmpty) return null;
+
+    try {
+      var cleanBase64 = foto.trim();
+
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+
+      return MemoryImage(base64Decode(cleanBase64));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _showProfileImage() {
+    final image = _profileImage();
+    if (image == null) return;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.82),
+      builder: (_) {
+        return GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(22),
+            child: Center(
+              child: Hero(
+                tag: 'chat-photo-${widget.chatId}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: Image(
+                    image: image,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.watch<AppState>().getMessagesForChat(widget.chatId);
+    final image = _profileImage();
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -139,19 +198,39 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                       onTap: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 12),
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: widget.statusColor,
-                          width: 2.4,
+                    GestureDetector(
+                      onTap: _showProfileImage,
+                      child: Hero(
+                        tag: 'chat-photo-${widget.chatId}',
+                        child: Container(
+                          width: 46,
+                          height: 46,
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: widget.statusColor,
+                              width: 2.4,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: image != null
+                                ? Image(
+                                    image: image,
+                                    width: 46,
+                                    height: 46,
+                                    fit: BoxFit.cover,
+                                    gaplessPlayback: true,
+                                  )
+                                : Container(
+                                    color: const Color(0xFF101018),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
                         ),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -234,12 +313,16 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                       child: _MessageInput(
                         controller: _messageController,
                         focusNode: _messageFocusNode,
-                        onSubmitted: (_) => _sendMessage(),
+                        onSubmitted: (_) {
+                          _sendMessage();
+                        },
                       ),
                     ),
                     const SizedBox(width: 10),
                     _SendButton(
-                      onTap: _sendMessage,
+                      onTap: () {
+                        _sendMessage();
+                      },
                     ),
                   ],
                 ),

@@ -324,7 +324,9 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void dispose() {
     _controller?.dispose();
-    _faceDetector.close();
+    if (!kIsWeb) {
+      _faceDetector.close();
+    }
     super.dispose();
   }
 

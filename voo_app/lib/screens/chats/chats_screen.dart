@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../mock/mock_chats.dart';
 import '../../models/chat_model.dart';
 import '../../models/chat_preview_state.dart';
 import '../../state/app_state.dart';
@@ -12,10 +13,27 @@ import '../retos/retos_screen.dart';
 import '../ranking/ranking_screen.dart';
 import '../settings/settings_screen.dart';
 
-class ChatsScreen extends StatelessWidget {
+class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
 
-  Color _previewColor(ChatPreviewState state) {
+  @override
+  State<ChatsScreen> createState() => _ChatsScreenState();
+}
+
+class _ChatsScreenState extends State<ChatsScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AppState>().cargarChats();
+    });
+  }
+
+  Color _previewColor(ChatPreviewState state, int unreadCount) {
+    if (unreadCount > 0) return const Color(0xFF52A9FF);
+
     switch (state) {
       case ChatPreviewState.normal:
         return Colors.white54;
@@ -30,14 +48,7 @@ class ChatsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final isHost = appState.isHost;
-
-    final List<ChatModel> chats = appState.buildChatsList(mockChats);
-
-    void openPlaceholder(String text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(text)),
-      );
-    }
+    final List<ChatModel> chats = appState.dynamicChats;
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -87,36 +98,43 @@ class ChatsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: chats.isEmpty
-                      ? Center(
-                          child: Text(
-                            'Todavía no tienes conversaciones',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.62),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                  child: appState.loadingChats && chats.isEmpty
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF9C4DFF),
                           ),
                         )
-                      : ListView.separated(
-                          itemCount: chats.length,
-                          separatorBuilder: (_, _) => Container(
-                            height: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                          itemBuilder: (context, index) {
-                            final ChatModel chat = chats[index];
+                      : chats.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Todavía no tienes conversaciones',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.62),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: chats.length,
+                              separatorBuilder: (_, _) => Container(
+                                height: 1,
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                color: Colors.white.withOpacity(0.08),
+                              ),
+                              itemBuilder: (context, index) {
+                                final chat = chats[index];
 
-                            return _ChatCard(
-                              chat: chat,
-                              isHost: isHost,
-                              previewColor: _previewColor(chat.previewState),
-                              showBlueDot:
-                                  chat.previewState == ChatPreviewState.answeredRequest,
-                            );
-                          },
-                        ),
+                                return _ChatCard(
+                                  chat: chat,
+                                  isHost: isHost,
+                                  previewColor: _previewColor(
+                                    chat.previewState,
+                                    chat.unreadCount,
+                                  ),
+                                );
+                              },
+                            ),
                 ),
                 const SizedBox(height: 10),
                 VooBottomNavBar(
@@ -168,17 +186,44 @@ class _ChatCard extends StatelessWidget {
   final ChatModel chat;
   final bool isHost;
   final Color previewColor;
-  final bool showBlueDot;
 
   const _ChatCard({
     required this.chat,
     required this.isHost,
     required this.previewColor,
-    required this.showBlueDot,
   });
+
+  ImageProvider? _profileImage() {
+    final foto = chat.foto;
+    if (foto == null || foto.trim().isEmpty) return null;
+
+    try {
+      var cleanBase64 = foto.trim();
+
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+
+      cleanBase64 = cleanBase64
+          .replaceAll('\n', '')
+          .replaceAll('\r', '')
+          .replaceAll(' ', '')
+          .replaceAll('"', '');
+
+      return MemoryImage(base64Decode(cleanBase64));
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final image = _profileImage();
+
+    final lastMessage = chat.lastMessage.trim().isEmpty
+        ? 'Todavía no hay mensajes'
+        : chat.lastMessage.trim();
+
     return GestureDetector(
       onTap: () {
         if (chat.previewState == ChatPreviewState.missionBusy) {
@@ -192,7 +237,7 @@ class _ChatCard extends StatelessWidget {
           return;
         }
 
-        if (chat.previewState == ChatPreviewState.answeredRequest) {
+        if (chat.unreadCount > 0) {
           context.read<AppState>().markAnsweredRequestAsSeen(chat.id);
         }
 
@@ -202,7 +247,9 @@ class _ChatCard extends StatelessWidget {
             builder: (_) => ChatConversationScreen(
               isHost: isHost,
               chatId: chat.id,
+              targetUserId: chat.otherUserId,
               chatName: chat.userName,
+              chatFoto: chat.foto,
               statusColor: chat.statusColor,
             ),
           ),
@@ -214,8 +261,9 @@ class _ChatCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 46,
+              height: 46,
+              padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -223,10 +271,23 @@ class _ChatCard extends StatelessWidget {
                   width: 2.4,
                 ),
               ),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 20,
+              child: ClipOval(
+                child: image != null
+                    ? Image(
+                        image: image,
+                        width: 46,
+                        height: 46,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      )
+                    : Container(
+                        color: const Color(0xFF101018),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 10),
@@ -236,33 +297,55 @@ class _ChatCard extends StatelessWidget {
                 children: [
                   Text(
                     chat.userName,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: chat.unreadCount > 0
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.88),
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: chat.unreadCount > 0
+                          ? FontWeight.w900
+                          : FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    chat.lastMessage,
+                    lastMessage,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: previewColor,
                       fontSize: 13,
-                      fontWeight: chat.previewState == ChatPreviewState.normal
-                          ? FontWeight.w500
-                          : FontWeight.w700,
+                      fontWeight: chat.unreadCount > 0
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            if (showBlueDot)
-              const CircleAvatar(
-                radius: 4,
-                backgroundColor: Color(0xFF52A9FF),
+            if (chat.time.isNotEmpty)
+              Text(
+                chat.time,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.45),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            const SizedBox(width: 8),
+            if (chat.unreadCount > 0)
+              CircleAvatar(
+                radius: 10,
+                backgroundColor: const Color(0xFF52A9FF),
+                child: Text(
+                  chat.unreadCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
           ],
         ),

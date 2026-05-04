@@ -17,6 +17,14 @@ namespace VooApi.Controllers
 
         // GET /chat/usuario/{usuarioId}
         // Flutter llama a esto para mostrar la lista de chats
+
+        [HttpPost("crear-o-obtener")]
+        public async Task<IActionResult> CrearOObtener([FromBody] CrearOObtenerChatDto dto)
+        {
+            var chat = await _service.CrearOObtenerChatAsync(dto.UsuarioAId, dto.UsuarioBId);
+            return Ok(chat);
+        }
+
         [HttpGet("usuario/{usuarioId}")]
         public async Task<IActionResult> ObtenerChats(string usuarioId)
         {
@@ -57,5 +65,10 @@ namespace VooApi.Controllers
             await _service.DesactivarChatAsync(chatId);
             return Ok(new { mensaje = "Chat desactivado" });
         }
+    }
+    public class CrearOObtenerChatDto
+    {
+        public string UsuarioAId { get; set; } = string.Empty;
+        public string UsuarioBId { get; set; } = string.Empty;
     }
 }

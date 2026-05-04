@@ -35,6 +35,8 @@ class AppState extends ChangeNotifier {
   final List<RequestModel> _receivedRequests = [];
   final List<ChatModel> _dynamicChats = [];
   final List<MessageModel> _messages = [];
+  bool _loadingChats = false;
+  bool get loadingChats => _loadingChats;
 
   List<SalaUsuarioModel> _salaUsuarios = [];
   bool _loadingUsuarios = false;
@@ -157,6 +159,7 @@ class AppState extends ChangeNotifier {
         0,
         ChatModel(
           id: targetUserId,
+          otherUserId: targetUserId,
           userName: targetUserName,
           lastMessage:
               '$targetUserName está en una misión ahora mismo ¡intenta con otro!',
@@ -295,7 +298,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void acceptIncomingRequest(String requestId) {
+  Future<void> acceptIncomingRequest(String requestId) async {
     final index = _receivedRequests.indexWhere((r) => r.id == requestId);
     if (index == -1) return;
 
@@ -306,6 +309,16 @@ class AppState extends ChangeNotifier {
     _receivedRequests.removeAt(index);
     _activeAcceptedRequest = request;
     notifyListeners();
+
+    final myId = _userId;
+    if (myId == null || myId.isEmpty) return;
+
+    await ApiService.crearOObtenerChat(
+      usuarioAId: myId,
+      usuarioBId: request.targetUserId,
+    );
+
+    await cargarChats();
   }
 
   void restoreAcceptedRequestToPending() {
@@ -320,9 +333,27 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void finishAcceptedRequestResponse(String responseText) {
+  Future<void> finishAcceptedRequestResponse(String responseText) async {
     final request = _activeAcceptedRequest;
     if (request == null) return;
+    final myId = _userId;
+    if (myId == null || myId.isEmpty) return;
+
+    final chatId = await ApiService.crearOObtenerChat(
+      usuarioAId: myId,
+      usuarioBId: request.targetUserId,
+    );
+
+    await sendChatMessage(
+      chatId: chatId,
+      targetUserId: request.targetUserId,
+      text: responseText,
+      isMine: true,
+    );
+
+    _activeAcceptedRequest = null;
+    notifyListeners();
+    return;
 
     final sentIndex = _sentRequests.indexWhere(
       (r) => r.targetUserId == request.targetUserId,
@@ -344,6 +375,7 @@ class AppState extends ChangeNotifier {
 
     final chat = ChatModel(
       id: request.targetUserId,
+      otherUserId: request.targetUserId,
       userName: request.targetUserName,
       lastMessage: responseText,
       time: _formatNow(),
@@ -468,45 +500,91 @@ class AppState extends ChangeNotifier {
     return _messages.where((message) => message.chatId == chatId).toList();
   }
 
-  void sendChatMessage({
-    required String chatId,
-    required String text,
-    required bool isMine,
-  }) {
-    final message = MessageModel(
-      id: '${chatId}_${DateTime.now().microsecondsSinceEpoch}',
+  Future<void> cargarMensajesChat(String chatId) async {
+    final id = _userId;
+    if (id == null || id.isEmpty) return;
+
+    final mensajes = await ApiService.getMensajesChat(
       chatId: chatId,
-      text: text,
-      isMine: isMine,
-      time: _formatNow(),
+      usuarioId: id,
     );
 
-    _messages.add(message);
-
-    final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == chatId);
-    if (chatIndex != -1) {
-      final oldChat = _dynamicChats[chatIndex];
-      final updatedChat = oldChat.copyWith(
-        lastMessage: text,
-        time: message.time,
-        unreadCount: isMine ? 0 : oldChat.unreadCount + 1,
-        previewState: isMine ? ChatPreviewState.normal : oldChat.previewState,
-      );
-
-      _dynamicChats.removeAt(chatIndex);
-      _dynamicChats.insert(0, updatedChat);
-    }
+    _messages.removeWhere((m) => m.chatId == chatId);
+    _messages.addAll(mensajes);
 
     notifyListeners();
   }
 
+  Future<void> sendChatMessage({
+    required String chatId,
+    required String targetUserId,
+    required String text,
+    required bool isMine,
+  }) async {
+    final myId = _userId;
+    if (myId == null || myId.isEmpty) return;
+
+    final tempMessage = MessageModel(
+      id: '${chatId}_local_${DateTime.now().microsecondsSinceEpoch}',
+      chatId: chatId,
+      text: text,
+      isMine: true,
+      time: _formatNow(),
+    );
+
+    _messages.add(tempMessage);
+
+    final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex != -1) {
+      final oldChat = _dynamicChats[chatIndex];
+
+      _dynamicChats.removeAt(chatIndex);
+      _dynamicChats.insert(
+        0,
+        oldChat.copyWith(
+          lastMessage: text,
+          time: tempMessage.time,
+          unreadCount: 0,
+          previewState: ChatPreviewState.normal,
+        ),
+      );
+    }
+
+    notifyListeners();
+
+    try {
+      await ApiService.enviarMensajeChat(
+        chatId: chatId,
+        emisorId: myId,
+        receptorId: targetUserId,
+        contenido: text,
+      );
+    } catch (e) {
+      debugPrint('Error enviando mensaje: $e');
+    }
+  }
+
   List<ChatModel> buildChatsList(List<ChatModel> mockChats) {
-    return [
-      ..._dynamicChats,
-      ...mockChats.where(
-        (mock) => !_dynamicChats.any((c) => c.id == mock.id),
-      ),
-    ];
+    return List.unmodifiable(_dynamicChats);
+  }
+
+  Future<void> cargarChats() async {
+    final id = _userId;
+    if (id == null || id.isEmpty) return;
+
+    _loadingChats = true;
+    notifyListeners();
+
+    try {
+      final chats = await ApiService.getChatsUsuario(id);
+
+      _dynamicChats
+        ..clear()
+        ..addAll(chats);
+    } finally {
+      _loadingChats = false;
+      notifyListeners();
+    }
   }
 
   bool isPendingOutgoingChat(String chatId) {
@@ -633,6 +711,57 @@ class AppState extends ChangeNotifier {
         type: type,
         content: content,
       );
+    });
+
+    _hubConnection!.on('UsuarioEntrado', (arguments) {
+      cargarUsuariosSala();
+    });
+
+    _hubConnection!.on('MensajeChatRecibido', (arguments) {
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+
+      final chatId = data['chatId']?.toString() ?? '';
+      final fromUserId = data['fromUserId']?.toString() ?? '';
+      final content = data['content']?.toString() ?? '';
+      final time = data['time']?.toString() ?? _formatNow();
+
+      if (chatId.isEmpty || fromUserId.isEmpty || content.isEmpty) return;
+
+      // Evita duplicar tus propios mensajes
+      if (fromUserId == _userId) return;
+
+      final message = MessageModel(
+        id: '${chatId}_${DateTime.now().microsecondsSinceEpoch}',
+        chatId: chatId,
+        text: content,
+        isMine: false,
+        time: time,
+      );
+
+      _messages.add(message);
+
+      final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == chatId);
+
+      if (chatIndex != -1) {
+        final oldChat = _dynamicChats[chatIndex];
+
+        _dynamicChats.removeAt(chatIndex);
+        _dynamicChats.insert(
+          0,
+          oldChat.copyWith(
+            lastMessage: content,
+            time: time,
+            unreadCount: oldChat.unreadCount + 1,
+            previewState: ChatPreviewState.normal,
+          ),
+        );
+      } else {
+        cargarChats();
+      }
+
+      notifyListeners();
     });
 
     await _hubConnection!.start();

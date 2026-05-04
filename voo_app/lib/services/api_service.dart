@@ -4,6 +4,9 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import '../models/chat_model.dart';
+import '../models/message_model.dart';
+import '../models/chat_preview_state.dart';
 
 
 class ApiService {
@@ -138,7 +141,7 @@ class ApiService {
 
   debugPrint('POST: $uri');
   debugPrint('STATUS: ${response.statusCode}');
-  debugPrint('BODY: ${response.body}');
+  debugPrint('BODY LENGTH: ${response.body.length}');
 
   final Map<String, dynamic> data =
       response.body.isNotEmpty ? jsonDecode(response.body) : {};
@@ -219,6 +222,157 @@ class ApiService {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Error al cerrar sala');
     }
+  }
+
+  static Future<String> crearOObtenerChat({
+    required String usuarioAId,
+    required String usuarioBId,
+  }) async {
+    final response = await http.post(
+      _uri('/Chat/crear-o-obtener'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'usuarioAId': usuarioAId,
+        'usuarioBId': usuarioBId,
+      }),
+    );
+
+    debugPrint('POST: ${_uri('/Chat/crear-o-obtener')}');
+    debugPrint('STATUS: ${response.statusCode}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al crear u obtener chat');
+    }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    return data['id']?.toString() ?? data['Id']?.toString() ?? '';
+  }
+
+  static Future<List<ChatModel>> getChatsUsuario(String usuarioId) async {
+    final response = await http.get(_uri('/Chat/usuario/$usuarioId'));
+
+    debugPrint('GET: ${_uri('/Chat/usuario/$usuarioId')}');
+    debugPrint('STATUS: ${response.statusCode}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener chats');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data.map((json) {
+      final map = json as Map<String, dynamic>;
+
+      final estado = map['otroUsuarioEstado']?.toString() ?? 'soltero';
+
+      return ChatModel(
+        id: map['chatId']?.toString() ?? '',
+        otherUserId: map['otroUsuarioId']?.toString() ?? '',
+        userName: map['otroUsuarioNombre']?.toString() ?? 'Usuario',
+        foto: map['otroUsuarioFoto']?.toString(),
+        lastMessage: (map['ultimoMensaje']?.toString().trim().isNotEmpty ?? false)
+          ? map['ultimoMensaje'].toString()
+          : 'Todavía no hay mensajes',
+        time: _formatApiDate(map['ultimoMensajeFecha']?.toString()),
+        unreadCount: map['mensajesNoLeidos'] as int? ?? 0,
+        statusColor: _statusColorFromEstado(estado),
+        previewState: ChatPreviewState.normal,
+      );
+    }).toList();
+  }
+
+  static Future<List<MessageModel>> getMensajesChat({
+    required String chatId,
+    required String usuarioId,
+  }) async {
+    final response = await http.get(_uri('/Chat/$chatId/mensajes/$usuarioId'));
+
+    debugPrint('GET: ${_uri('/Chat/$chatId/mensajes/$usuarioId')}');
+    debugPrint('STATUS: ${response.statusCode}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener mensajes');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data.map((json) {
+      final map = json as Map<String, dynamic>;
+      final emisorId = map['emisorId']?.toString() ?? '';
+
+      return MessageModel(
+        id: map['id']?.toString() ?? '',
+        chatId: map['chatId']?.toString() ?? chatId,
+        text: map['contenido']?.toString() ?? '',
+        isMine: emisorId == usuarioId,
+        time: _formatApiDate(map['fechaHora']?.toString()),
+      );
+    }).toList();
+  }
+
+  static Future<MessageModel> enviarMensajeChat({
+    required String chatId,
+    required String emisorId,
+    required String receptorId,
+    required String contenido,
+  }) async {
+    final response = await http.post(
+      _uri('/Chat/mensaje'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'chatId': chatId,
+        'emisorId': emisorId,
+        'receptorId': receptorId,
+        'contenido': contenido,
+      }),
+    );
+
+    debugPrint('POST: ${_uri('/Chat/mensaje')}');
+    debugPrint('STATUS: ${response.statusCode}');
+
+    final Map<String, dynamic> data =
+        response.body.isNotEmpty ? jsonDecode(response.body) : {};
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['mensaje'] ?? 'Error al enviar mensaje');
+    }
+
+    final mensaje = data['mensajeEnviado'] as Map<String, dynamic>? ?? {};
+
+    return MessageModel(
+      id: mensaje['id']?.toString() ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      chatId: mensaje['chatId']?.toString() ?? chatId,
+      text: mensaje['contenido']?.toString() ?? contenido,
+      isMine: true,
+      time: _formatApiDate(mensaje['fechaHora']?.toString()),
+    );
+  }
+
+  static String _formatApiDate(String? value) {
+    if (value == null || value.isEmpty) return '';
+
+    try {
+      final date = DateTime.parse(value).toLocal();
+      final h = date.hour.toString().padLeft(2, '0');
+      final m = date.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static Color _statusColorFromEstado(String estado) {
+    final value = estado.toLowerCase().trim();
+
+    if (value.contains('amigos') || value.contains('amigo')) {
+      return const Color(0xFFEAB308);
+    }
+
+    if (value.contains('pareja')) {
+      return const Color(0xFFEF4444);
+    }
+
+    return const Color(0xFF22C55E);
   }
 }
 

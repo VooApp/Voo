@@ -1,5 +1,7 @@
 using VooApi.Models;
 using VooApi.Data;
+using Microsoft.AspNetCore.SignalR;
+using VooApi.Hubs;
 
 namespace VooApi.Services
 {
@@ -9,21 +11,44 @@ namespace VooApi.Services
         private readonly MensajeRepository _mensajeRepository;
         private readonly UsuarioRepository _usuarioRepository;
         private readonly SolicitudRepository _solicitudRepository;
+        private readonly IHubContext<SalaHub> _hubContext;
 
         public ChatService(
             ChatRepository chatRepository,
             MensajeRepository mensajeRepository,
             UsuarioRepository usuarioRepository,
-            SolicitudRepository solicitudRepository)
+            SolicitudRepository solicitudRepository,
+            IHubContext<SalaHub> hubContext)
         {
             _chatRepository = chatRepository;
             _mensajeRepository = mensajeRepository;
             _usuarioRepository = usuarioRepository;
             _solicitudRepository = solicitudRepository;
+            _hubContext = hubContext;
         }
 
         // Obtener todos los chats de un usuario con info del otro participante
         // Flutter usa esto para mostrar la lista de chats
+
+        public async Task<Chat> CrearOObtenerChatAsync(string usuarioAId, string usuarioBId)
+        {
+            var existente = await _chatRepository.ObtenerPorParticipantesAsync(usuarioAId, usuarioBId);
+
+            if (existente != null)
+                return existente;
+
+            var nuevoChat = new Chat
+            {
+                EmisorId = usuarioAId,
+                ReceptorId = usuarioBId,
+                Activo = true
+            };
+
+            await _chatRepository.InsertarAsync(nuevoChat);
+
+            return nuevoChat;
+        }
+
         public async Task<List<ChatResumen>> ObtenerChatsDeUsuarioAsync(string usuarioId)
         {
             var chats = await _chatRepository.ObtenerPorUsuarioAsync(usuarioId);
@@ -120,6 +145,15 @@ namespace VooApi.Services
                 Leido = false
             };
             await _mensajeRepository.InsertarAsync(mensaje);
+            await _hubContext.Clients.Group($"usuario-{dto.ReceptorId}")
+            .SendAsync("MensajeRecibido", new
+            {
+                chatId = dto.ChatId,
+                emisorId = dto.EmisorId,
+                receptorId = dto.ReceptorId,
+                contenido = dto.Contenido,
+                fechaHora = mensaje.FechaHora
+            });
 
             return new EnviarMensajeResultado
             {
