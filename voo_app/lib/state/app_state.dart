@@ -164,8 +164,18 @@ class AppState extends ChangeNotifier {
 
     if (hasBlockingState) return;
 
+    final myId = _userId;
+    if (myId == null || myId.isEmpty) return;
+
+    final solicitudId = await ApiService.crearSolicitud(
+      emisorId: myId,
+      receptorId: targetUserId,
+      type: type,
+      content: content,
+    );
+
     final request = RequestModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: solicitudId,
       targetUserId: targetUserId,
       targetUserName: targetUserName,
       type: type,
@@ -196,9 +206,20 @@ class AppState extends ChangeNotifier {
 
     notifyListeners();
 
+    debugPrint('ENVIANDO SOLICITUD SIGNALR');
+    debugPrint('solicitudId: $solicitudId');
+    debugPrint('fromUserId: $_userId');
+    debugPrint('targetUserId: $targetUserId');
+    debugPrint('hubState: ${_hubConnection?.state}');
+
+    if (_hubConnection?.state != HubConnectionState.Connected) {
+      await iniciarSignalR();
+    }
+
     await _hubConnection?.invoke(
       'EnviarSolicitud',
       args: [
+        solicitudId,
         _userId ?? '',
         _userName ?? '',
         targetUserId,
@@ -290,12 +311,15 @@ class AppState extends ChangeNotifier {
               request.status == RequestStatus.rejected),
     );
 
-    final hasChat = _dynamicChats.any((chat) => chat.id == userId);
+    final hasChat = _dynamicChats.any(
+      (chat) => chat.otherUserId == userId,
+    );
 
     return hasOutgoingState || hasChat;
   }
 
   void addIncomingRequest({
+    required String solicitudId,
     required String fromUserId,
     required String fromUserName,
     required RequestType type,
@@ -303,14 +327,15 @@ class AppState extends ChangeNotifier {
   }) {
     final alreadyExists = _receivedRequests.any(
       (request) =>
-          request.targetUserId == fromUserId &&
-          request.status == RequestStatus.pending,
+          request.id == solicitudId ||
+          (request.targetUserId == fromUserId &&
+              request.status == RequestStatus.pending),
     );
 
     if (alreadyExists) return;
 
     final request = RequestModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: solicitudId,
       targetUserId: fromUserId,
       targetUserName: fromUserName,
       type: type,
@@ -328,6 +353,8 @@ class AppState extends ChangeNotifier {
     if (index == -1) return;
 
     final request = _receivedRequests[index];
+
+    ApiService.rechazarVerdadReto(request.id);
 
     _receivedRequests.removeAt(index);
 
@@ -380,10 +407,9 @@ class AppState extends ChangeNotifier {
     final myId = _userId;
     if (myId == null || myId.isEmpty) return;
 
-    await ApiService.crearOObtenerChat(
-      usuarioAId: myId,
-      usuarioBId: request.targetUserId,
-    );
+    await ApiService.aceptarVerdadReto(request.id);
+
+    _sentRequests.removeWhere((r) => r.targetUserId == request.targetUserId);
 
     await cargarChats();
   }
@@ -403,6 +429,7 @@ class AppState extends ChangeNotifier {
   Future<void> finishAcceptedRequestResponse(String responseText) async {
     final request = _activeAcceptedRequest;
     if (request == null) return;
+
     final myId = _userId;
     if (myId == null || myId.isEmpty) return;
 
@@ -417,73 +444,6 @@ class AppState extends ChangeNotifier {
       text: responseText,
       isMine: true,
     );
-
-    _activeAcceptedRequest = null;
-    notifyListeners();
-    return;
-
-    final sentIndex = _sentRequests.indexWhere(
-      (r) => r.targetUserId == request.targetUserId,
-    );
-
-    if (sentIndex != -1) {
-      _sentRequests[sentIndex] = _sentRequests[sentIndex].copyWith(
-        status: RequestStatus.accepted,
-      );
-    }
-
-    final existingChatIndex = _dynamicChats.indexWhere(
-      (chat) => chat.id == request.targetUserId,
-    );
-
-    final previousColor = existingChatIndex != -1
-        ? _dynamicChats[existingChatIndex].statusColor
-        : _statusColorFromType(request.type);
-
-    final chat = ChatModel(
-      id: request.targetUserId,
-      otherUserId: request.targetUserId,
-      userName: request.targetUserName,
-      lastMessage: responseText,
-      time: _formatNow(),
-      unreadCount: 0,
-      statusColor: previousColor,
-      previewState: ChatPreviewState.normal,
-    );
-
-    if (existingChatIndex == -1) {
-      _dynamicChats.insert(0, chat);
-    } else {
-      _dynamicChats.removeAt(existingChatIndex);
-      _dynamicChats.insert(0, chat);
-    }
-
-    final alreadyHasMessages =
-        _messages.any((message) => message.chatId == request.targetUserId);
-
-    if (!alreadyHasMessages) {
-      _messages.add(
-        MessageModel(
-          id:
-              '${request.targetUserId}_incoming_${DateTime.now().microsecondsSinceEpoch}',
-          chatId: request.targetUserId,
-          text: request.content,
-          isMine: false,
-          time: _formatNow(),
-        ),
-      );
-
-      _messages.add(
-        MessageModel(
-          id:
-              '${request.targetUserId}_mine_${DateTime.now().microsecondsSinceEpoch + 1}',
-          chatId: request.targetUserId,
-          text: responseText,
-          isMine: true,
-          time: _formatNow(),
-        ),
-      );
-    }
 
     _activeAcceptedRequest = null;
     notifyListeners();
@@ -636,6 +596,17 @@ class AppState extends ChangeNotifier {
           myId,
           targetUserId,
           text,
+          tempMessage.time,
+        ],
+      );
+
+      await _hubConnection?.invoke(
+        'EnviarMensajeChat',
+        args: [
+          chatId,
+          myId,
+          targetUserId,
+          text,
           tempTime,
         ],
       );
@@ -672,17 +643,6 @@ class AppState extends ChangeNotifier {
       (request) =>
           request.targetUserId == chatId &&
           request.status == RequestStatus.pending,
-    );
-  }
-
-  void seedDemoIncomingRequestIfNeeded() {
-    if (_receivedRequests.isNotEmpty || _activeAcceptedRequest != null) return;
-
-    addIncomingRequest(
-      fromUserId: 'demo_maria',
-      fromUserName: 'Maria',
-      type: RequestType.truth,
-      content: '¿Qué pensaste al ver mi foto?',
     );
   }
 
@@ -772,10 +732,12 @@ class AppState extends ChangeNotifier {
         .build();
 
     _hubConnection!.on('SolicitudRecibida', (arguments) {
+      debugPrint('SOLICITUD RECIBIDA SIGNALR: $arguments');
       if (arguments == null || arguments.isEmpty) return;
 
       final data = arguments.first as Map<Object?, Object?>;
 
+      final solicitudId = data['solicitudId']?.toString() ?? '';
       final fromUserId = data['fromUserId']?.toString() ?? '';
       final fromUserName = data['fromUserName']?.toString() ?? '';
       final typeText = data['type']?.toString() ?? '';
@@ -783,9 +745,10 @@ class AppState extends ChangeNotifier {
 
       final type = _requestTypeFromString(typeText);
 
-      if (fromUserId.isEmpty || fromUserName.isEmpty || content.isEmpty) return;
+      if (solicitudId.isEmpty || fromUserId.isEmpty || fromUserName.isEmpty || content.isEmpty) return;
 
       addIncomingRequest(
+        solicitudId: solicitudId,
         fromUserId: fromUserId,
         fromUserName: fromUserName,
         type: type,
@@ -840,6 +803,22 @@ class AppState extends ChangeNotifier {
       } else {
         cargarChats();
       }
+
+      notifyListeners();
+    });
+
+    _hubConnection!.on('SolicitudAceptada', (arguments) async {
+      debugPrint('SOLICITUD ACEPTADA SIGNALR: $arguments');
+
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+
+      final solicitudId = data['solicitudId']?.toString() ?? '';
+
+      _sentRequests.removeWhere((request) => request.id == solicitudId);
+
+      await cargarChats();
 
       notifyListeners();
     });

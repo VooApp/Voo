@@ -15,5 +15,6 @@ namespace VooApi.Models
         public string EmisorId { get; set; } = string.Empty;    // FK → Usuario
         public string ReceptorId { get; set; } = string.Empty;  // FK → Usuario
         public string Estado { get; set; } = "pendiente";       // "pendiente", "aceptado", "rechazado"
+        public string Contenido { get; set; } = string.Empty;   // texto de la verdad o descripción del reto
     }
 }

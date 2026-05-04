@@ -1,11 +1,7 @@
 import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-
-import '../mock/mock_dares.dart';
-import '../mock/mock_truths.dart';
 import '../models/request_model.dart';
+import '../services/api_service.dart';
 
 class DialogRequestResult {
   final String targetUserId;
@@ -43,14 +39,22 @@ class UserInteractionDialog extends StatefulWidget {
 
 class _UserInteractionDialogState extends State<UserInteractionDialog> {
   final TextEditingController _messageController = TextEditingController();
-  final Random _random = Random();
-
   bool _expandedTruthOrDare = false;
+  bool _loadingVerdadReto = true;
+
+  String? _verdadBackend;
+  String? _retoBackend;
 
   @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarVerdadReto();
   }
 
   String _cleanBase64(String value) {
@@ -87,34 +91,54 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
     );
   }
 
-  String _randomTruth() {
-    return mockTruths[_random.nextInt(mockTruths.length)];
-  }
+  Future<void> _cargarVerdadReto() async {
+    try {
+      final data = await ApiService.getVerdadRetoRandom();
 
-  String _randomDare() {
-    return mockDares[_random.nextInt(mockDares.length)];
+      if (!mounted) return;
+
+      setState(() {
+        _verdadBackend = data.verdad;
+        _retoBackend = data.reto;
+        _loadingVerdadReto = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _verdadBackend = '¿Qué pensaste al verme?';
+        _retoBackend = 'Te reto a decirme algo sincero.';
+        _loadingVerdadReto = false;
+      });
+    }
   }
 
   void _sendTruth() {
+    final verdad = _verdadBackend?.trim();
+    if (verdad == null || verdad.isEmpty) return;
+
     Navigator.pop(
       context,
       DialogRequestResult(
         targetUserId: widget.targetUserId,
         targetUserName: widget.targetUserName,
         type: RequestType.truth,
-        content: _randomTruth(),
+        content: verdad,
       ),
     );
   }
 
   void _sendDare() {
+    final reto = _retoBackend?.trim();
+    if (reto == null || reto.isEmpty) return;
+
     Navigator.pop(
       context,
       DialogRequestResult(
         targetUserId: widget.targetUserId,
         targetUserName: widget.targetUserName,
         type: RequestType.dare,
-        content: _randomDare(),
+        content: reto,
       ),
     );
   }
@@ -238,19 +262,28 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
             else
               Column(
                 children: [
-                  _QuestionChoiceCard(
-                    title: 'Verdad',
-                    color: const Color(0xFFEAB308),
-                    text: mockTruths.first,
-                    onTap: _sendTruth,
-                  ),
-                  const SizedBox(height: 10),
-                  _QuestionChoiceCard(
-                    title: 'Reto',
-                    color: const Color(0xFFEAB308),
-                    text: mockDares.first,
-                    onTap: _sendDare,
-                  ),
+                  if (_loadingVerdadReto)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 18),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF9C4DFF),
+                      ),
+                    )
+                  else ...[
+                    _QuestionChoiceCard(
+                      title: 'Verdad',
+                      color: const Color(0xFFEAB308),
+                      text: _verdadBackend ?? '',
+                      onTap: _sendTruth,
+                    ),
+                    const SizedBox(height: 10),
+                    _QuestionChoiceCard(
+                      title: 'Reto',
+                      color: const Color(0xFFEAB308),
+                      text: _retoBackend ?? '',
+                      onTap: _sendDare,
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   GestureDetector(
                     onTap: () {

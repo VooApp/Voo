@@ -20,6 +20,7 @@ namespace VooApi.Hubs
         }
 
         public async Task EnviarSolicitud(
+            string solicitudId,
             string fromUserId,
             string fromUserName,
             string targetUserId,
@@ -28,6 +29,7 @@ namespace VooApi.Hubs
         {
             await Clients.Group($"usuario-{targetUserId}").SendAsync("SolicitudRecibida", new
             {
+                solicitudId,
                 fromUserId,
                 fromUserName,
                 type,

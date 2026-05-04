@@ -113,10 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final DialogRequestResult? result =
-          await showDialog<DialogRequestResult>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => UserInteractionDialog(
+            await showDialog<DialogRequestResult>(
+          context: context,
+          barrierDismissible: true,
+          builder: (_) => UserInteractionDialog(
           targetUserId: user.id,
           targetUserName: user.nombre,
           targetUserAge: user.edad,
