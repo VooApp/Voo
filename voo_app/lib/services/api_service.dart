@@ -16,14 +16,14 @@ class ApiService {
     if (envUrl.isNotEmpty) return envUrl;
 
     if (kIsWeb) {
-      return 'http://localhost:5011';
+      return 'http://192.168.111.51:5011';
     }
 
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5011';
+      return 'http://192.168.111.51:5011';
     }
 
-    return 'http://localhost:5011';
+    return 'http://192.168.111.51:5011';
   }
 
   static Uri _uri(String path) {

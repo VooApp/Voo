@@ -271,6 +271,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  RequestModel? getInteractionRequestForUser(String userId) {
+    try {
+      return _sentRequests.firstWhere(
+        (request) => request.targetUserId == userId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   bool shouldHideUserFromHome(String userId) {
     final hasOutgoingState = _sentRequests.any(
       (request) =>
@@ -317,7 +327,41 @@ class AppState extends ChangeNotifier {
     final index = _receivedRequests.indexWhere((r) => r.id == requestId);
     if (index == -1) return;
 
+    final request = _receivedRequests[index];
+
     _receivedRequests.removeAt(index);
+
+    final existingIndex = _sentRequests.indexWhere(
+      (r) => r.targetUserId == request.targetUserId,
+    );
+
+    final rejectedRequest = request.copyWith(status: RequestStatus.rejected);
+
+    if (existingIndex == -1) {
+      _sentRequests.insert(0, rejectedRequest);
+    } else {
+      _sentRequests[existingIndex] = rejectedRequest;
+    }
+
+    notifyListeners();
+  }
+
+  void reopenRejectedIncomingRequest(String userId) {
+    final index = _sentRequests.indexWhere(
+      (request) =>
+          request.targetUserId == userId &&
+          request.status == RequestStatus.rejected,
+    );
+
+    if (index == -1) return;
+
+    final request = _sentRequests[index].copyWith(
+      status: RequestStatus.pending,
+    );
+
+    _sentRequests.removeAt(index);
+    _receivedRequests.insert(0, request);
+
     notifyListeners();
   }
 

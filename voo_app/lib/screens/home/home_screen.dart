@@ -235,8 +235,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                   final user = visibleUsers[index];
                                   final userColor = _colorPorEstado(user.estado);
 
-                                  final pendingRequest =
-                                      appState.getPendingRequestForUser(user.id);
+                                  final interactionRequest =
+                                      appState.getInteractionRequestForUser(user.id);
+
+                                  final bool hasRequest =
+                                      interactionRequest != null || appState.shouldHideUserFromHome(user.id);
+
+                                  final bool isRejected =
+                                      interactionRequest?.status == RequestStatus.rejected;
+
+                                  final String? requestLabel = interactionRequest == null
+                                      ? null
+                                      : interactionRequest.status == RequestStatus.rejected
+                                          ? 'Solicitud rechazada'
+                                          : '${_requestTypeLabel(interactionRequest.type)} pendiente';
 
                                   final bool isNewUser =
                                       !_knownUserIds.contains(user.id);
@@ -257,13 +269,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                       age: user.edad,
                                       foto: user.foto,
                                       statusColor: userColor,
-                                      hasRequestSent: pendingRequest != null || appState.shouldHideUserFromHome(user.id),
-                                      pendingLabel: pendingRequest == null
-                                          ? null
-                                          : '${_requestTypeLabel(pendingRequest.type)} pendiente',
-                                      onTap: pendingRequest == null
-                                          ? () => openInteractionPopup(user)
-                                          : () {},
+                                      hasRequestSent: hasRequest,
+                                      pendingLabel: requestLabel,
+                                      pendingLabelColor: isRejected
+                                          ? const Color(0xFFFF3B5C)
+                                          : const Color(0xFFEAB308),
+                                      onTap: isRejected
+                                          ? () {
+                                              context
+                                                  .read<AppState>()
+                                                  .reopenRejectedIncomingRequest(user.id);
+                                            }
+                                          : interactionRequest == null
+                                              ? () => openInteractionPopup(user)
+                                              : () {},
                                     ),
                                   );
                                 },
@@ -896,6 +915,7 @@ class _GuestCard extends StatelessWidget {
   final String? pendingLabel;
   final bool hasRequestSent;
   final VoidCallback onTap;
+  final Color? pendingLabelColor;
 
   const _GuestCard({
     required this.name,
@@ -905,6 +925,7 @@ class _GuestCard extends StatelessWidget {
     required this.onTap,
     required this.hasRequestSent,
     this.pendingLabel,
+    this.pendingLabelColor,
   });
 
   ImageProvider? _profileImage() {
@@ -971,8 +992,8 @@ class _GuestCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       pendingLabel!,
-                      style: const TextStyle(
-                        color: Color(0xFFEAB308),
+                      style: TextStyle(
+                        color: pendingLabelColor ?? const Color(0xFFEAB308),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
