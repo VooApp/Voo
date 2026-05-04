@@ -77,8 +77,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final String codigoSala = appState.roomCode ?? '---';
 
     final visibleUsers = appState.salaUsuarios
-        .where((user) => !user.baneado && !appState.shouldHideUserFromHome(user.id))
-        .toList();
+      .where((user) => !user.baneado)
+      .toList()
+    ..sort((a, b) {
+      final aTieneSolicitud = appState.getPendingRequestForUser(a.id) != null ||
+          appState.shouldHideUserFromHome(a.id);
+
+      final bTieneSolicitud = appState.getPendingRequestForUser(b.id) != null ||
+          appState.shouldHideUserFromHome(b.id);
+
+      if (aTieneSolicitud == bTieneSolicitud) return 0;
+      return aTieneSolicitud ? 1 : -1;
+    });
 
     final RequestModel? blockingIncoming = appState.blockingIncomingRequest;
     final RequestModel? activeAccepted = appState.activeAcceptedRequest;
@@ -105,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final DialogRequestResult? result =
           await showDialog<DialogRequestResult>(
         context: context,
-        barrierDismissible: true,
+        barrierDismissible: false,
         builder: (_) => UserInteractionDialog(
           targetUserId: user.id,
           targetUserName: user.nombre,
@@ -142,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       await showDialog<void>(
         context: context,
-        barrierDismissible: true,
+        barrierDismissible: false,
         builder: (_) => SentRequestDialog(
           title: dialogData.$1,
           subtitle: dialogData.$2,
@@ -247,10 +257,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       age: user.edad,
                                       foto: user.foto,
                                       statusColor: userColor,
+                                      hasRequestSent: pendingRequest != null || appState.shouldHideUserFromHome(user.id),
                                       pendingLabel: pendingRequest == null
                                           ? null
                                           : '${_requestTypeLabel(pendingRequest.type)} pendiente',
-                                      onTap: () => openInteractionPopup(user),
+                                      onTap: pendingRequest == null
+                                          ? () => openInteractionPopup(user)
+                                          : () {},
                                     ),
                                   );
                                 },
@@ -337,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       await showDialog<void>(
                         context: context,
-                        barrierDismissible: true,
+                        barrierDismissible: false,
                         builder: (_) => const SentRequestDialog(
                           title: 'Mensaje enviado',
                           subtitle: 'Ya podéis seguir hablando en vuestro chat.',
@@ -881,6 +894,7 @@ class _GuestCard extends StatelessWidget {
   final String? foto;
   final Color statusColor;
   final String? pendingLabel;
+  final bool hasRequestSent;
   final VoidCallback onTap;
 
   const _GuestCard({
@@ -889,6 +903,7 @@ class _GuestCard extends StatelessWidget {
     required this.foto,
     required this.statusColor,
     required this.onTap,
+    required this.hasRequestSent,
     this.pendingLabel,
   });
 
@@ -915,56 +930,28 @@ class _GuestCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: const Color(0xFF151525),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFFD78BFF).withOpacity(0.5),
+            color: hasRequestSent
+                ? Colors.white.withOpacity(0.12)
+                : const Color(0xFFD78BFF).withOpacity(0.5),
             width: 1.4,
           ),
         ),
         child: Row(
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              padding: const EdgeInsets.all(2.4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: statusColor,
-                  width: 2.4,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: statusColor.withOpacity(0.25),
-                    blurRadius: 12,
-                    spreadRadius: 0.5,
+            hasRequestSent
+                ? _StaticProfilePhoto(
+                    image: image,
+                    statusColor: statusColor,
+                  )
+                : _BlinkingProfilePhoto(
+                    image: image,
+                    statusColor: statusColor,
                   ),
-                ],
-              ),
-              child: ClipOval(
-                child: image != null
-                    ? Image(
-                        image: image,
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                        gaplessPlayback: true,
-                      )
-                    : Container(
-                        color: const Color(0xFF101018),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.white,
-                        ),
-                      ),
-              ),
-            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -972,8 +959,10 @@ class _GuestCard extends StatelessWidget {
                 children: [
                   Text(
                     '$name, $age',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: hasRequestSent
+                          ? Colors.white.withOpacity(0.62)
+                          : Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -992,14 +981,205 @@ class _GuestCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.white54,
-              size: 24,
-            ),
+            hasRequestSent
+                ? const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white38,
+                    size: 24,
+                  )
+                : _GlowingArrow(color: const Color(0xFF9C4DFF)),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BlinkingProfilePhoto extends StatefulWidget {
+  final ImageProvider? image;
+  final Color statusColor;
+
+  const _BlinkingProfilePhoto({
+    required this.image,
+    required this.statusColor,
+  });
+
+  @override
+  State<_BlinkingProfilePhoto> createState() => _BlinkingProfilePhotoState();
+}
+
+class _BlinkingProfilePhotoState extends State<_BlinkingProfilePhoto>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _glow;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 950),
+    )..repeat(reverse: true);
+
+    _glow = Tween<double>(begin: 0.25, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glow,
+      builder: (context, _) {
+        return Container(
+          width: 52,
+          height: 52,
+          padding: const EdgeInsets.all(2.4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.statusColor.withOpacity(0.65 + (_glow.value * 0.35)),
+              width: 2.6,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.statusColor.withOpacity(0.45 * _glow.value),
+                blurRadius: 18 * _glow.value,
+                spreadRadius: 1.4 * _glow.value,
+              ),
+            ],
+          ),
+          child: _PhotoCircle(image: widget.image),
+        );
+      },
+    );
+  }
+}
+
+class _StaticProfilePhoto extends StatelessWidget {
+  final ImageProvider? image;
+  final Color statusColor;
+
+  const _StaticProfilePhoto({
+    required this.image,
+    required this.statusColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 52,
+      height: 52,
+      padding: const EdgeInsets.all(2.4),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: statusColor.withOpacity(0.35),
+          width: 2.2,
+        ),
+      ),
+      child: _PhotoCircle(image: image),
+    );
+  }
+}
+
+class _PhotoCircle extends StatelessWidget {
+  final ImageProvider? image;
+
+  const _PhotoCircle({
+    required this.image,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: image != null
+          ? Image(
+              image: image!,
+              width: 52,
+              height: 52,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            )
+          : Container(
+              color: const Color(0xFF101018),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+              ),
+            ),
+    );
+  }
+}
+
+class _GlowingArrow extends StatefulWidget {
+  final Color color;
+
+  const _GlowingArrow({
+    required this.color,
+  });
+
+  @override
+  State<_GlowingArrow> createState() => _GlowingArrowState();
+}
+
+class _GlowingArrowState extends State<_GlowingArrow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _glow;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
+    _glow = Tween<double>(begin: 0.45, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glow,
+      builder: (context, _) {
+        return Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.35 * _glow.value),
+                blurRadius: 14 * _glow.value,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.chevron_right_rounded,
+            color: widget.color.withOpacity(0.75 + (_glow.value * 0.25)),
+            size: 28,
+          ),
+        );
+      },
     );
   }
 }

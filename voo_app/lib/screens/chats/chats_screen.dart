@@ -25,9 +25,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      context.read<AppState>().cargarChats();
+
+      await context.read<AppState>().iniciarSignalR();
+      await context.read<AppState>().cargarChats();
     });
   }
 
