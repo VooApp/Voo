@@ -483,6 +483,44 @@ class ApiService {
 
     return const Color(0xFF22C55E);
   }
+
+  static Future<Map<String, dynamic>> getRetosTimeline(String usuarioId) async {
+    final response = await http.get(_uri('/Reto/timeline/$usuarioId'));
+
+    debugPrint('GET: ${_uri('/Reto/timeline/$usuarioId')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al cargar retos');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> completarRetoActual({
+    required String usuarioId,
+    required String usuarioEscaneadoId,
+  }) async {
+    final response = await http.post(
+      _uri('/Reto/completar-actual'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'usuarioId': usuarioId,
+        'usuarioEscaneadoId': usuarioEscaneadoId,
+      }),
+    );
+
+    debugPrint('POST: ${_uri('/Reto/completar-actual')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al completar reto');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
 }
 
 class RegistroHostResponse {

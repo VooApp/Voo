@@ -26,6 +26,8 @@ builder.Services.AddControllers()
 // SignalR para notificaciones en tiempo real
 builder.Services.AddSignalR();
 
+builder.Services.AddScoped<RetoCompletadoRepository>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VooCors", policy =>

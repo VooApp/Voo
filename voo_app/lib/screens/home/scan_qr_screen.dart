@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../../state/app_state.dart';
 
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key});
@@ -74,13 +76,26 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
               _statusText = 'Apunta al QR dentro del recuadro';
             });
           },
-          onConfirm: () {
+          onConfirm: () async {
+            final myId = context.read<AppState>().userId;
+
+            if (myId == null || myId.isEmpty) return;
+
+            final resultado = await ApiService.completarRetoActual(
+              usuarioId: myId,
+              usuarioEscaneadoId: usuario.id,
+            );
+
+            if (!context.mounted) return;
+
             Navigator.pop(context);
+
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Reto confirmado'),
+              SnackBar(
+                content: Text(resultado['mensaje']?.toString() ?? 'Reto procesado'),
               ),
             );
+
             setState(() {
               _handledResult = false;
               _statusText = 'Apunta al QR dentro del recuadro';
