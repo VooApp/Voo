@@ -18,6 +18,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().cargarPremios();
+    });
+  }
+
   Future<void> _confirmarCerrarSala(AppState appState) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -292,7 +300,7 @@ class _ProfileCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF66D63E),
+                        color: estadoColor,
                         width: 3.5,
                       ),
                     ),
@@ -309,7 +317,7 @@ class _ProfileCard extends StatelessWidget {
                       width: 17,
                       height: 17,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF66D63E),
+                        color: estadoColor,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: const Color(0xFF05051C),
@@ -390,7 +398,7 @@ class _RoomCard extends StatelessWidget {
     final invitados = appState.salaUsuarios.where((u) => !u.baneado).length;
     final baneados = appState.baneadosCount;
     final matches = appState.matchCount;
-    
+
     return _GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/app_state.dart';
+import '../../services/api_service.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../chats/chats_screen.dart';
 import '../home/home_screen.dart';
@@ -9,47 +10,70 @@ import 'create_challenge_screen.dart';
 import '../ranking/ranking_screen.dart';
 import '../settings/settings_screen.dart';
 
-class RetosScreen extends StatelessWidget {
+class RetosScreen extends StatefulWidget {
   const RetosScreen({super.key});
+
+  @override
+  State<RetosScreen> createState() => _RetosScreenState();
+}
+
+class _RetosScreenState extends State<RetosScreen> {
+  List<RetoModel> _retos = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarRetos();
+  }
+
+  Future<void> _cargarRetos() async {
+    try {
+      final retos = await ApiService.getRetosActivos();
+      setState(() {
+        _retos = retos;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error al cargar los retos';
+        _loading = false;
+      });
+    }
+  }
+
+  // Convierte el estadoReto en los datos visuales de la tarjeta
+  _ChallengeViewModel _retoToViewModel(RetoModel reto) {
+    switch (reto.estadoReto) {
+      case 'activo':
+        return _ChallengeViewModel(
+          title: reto.concepto,
+          badgeText: 'Activo',
+          pointsText: '+${reto.puntos} pt',
+          color: const Color(0xFF22C55E),
+        );
+      case 'completado':
+        return _ChallengeViewModel(
+          title: reto.concepto,
+          badgeText: 'Completado',
+          pointsText: '+${reto.puntos} pt',
+          color: const Color(0xFFEF4444),
+        );
+      default:
+        return _ChallengeViewModel(
+          title: reto.concepto,
+          badgeText: 'Próximo',
+          pointsText: '+${reto.puntos} pt',
+          color: const Color(0xFFEAB308),
+        );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final bool isHost = appState.isHost;
-
-    void openPlaceholder(String text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(text)),
-      );
-    }
-
-    // ✅ ORDEN Y SIGNIFICADO CORRECTO
-    const activeChallenge = _ChallengeViewModel(
-      title: 'Escanea el QR de 3 personas con estado amarillo',
-      badgeText: 'Activo',
-      pointsText: '+15 pt',
-      color: Color(0xFF22C55E),
-    );
-
-    const nextChallenge = _ChallengeViewModel(
-      title: 'Escanea el QR de alguien que aún no haya hablado con nadie',
-      badgeText: 'Próximo',
-      pointsText: '+10 pt',
-      color: Color(0xFFEAB308),
-    );
-
-    const lastChallenge = _ChallengeViewModel(
-      title: 'Juego verdad o reto con 3 invitados',
-      badgeText: 'Hace 10 min',
-      pointsText: '+25 pt',
-      color: Color(0xFFEF4444),
-    );
-
-    final challenges = [
-      activeChallenge,
-      nextChallenge,
-      lastChallenge,
-    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -94,17 +118,70 @@ class RetosScreen extends StatelessWidget {
 
                 // LISTA DE RETOS
                 Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.only(top: 4, bottom: 12),
-                    itemCount: challenges.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: 22), // 👈 ESPACIADO
-                    itemBuilder: (context, index) {
-                      return _WideChallengeCard(
-                        challenge: challenges[index],
-                      );
-                    },
-                  ),
+                  child: _loading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF9C4DFF),
+                          ),
+                        )
+                      : _error != null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    _error!,
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _loading = true;
+                                        _error = null;
+                                      });
+                                      _cargarRetos();
+                                    },
+                                    child: const Text(
+                                      'Reintentar',
+                                      style: TextStyle(
+                                        color: Color(0xFF9C4DFF),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : _retos.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    'No hay retos activos por ahora',
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                )
+                              : RefreshIndicator(
+                                  color: const Color(0xFF9C4DFF),
+                                  onRefresh: _cargarRetos,
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.only(
+                                        top: 4, bottom: 12),
+                                    itemCount: _retos.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 22),
+                                    itemBuilder: (context, index) {
+                                      return _WideChallengeCard(
+                                        challenge:
+                                            _retoToViewModel(_retos[index]),
+                                      );
+                                    },
+                                  ),
+                                ),
                 ),
 
                 const SizedBox(height: 8),
@@ -155,6 +232,7 @@ class RetosScreen extends StatelessWidget {
   }
 }
 
+// Todos los widgets de abajo se quedan exactamente igual que antes
 class _RetosTitle extends StatelessWidget {
   const _RetosTitle();
 
@@ -246,24 +324,15 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
     );
 
     _glowAnimation = Tween<double>(begin: 0.18, end: 0.42).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
     _borderAnimation = Tween<double>(begin: 2.2, end: 3.6).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.012).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
     if (isActive) {
@@ -289,10 +358,7 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
         decoration: BoxDecoration(
           color: const Color(0xFF081328),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: color,
-            width: 2.2,
-          ),
+          border: Border.all(color: color, width: 2.2),
         ),
         child: Stack(
           children: [
@@ -369,7 +435,8 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
             child: Stack(
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 8, right: 88, bottom: 22),
+                  padding:
+                      const EdgeInsets.only(top: 8, right: 88, bottom: 22),
                   child: Text(
                     widget.challenge.title,
                     style: const TextStyle(
@@ -416,13 +483,10 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
 class _CreateChallengeButton extends StatefulWidget {
   final VoidCallback onTap;
 
-  const _CreateChallengeButton({
-    required this.onTap,
-  });
+  const _CreateChallengeButton({required this.onTap});
 
   @override
-  State<_CreateChallengeButton> createState() =>
-      _CreateChallengeButtonState();
+  State<_CreateChallengeButton> createState() => _CreateChallengeButtonState();
 }
 
 class _CreateChallengeButtonState extends State<_CreateChallengeButton> {
@@ -445,10 +509,7 @@ class _CreateChallengeButtonState extends State<_CreateChallengeButton> {
         decoration: BoxDecoration(
           color: const Color(0xFF151525),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: color,
-            width: 2,
-          ),
+          border: Border.all(color: color, width: 2),
           boxShadow: _pressed
               ? [
                   BoxShadow(

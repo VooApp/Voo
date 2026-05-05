@@ -6,6 +6,7 @@ import '../models/message_model.dart';
 import '../models/request_model.dart';
 
 import '../services/api_service.dart';
+import '../services/presencia_service.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 class AppState extends ChangeNotifier {
@@ -46,6 +47,28 @@ class AppState extends ChangeNotifier {
   List<SalaUsuarioModel> get salaUsuarios => List.unmodifiable(_salaUsuarios);
   bool get loadingUsuarios => _loadingUsuarios;
   String? get loadingError => _loadingError;
+
+  // ─── PREMIOS ──────────────────────────────────────────────────────────
+  List<PremioModel> _premios = [];
+  bool _loadingPremios = false;
+
+  List<PremioModel> get premios => List.unmodifiable(_premios);
+  bool get loadingPremios => _loadingPremios;
+
+  Future<void> cargarPremios() async {
+    _loadingPremios = true;
+    notifyListeners();
+    try {
+      _premios = await ApiService.getPremios();
+    } catch (e) {
+      debugPrint('Error cargando premios: $e');
+      _premios = [];
+    } finally {
+      _loadingPremios = false;
+      notifyListeners();
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────
 
   RequestModel? _activeAcceptedRequest;
 
@@ -122,12 +145,13 @@ class AppState extends ChangeNotifier {
     _aceptaTerminos = false;
     _latitudGuest = null;
     _longitudGuest = null;
+    _premios = [];
+    _loadingPremios = false;
     notifyListeners();
   }
 
   void setActiveChat(String? chatId) {
     _activeChatId = chatId;
-
     if (chatId != null) {
       marcarChatComoLeidoLocal(chatId);
     }
@@ -138,7 +162,6 @@ class AppState extends ChangeNotifier {
     if (index == -1) return;
 
     final oldChat = _dynamicChats[index];
-
     _dynamicChats[index] = oldChat.copyWith(
       unreadCount: 0,
       previewState: ChatPreviewState.normal,
@@ -511,7 +534,8 @@ class AppState extends ChangeNotifier {
       );
     }
 
-    final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == targetUserId);
+    final chatIndex =
+        _dynamicChats.indexWhere((chat) => chat.id == targetUserId);
     if (chatIndex != -1) {
       final oldChat = _dynamicChats[chatIndex];
       _dynamicChats[chatIndex] = oldChat.copyWith(
@@ -648,17 +672,6 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  Color _statusColorFromType(RequestType type) {
-    switch (type) {
-      case RequestType.truth:
-        return const Color(0xFF22C55E);
-      case RequestType.dare:
-        return const Color(0xFFEF4444);
-      case RequestType.messageRequest:
-        return const Color(0xFF52A9FF);
-    }
-  }
-
   String _formatNow() {
     final now = DateTime.now();
     final h = now.hour.toString().padLeft(2, '0');
@@ -676,9 +689,7 @@ class AppState extends ChangeNotifier {
 
     try {
       final usuarios = await ApiService.getUsuariosSala(id);
-      _salaUsuarios = usuarios
-          .where((u) => u.id != _userId)
-          .toList();
+      _salaUsuarios = usuarios.where((u) => u.id != _userId).toList();
     } catch (e) {
       _loadingError = e.toString();
     } finally {
@@ -695,6 +706,7 @@ class AppState extends ChangeNotifier {
   Future<void> salirDeSala() async {
     final id = _userId;
     if (id != null) await ApiService.salirDeSala(id);
+    detenerPresencia();
     clear();
   }
 
@@ -704,10 +716,10 @@ class AppState extends ChangeNotifier {
     clear();
   }
 
-  List<String> get premios => [];
-
   int get matchCount =>
-      _dynamicChats.where((c) => c.previewState == ChatPreviewState.normal).length;
+      _dynamicChats
+          .where((c) => c.previewState == ChatPreviewState.normal)
+          .length;
 
   int get baneadosCount => _salaUsuarios.where((u) => u.baneado).length;
 
@@ -747,7 +759,10 @@ class AppState extends ChangeNotifier {
 
       final type = _requestTypeFromString(typeText);
 
-      if (solicitudId.isEmpty || fromUserId.isEmpty || fromUserName.isEmpty || content.isEmpty) return;
+      if (solicitudId.isEmpty ||
+          fromUserId.isEmpty ||
+          fromUserName.isEmpty ||
+          content.isEmpty) return;
 
       addIncomingRequest(
         solicitudId: solicitudId,
@@ -774,7 +789,6 @@ class AppState extends ChangeNotifier {
 
       if (chatId.isEmpty || fromUserId.isEmpty || content.isEmpty) return;
 
-      // Evita duplicar tus propios mensajes
       if (fromUserId == _userId) return;
 
       final message = MessageModel(
@@ -787,7 +801,8 @@ class AppState extends ChangeNotifier {
 
       _messages.add(message);
 
-      final chatIndex = _dynamicChats.indexWhere((chat) => chat.id == chatId);
+      final chatIndex =
+          _dynamicChats.indexWhere((chat) => chat.id == chatId);
 
       if (chatIndex != -1) {
         final oldChat = _dynamicChats[chatIndex];
@@ -798,7 +813,8 @@ class AppState extends ChangeNotifier {
           oldChat.copyWith(
             lastMessage: content,
             time: time,
-            unreadCount: _activeChatId == chatId ? 0 : oldChat.unreadCount + 1,
+            unreadCount:
+                _activeChatId == chatId ? 0 : oldChat.unreadCount + 1,
             previewState: ChatPreviewState.normal,
           ),
         );
@@ -839,7 +855,8 @@ class AppState extends ChangeNotifier {
 
       if (solicitudId.isEmpty || receptorId.isEmpty) return;
 
-      final sentIndex = _sentRequests.indexWhere((r) => r.id == solicitudId);
+      final sentIndex =
+          _sentRequests.indexWhere((r) => r.id == solicitudId);
 
       if (sentIndex != -1) {
         _sentRequests[sentIndex] = _sentRequests[sentIndex].copyWith(
@@ -904,8 +921,6 @@ class AppState extends ChangeNotifier {
         latitud: _latitudGuest ?? 0.0,
         longitud: _longitudGuest ?? 0.0,
         accuracy: 0.0,
-
-        // ✅ Enviamos al backend lo que exige el RegistroService
         aceptaTerminos: _aceptaTerminos,
         aceptaPrivacidad: _aceptaTerminos,
         aceptaBiometria: _aceptaTerminos,
@@ -915,8 +930,23 @@ class AppState extends ChangeNotifier {
       _salaId = response.salaId;
       _userName = response.nombreUsuario;
       notifyListeners();
+
+      // Iniciar verificación de presencia al entrar a la sala
+      iniciarPresencia();
     } catch (e) {
       rethrow;
     }
+  }
+
+  // Inicia la verificación de presencia cada 3 horas
+  void iniciarPresencia() {
+    final id = _userId;
+    if (id == null || _isHost) return;
+    PresenciaService.iniciar(usuarioId: id);
+  }
+
+  // Detiene la verificación cuando el usuario sale de la sala
+  void detenerPresencia() {
+    PresenciaService.detener();
   }
 }
