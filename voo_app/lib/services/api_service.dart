@@ -8,6 +8,7 @@ import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/chat_preview_state.dart';
 import '../models/request_model.dart';
+import '../models/reto_model.dart';
 
 
 class ApiService {
@@ -484,20 +485,6 @@ class ApiService {
     return const Color(0xFF22C55E);
   }
 
-  static Future<Map<String, dynamic>> getRetosTimeline(String usuarioId) async {
-    final response = await http.get(_uri('/Reto/timeline/$usuarioId'));
-
-    debugPrint('GET: ${_uri('/Reto/timeline/$usuarioId')}');
-    debugPrint('STATUS: ${response.statusCode}');
-    debugPrint('BODY: ${response.body}');
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Error al cargar retos');
-    }
-
-    return jsonDecode(response.body) as Map<String, dynamic>;
-  }
-
   static Future<Map<String, dynamic>> completarRetoActual({
     required String usuarioId,
     required String usuarioEscaneadoId,
@@ -520,6 +507,31 @@ class ApiService {
     }
 
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, RetoModel?>> getRetosTimeline(String usuarioId) async {
+    final response = await http.get(_uri('/Reto/timeline/$usuarioId'));
+
+    debugPrint('GET: ${_uri('/Reto/timeline/$usuarioId')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener retos');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    RetoModel? parseReto(dynamic value) {
+      if (value == null) return null;
+      return RetoModel.fromJson(value as Map<String, dynamic>);
+    }
+
+    return {
+      'anterior': parseReto(data['anterior']),
+      'activo': parseReto(data['activo']),
+      'proximo': parseReto(data['proximo']),
+    };
   }
 }
 

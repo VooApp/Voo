@@ -59,5 +59,10 @@ namespace VooApi.Hubs
         {
             await Clients.Group(salaId).SendAsync("UsuarioEntradoSala");
         }
+
+        public async Task NotificarRetosActualizados(string salaId)
+        {
+            await Clients.Group(salaId).SendAsync("RetosActualizados");
+        }
     }
 }

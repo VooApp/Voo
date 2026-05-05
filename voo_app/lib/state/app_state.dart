@@ -74,6 +74,9 @@ class AppState extends ChangeNotifier {
   double? get latitudGuest => _latitudGuest;
   double? get longitudGuest => _longitudGuest;
 
+  int _retosVersion = 0;
+  int get retosVersion => _retosVersion;
+
   RequestModel? get blockingIncomingRequest {
     try {
       return _receivedRequests.firstWhere(
@@ -865,6 +868,12 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     });
 
+    _hubConnection!.on('RetosActualizados', (arguments) {
+      debugPrint('RETOS ACTUALIZADOS SIGNALR');
+      _retosVersion++;
+      notifyListeners();
+    });
+
     await _hubConnection!.start();
 
     await _hubConnection!.invoke(
@@ -876,6 +885,7 @@ class AppState extends ChangeNotifier {
       'JoinUsuario',
       args: [currentUserId],
     );
+    
   }
 
   void setGuestJoinData({
