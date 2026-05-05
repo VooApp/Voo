@@ -64,8 +64,18 @@ namespace VooApi.Controllers
         public async Task<IActionResult> Rechazar(string solicitudId)
         {
             var resultado = await _service.RechazarSolicitudAsync(solicitudId);
+
             if (!resultado.Exito)
                 return BadRequest(new { mensaje = resultado.Mensaje });
+
+            await _hubContext.Clients
+                .Group($"usuario-{resultado.EmisorId}")
+                .SendAsync("SolicitudRechazada", new
+                {
+                    solicitudId,
+                    receptorId = resultado.ReceptorId,
+                    mensaje = resultado.Mensaje
+                });
 
             return Ok(new { mensaje = resultado.Mensaje });
         }

@@ -186,7 +186,9 @@ class AppState extends ChangeNotifier {
 
     _sentRequests.insert(0, request);
 
-    final alreadyInChats = _dynamicChats.any((chat) => chat.id == targetUserId);
+    final alreadyInChats = _dynamicChats.any(
+      (chat) => chat.otherUserId == targetUserId,
+    );
     if (!alreadyInChats) {
       _dynamicChats.insert(
         0,
@@ -596,17 +598,6 @@ class AppState extends ChangeNotifier {
           myId,
           targetUserId,
           text,
-          tempMessage.time,
-        ],
-      );
-
-      await _hubConnection?.invoke(
-        'EnviarMensajeChat',
-        args: [
-          chatId,
-          myId,
-          targetUserId,
-          text,
           tempTime,
         ],
       );
@@ -627,11 +618,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final chats = await ApiService.getChatsUsuario(id);
+      final backendChats = await ApiService.getChatsUsuario(id);
+
+      final localMissionChats = _dynamicChats.where((chat) {
+        final hasBackendChat = backendChats.any(
+          (backendChat) => backendChat.otherUserId == chat.otherUserId,
+        );
+
+        return !hasBackendChat &&
+            (chat.previewState == ChatPreviewState.missionBusy ||
+                isPendingOutgoingChat(chat.otherUserId));
+      }).toList();
 
       _dynamicChats
         ..clear()
-        ..addAll(chats);
+        ..addAll(localMissionChats)
+        ..addAll(backendChats);
     } finally {
       _loadingChats = false;
       notifyListeners();
@@ -819,6 +821,46 @@ class AppState extends ChangeNotifier {
       _sentRequests.removeWhere((request) => request.id == solicitudId);
 
       await cargarChats();
+
+      notifyListeners();
+    });
+
+    _hubConnection!.on('SolicitudRechazada', (arguments) {
+      debugPrint('SOLICITUD RECHAZADA SIGNALR: $arguments');
+
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+
+      final solicitudId = data['solicitudId']?.toString() ?? '';
+      final receptorId = data['receptorId']?.toString() ?? '';
+      final mensaje = data['mensaje']?.toString() ??
+          'Está en otra misión ahora mismo ¡intenta con otro!';
+
+      if (solicitudId.isEmpty || receptorId.isEmpty) return;
+
+      final sentIndex = _sentRequests.indexWhere((r) => r.id == solicitudId);
+
+      if (sentIndex != -1) {
+        _sentRequests[sentIndex] = _sentRequests[sentIndex].copyWith(
+          status: RequestStatus.rejected,
+        );
+      }
+
+      final chatIndex = _dynamicChats.indexWhere(
+        (chat) => chat.otherUserId == receptorId || chat.id == receptorId,
+      );
+
+      if (chatIndex != -1) {
+        final oldChat = _dynamicChats[chatIndex];
+
+        _dynamicChats[chatIndex] = oldChat.copyWith(
+          lastMessage: mensaje,
+          previewState: ChatPreviewState.missionBusy,
+          unreadCount: 0,
+          time: _formatNow(),
+        );
+      }
 
       notifyListeners();
     });

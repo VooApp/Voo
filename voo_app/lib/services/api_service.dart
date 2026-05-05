@@ -372,10 +372,6 @@ class ApiService {
 
       final ultimoMensaje = map['ultimoMensaje']?.toString().trim() ?? '';
 
-      if (ultimoMensaje.isEmpty) {
-        return null;
-      }
-
       final estado = map['otroUsuarioEstado']?.toString() ?? 'soltero';
 
       return ChatModel(
@@ -383,7 +379,9 @@ class ApiService {
         otherUserId: map['otroUsuarioId']?.toString() ?? '',
         userName: map['otroUsuarioNombre']?.toString() ?? 'Usuario',
         foto: map['otroUsuarioFoto']?.toString(),
-        lastMessage: ultimoMensaje,
+        lastMessage: ultimoMensaje.isEmpty
+          ? '${map['otroUsuarioNombre']?.toString() ?? 'Usuario'} está en una misión ahora mismo ¡intenta con otro!'
+          : ultimoMensaje,
         time: _formatApiDate(map['ultimoMensajeFecha']?.toString()),
         unreadCount: map['mensajesNoLeidos'] as int? ?? 0,
         statusColor: _statusColorFromEstado(estado),

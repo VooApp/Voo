@@ -148,7 +148,9 @@ namespace VooApi.Services
             return new ResultadoReto
             {
                 Exito = true,
-                Mensaje = "Está en otra misión, intenta con otro"
+                Mensaje = "Está en otra misión, intenta con otro",
+                EmisorId = solicitud.EmisorId,
+                ReceptorId = solicitud.ReceptorId
             };
         }
 

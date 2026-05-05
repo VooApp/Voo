@@ -14,6 +14,9 @@ import '../retos/retos_screen.dart';
 import '../ranking/ranking_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../services/api_service.dart';
+import '../chats/chat_conversation_screen.dart';
+import '../../models/chat_preview_state.dart';
+import '../../models/chat_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -94,6 +97,47 @@ class _HomeScreenState extends State<HomeScreen> {
     final RequestModel? activeAccepted = appState.activeAcceptedRequest;
 
     final bool lockHome = blockingIncoming != null || activeAccepted != null;
+
+    void abrirChatConUsuario(SalaUsuarioModel user) {
+      final appState = context.read<AppState>();
+
+      ChatModel? chat;
+
+      try {
+        chat = appState.dynamicChats.firstWhere(
+          (c) =>
+              c.otherUserId == user.id &&
+              c.previewState != ChatPreviewState.missionBusy,
+        );
+      } catch (_) {
+        chat = null;
+      }
+
+      if (chat == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${user.nombre} todavía no ha aceptado la solicitud.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatConversationScreen(
+            isHost: appState.isHost,
+            chatId: chat!.id,
+            targetUserId: chat!.otherUserId,
+            chatName: chat!.userName,
+            chatFoto: chat!.foto,
+            statusColor: chat!.statusColor,
+          ),
+        ),
+      );
+    }
 
     Future<void> openInteractionPopup(SalaUsuarioModel user) async {
       if (lockHome) return;
@@ -275,14 +319,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ? const Color(0xFFFF3B5C)
                                           : const Color(0xFFEAB308),
                                       onTap: isRejected
-                                          ? () {
-                                              context
-                                                  .read<AppState>()
-                                                  .reopenRejectedIncomingRequest(user.id);
-                                            }
-                                          : interactionRequest == null
-                                              ? () => openInteractionPopup(user)
-                                              : () {},
+                                        ? () {
+                                            context
+                                                .read<AppState>()
+                                                .reopenRejectedIncomingRequest(user.id);
+                                          }
+                                        : hasRequest
+                                            ? () => abrirChatConUsuario(user)
+                                            : () => openInteractionPopup(user),
                                     ),
                                   );
                                 },

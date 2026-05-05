@@ -168,6 +168,18 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
     );
   }
 
+  bool _isAtLeast16(DateTime date) {
+    final today = DateTime.now();
+    var age = today.year - date.year;
+
+    if (today.month < date.month ||
+        (today.month == date.month && today.day < date.day)) {
+      age--;
+    }
+
+    return age >= 16;
+  }
+
   Future<void> _pickBirthDate() async {
     FocusScope.of(context).unfocus();
 
@@ -203,6 +215,18 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
     );
 
     if (pickedDate == null) return;
+
+    if (!_isAtLeast16(pickedDate)) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes ser mayor de 16 años para usar Voo.'),
+        ),
+      );
+
+      return;
+    }
 
     final formatted =
         '${pickedDate.day.toString().padLeft(2, '0')}/'
