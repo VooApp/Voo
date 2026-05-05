@@ -147,7 +147,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.82),
+      barrierColor: Colors.black.withValues(alpha: 0.82),
       builder: (_) {
         return GestureDetector(
           onTap: () => Navigator.pop(context),
@@ -254,7 +254,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                           Text(
                             'En sala',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.58),
+                              color: Colors.white.withValues(alpha: 0.58),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -354,17 +354,17 @@ class _ConversationBadge extends StatelessWidget {
         vertical: 8,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: const Color(0xFF9C4DFF).withOpacity(0.28),
+          color: const Color(0xFF9C4DFF).withValues(alpha: 0.28),
           width: 1.2,
         ),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.72),
+          color: Colors.white.withValues(alpha: 0.72),
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
@@ -422,14 +422,14 @@ class _MessageBubble extends StatelessWidget {
             ),
             border: Border.all(
               color: message.isMine
-                  ? Colors.white.withOpacity(0.10)
-                  : const Color(0xFF9C4DFF).withOpacity(0.65),
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : const Color(0xFF9C4DFF).withValues(alpha: 0.65),
               width: 1.1,
             ),
             boxShadow: !message.isMine
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF9C4DFF).withOpacity(0.20),
+                      color: const Color(0xFF9C4DFF).withValues(alpha: 0.20),
                       blurRadius: 12,
                       spreadRadius: 0.5,
                     ),
@@ -455,7 +455,7 @@ class _MessageBubble extends StatelessWidget {
               Text(
                 message.time,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.58),
+                  color: Colors.white.withValues(alpha: 0.58),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -501,7 +501,7 @@ class _MessageInputState extends State<_MessageInput> {
           boxShadow: _focused
               ? [
                   BoxShadow(
-                    color: const Color(0xFF9C4DFF).withOpacity(0.20),
+                    color: const Color(0xFF9C4DFF).withValues(alpha: 0.20),
                     blurRadius: 18,
                     spreadRadius: 1,
                   ),
@@ -520,7 +520,7 @@ class _MessageInputState extends State<_MessageInput> {
           decoration: InputDecoration(
             hintText: 'Escribe un mensaje',
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.42),
+              color: Colors.white.withValues(alpha: 0.42),
             ),
             filled: true,
             fillColor: const Color(0xFF151525),
@@ -531,7 +531,7 @@ class _MessageInputState extends State<_MessageInput> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(22),
               borderSide: BorderSide(
-                color: const Color(0xFF9C4DFF).withOpacity(0.32),
+                color: const Color(0xFF9C4DFF).withValues(alpha: 0.32),
                 width: 1.4,
               ),
             ),
@@ -588,7 +588,7 @@ class _SendButtonState extends State<_SendButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.38),
+                    color: color.withValues(alpha: 0.38),
                     blurRadius: 16,
                     spreadRadius: 1.2,
                   ),
@@ -638,12 +638,12 @@ class _ScrollToBottomButtonState extends State<_ScrollToBottomButton> {
           color: const Color(0xAA151515),
           shape: BoxShape.circle,
           border: Border.all(
-            color: color.withOpacity(0.75),
+            color: color.withValues(alpha: 0.75),
             width: 1.8,
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(_pressed ? 0.28 : 0.14),
+              color: color.withValues(alpha: _pressed ? 0.28 : 0.14),
               blurRadius: _pressed ? 16 : 10,
               spreadRadius: _pressed ? 1.2 : 0.3,
             ),
@@ -651,7 +651,7 @@ class _ScrollToBottomButtonState extends State<_ScrollToBottomButton> {
         ),
         child: Icon(
           Icons.keyboard_arrow_down_rounded,
-          color: color.withOpacity(0.95),
+          color: color.withValues(alpha: 0.95),
           size: 28,
         ),
       ),
@@ -700,7 +700,7 @@ class _BackButtonState extends State<_BackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.45 : 0.18),
+              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.45 : 0.18),
               blurRadius: _pressed ? 20 : 12,
               spreadRadius: _pressed ? 1.2 : 0.4,
             ),

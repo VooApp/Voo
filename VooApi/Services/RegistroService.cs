@@ -178,6 +178,23 @@ namespace VooApi.Services
                 };
             }
 
+            if (!string.IsNullOrWhiteSpace(dto.DeviceId))
+            {
+                var usuarioBaneado = await _usuarioRepository.ObtenerBaneadoPorSalaYDeviceAsync(
+                    sala.Id!,
+                    dto.DeviceId
+                );
+
+                if (usuarioBaneado != null)
+                {
+                    return new RegistroResultado
+                    {
+                        Exito = false,
+                        Mensaje = "Estás baneado de esta sala"
+                    };
+                }
+            }
+
             if (sala.Invitados >= sala.Aforo)
             {
                 return new RegistroResultado
@@ -217,6 +234,7 @@ namespace VooApi.Services
                 DentroRadio = dto.Accuracy <= 200,
                 UltimaVerificacion = DateTime.UtcNow,
                 SalaId = sala.Id,
+                DeviceId = dto.DeviceId,
                 Puntos = 0,
                 Baneado = false,
                 AceptaTerminos = dto.AceptaTerminos,

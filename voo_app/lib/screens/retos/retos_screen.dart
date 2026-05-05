@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/reto_model.dart';
+import '../../services/api_service.dart';
 import '../../state/app_state.dart';
 import '../../services/api_service.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
@@ -16,6 +18,143 @@ class RetosScreen extends StatefulWidget {
   @override
   State<RetosScreen> createState() => _RetosScreenState();
 }
+
+class _RetosScreenState extends State<RetosScreen> {
+  bool _loading = true;
+  String? _error;
+
+  RetoModel? _anterior;
+  RetoModel? _activo;
+  RetoModel? _proximo;
+  int? _lastRetosVersion;
+  bool _isLoadingRetos = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await context.read<AppState>().iniciarSignalR();
+      await _loadRetos(showLoading: true);
+    });
+  }
+
+  Future<void> _loadRetos({bool showLoading = false}) async {
+    if (_isLoadingRetos) return;
+
+    final userId = context.read<AppState>().userId;
+
+    if (userId == null || userId.isEmpty) {
+      setState(() {
+        _loading = false;
+        _error = 'No se ha encontrado tu usuario.';
+      });
+      return;
+    }
+
+    _isLoadingRetos = true;
+
+    if (showLoading) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final timeline = await ApiService.getRetosTimeline(userId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _anterior = timeline['anterior'];
+        _activo = timeline['activo'];
+        _proximo = timeline['proximo'];
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _error = 'No se pudieron cargar los retos.';
+      });
+    } finally {
+      _isLoadingRetos = false;
+    }
+  }
+
+  String _timeAgo(DateTime? date) {
+    if (date == null) return 'Anterior';
+
+    final diff = DateTime.now().difference(date);
+
+    if (diff.inMinutes < 1) return 'Ahora';
+    if (diff.inMinutes < 60) return 'Hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Hace ${diff.inHours} h';
+
+    return 'Hace ${diff.inDays} días';
+  }
+
+  List<_ChallengeViewModel> _buildChallenges() {
+    final list = <_ChallengeViewModel>[];
+
+    if (_activo != null) {
+      list.add(
+        _ChallengeViewModel(
+          title: _activo!.concepto,
+          badgeText: 'Activo',
+          pointsText: '+${_activo!.puntos} pt',
+          color: const Color(0xFF22C55E),
+        ),
+      );
+    }
+
+    if (_proximo != null) {
+      list.add(
+        _ChallengeViewModel(
+          title: _proximo!.concepto,
+          badgeText: 'Próximo',
+          pointsText: '+${_proximo!.puntos} pt',
+          color: const Color(0xFFEAB308),
+        ),
+      );
+    }
+
+    if (_anterior != null) {
+      list.add(
+        _ChallengeViewModel(
+          title: _anterior!.concepto,
+          badgeText: _timeAgo(_anterior!.horaActivacion),
+          pointsText: '+${_anterior!.puntos} pt',
+          color: const Color(0xFFEF4444),
+        ),
+      );
+    }
+
+    return list;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isHost = context.select<AppState, bool>((s) => s.isHost);
+    final int retosVersion = context.select<AppState, int>((s) => s.retosVersion);
+
+    if (_lastRetosVersion == null) {
+      _lastRetosVersion = retosVersion;
+    } else if (_lastRetosVersion != retosVersion) {
+      _lastRetosVersion = retosVersion;
+
+      Future.microtask(() {
+        if (mounted) _loadRetos(showLoading: false);
+      });
+    }
+
+    final challenges = _buildChallenges();
+
 
 class _RetosScreenState extends State<RetosScreen> {
   List<RetoModel> _retos = [];
@@ -98,25 +237,25 @@ class _RetosScreenState extends State<RetosScreen> {
                 const _RetosTitle(),
                 const SizedBox(height: 12),
 
-                // BOTÓN SOLO PARA HOST
                 if (isHost) ...[
                   Align(
                     alignment: Alignment.centerLeft,
                     child: _CreateChallengeButton(
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => const CreateChallengeScreen(),
                           ),
                         );
+
+                        if (mounted) _loadRetos();
                       },
                     ),
                   ),
                   const SizedBox(height: 18),
                 ],
 
-                // LISTA DE RETOS
                 Expanded(
                   child: _loading
                       ? const Center(
@@ -125,6 +264,29 @@ class _RetosScreenState extends State<RetosScreen> {
                           ),
                         )
                       : _error != null
+                          ? _EmptyRetosMessage(
+                              text: _error!,
+                              onRetry: _loadRetos,
+                            )
+                          : challenges.isEmpty
+                              ? _EmptyRetosMessage(
+                                  text: 'Todavía no hay retos disponibles.',
+                                  onRetry: _loadRetos,
+                                )
+                              : RefreshIndicator(
+                                  onRefresh: _loadRetos,
+                                  color: const Color(0xFF9C4DFF),
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.only(
+                                      top: 4,
+                                      bottom: 12,
+                                    ),
+                                    itemCount: challenges.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 22),
+                                    itemBuilder: (context, index) {
+                                      return _WideChallengeCard(
+                                        challenge: challenges[index],
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -186,7 +348,6 @@ class _RetosScreenState extends State<RetosScreen> {
 
                 const SizedBox(height: 8),
 
-                // NAV BAR
                 VooBottomNavBar(
                   currentIndex: 3,
                   onTap: (index) {
@@ -212,7 +373,7 @@ class _RetosScreenState extends State<RetosScreen> {
                         ),
                       );
                     } else if (index == 3) {
-                      return;
+                      _loadRetos();
                     } else if (index == 4) {
                       Navigator.pushReplacement(
                         context,
@@ -225,6 +386,35 @@ class _RetosScreenState extends State<RetosScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyRetosMessage extends StatelessWidget {
+  final String text;
+  final VoidCallback onRetry;
+
+  const _EmptyRetosMessage({
+    required this.text,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: GestureDetector(
+        onTap: onRetry,
+        child: Text(
+          '$text\nToca para recargar',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.65),
+            fontSize: 14,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -311,8 +501,7 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
   late final Animation<double> _borderAnimation;
   late final Animation<double> _scaleAnimation;
 
-  bool get isActive =>
-      widget.challenge.color == const Color(0xFF22C55E);
+  bool get isActive => widget.challenge.color == const Color(0xFF22C55E);
 
   @override
   void initState() {
@@ -338,6 +527,21 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
     if (isActive) {
       _controller.repeat(reverse: true);
     }
+
+
+  }
+
+  @override
+  void didUpdateWidget(covariant _WideChallengeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (isActive && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+
+    if (!isActive && _controller.isAnimating) {
+      _controller.stop();
+    }
   }
 
   @override
@@ -351,6 +555,9 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
     final color = widget.challenge.color;
 
     if (!isActive) {
+      return _ChallengeContainer(
+        challenge: widget.challenge,
+        color: color,
       return Container(
         width: double.infinity,
         constraints: const BoxConstraints(minHeight: 128),
@@ -408,17 +615,22 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 128),
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF081328),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: color,
-                width: _borderAnimation.value,
+          child: _ChallengeContainer(
+            challenge: widget.challenge,
+            color: color,
+            borderWidth: _borderAnimation.value,
+            shadows: [
+              BoxShadow(
+                color: color.withValues(alpha: _glowAnimation.value),
+                blurRadius: 34,
+                spreadRadius: 4,
               ),
+              BoxShadow(
+                color: color.withValues(alpha: _glowAnimation.value * 0.7),
+                blurRadius: 60,
+                spreadRadius: 8,
+              ),
+            ],
               boxShadow: [
                 BoxShadow(
                   color: color.withOpacity(_glowAnimation.value),
@@ -480,6 +692,78 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
   }
 }
 
+class _ChallengeContainer extends StatelessWidget {
+  final _ChallengeViewModel challenge;
+  final Color color;
+  final double borderWidth;
+  final List<BoxShadow> shadows;
+
+  const _ChallengeContainer({
+    required this.challenge,
+    required this.color,
+    this.borderWidth = 2.2,
+    this.shadows = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 128),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF081328),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: color,
+          width: borderWidth,
+        ),
+        boxShadow: shadows,
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8, right: 88, bottom: 22),
+            child: Text(
+              challenge.title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                height: 1.25,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Text(
+              challenge.badgeText,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Text(
+              challenge.pointsText,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CreateChallengeButton extends StatefulWidget {
   final VoidCallback onTap;
 
@@ -513,7 +797,7 @@ class _CreateChallengeButtonState extends State<_CreateChallengeButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.22),
+                    color: color.withValues(alpha: 0.22),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),

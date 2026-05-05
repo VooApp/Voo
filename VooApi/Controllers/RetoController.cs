@@ -57,5 +57,29 @@ namespace VooApi.Controllers
             await _service.CompletarRetoAsync(id);
             return Ok(new { mensaje = "Reto completado" });
         }
+
+        [HttpGet("timeline/{usuarioId}")]
+        public async Task<IActionResult> ObtenerTimeline(string usuarioId)
+        {
+            var resultado = await _service.ObtenerTimelineAsync(usuarioId);
+            return Ok(resultado);
+        }
+
+        [HttpPost("completar-actual")]
+        public async Task<IActionResult> CompletarActual([FromBody] CompletarRetoActualDto dto)
+        {
+            var resultado = await _service.CompletarRetoActivoAsync(
+                dto.UsuarioId,
+                dto.UsuarioEscaneadoId
+            );
+
+            return Ok(resultado);
+        }
+    }
+
+    public class CompletarRetoActualDto
+    {
+        public string UsuarioId { get; set; } = string.Empty;
+        public string UsuarioEscaneadoId { get; set; } = string.Empty;
     }
 }

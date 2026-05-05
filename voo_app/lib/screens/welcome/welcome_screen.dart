@@ -34,7 +34,7 @@ class WelcomeScreen extends StatelessWidget {
                     Text(
                       'Bienvenido',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.78),
+                        color: Colors.white.withValues(alpha: 0.78),
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.4,
@@ -130,15 +130,15 @@ class _VooLetter extends StatelessWidget {
         letterSpacing: 1.0,
         shadows: [
           Shadow(
-            color: color.withOpacity(0.95),
+            color: color.withValues(alpha: 0.95),
             blurRadius: 10,
           ),
           Shadow(
-            color: color.withOpacity(0.65),
+            color: color.withValues(alpha: 0.65),
             blurRadius: 24,
           ),
           Shadow(
-            color: color.withOpacity(0.35),
+            color: color.withValues(alpha: 0.35),
             blurRadius: 42,
           ),
         ],
@@ -205,8 +205,8 @@ class _WelcomeActionButtonState extends State<_WelcomeActionButton>
             child: InkWell(
               onTap: widget.onTap,
               borderRadius: BorderRadius.circular(30),
-              splashColor: widget.color.withOpacity(0.10),
-              highlightColor: widget.color.withOpacity(0.05),
+              splashColor: widget.color.withValues(alpha: 0.10),
+              highlightColor: widget.color.withValues(alpha: 0.05),
               onHighlightChanged: (value) {
                 if (mounted) {
                   setState(() {
@@ -233,17 +233,17 @@ class _WelcomeActionButtonState extends State<_WelcomeActionButton>
                     ],
                   ),
                   border: Border.all(
-                    color: widget.color.withOpacity(borderOpacity),
+                    color: widget.color.withValues(alpha: borderOpacity),
                     width: _pressed ? 2.4 : 1.6,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withOpacity(glowOpacity),
+                      color: widget.color.withValues(alpha: glowOpacity),
                       blurRadius: _pressed ? 28 : 18 + (pulse * 10),
                       spreadRadius: _pressed ? 1.6 : 0.3 + (pulse * 0.8),
                     ),
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.24),
+                      color: Colors.black.withValues(alpha: 0.24),
                       blurRadius: 14,
                       offset: const Offset(0, 8),
                     ),
@@ -256,16 +256,16 @@ class _WelcomeActionButtonState extends State<_WelcomeActionButton>
                       height: 58,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.04),
+                        color: Colors.white.withValues(alpha: 0.04),
                         border: Border.all(
-                          color: widget.color.withOpacity(
+                          color: widget.color.withValues(alpha: 
                             _pressed ? 0.90 : 0.46,
                           ),
                           width: 1.4,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: widget.color.withOpacity(
+                            color: widget.color.withValues(alpha: 
                               _pressed ? 0.24 : 0.10,
                             ),
                             blurRadius: _pressed ? 18 : 10,
@@ -293,7 +293,7 @@ class _WelcomeActionButtonState extends State<_WelcomeActionButton>
                     ),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
-                      color: Colors.white.withOpacity(0.75),
+                      color: Colors.white.withValues(alpha: 0.75),
                       size: 18,
                     ),
                   ],
