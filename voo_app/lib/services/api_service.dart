@@ -99,59 +99,60 @@ class ApiService {
   }
 
   static Future<RegistroInvitadoResponse> registrarInvitado({
-  required String nombre,
-  required bool sexo,
-  required DateTime fechaNacimiento,
-  required String foto,
-  required String? instagram,
-  required String estado,
-  required List<String> respuestas,
-  required String codigoSala,
-  required double latitud,
-  required double longitud,
-  required double accuracy,
-  bool verificado = true,
-  required bool aceptaTerminos,
-  required bool aceptaPrivacidad,
-  required bool aceptaBiometria,
-}) async {
-  final uri = _uri('/Registro/invitado');
+    required String nombre,
+    required bool sexo,
+    required DateTime fechaNacimiento,
+    required String foto,
+    required String? instagram,
+    required String estado,
+    required List<String> respuestas,
+    required String codigoSala,
+    required double latitud,
+    required double longitud,
+    required double accuracy,
+    bool verificado = true,
+    required bool aceptaTerminos,
+    required bool aceptaPrivacidad,
+    required bool aceptaBiometria,
+  }) async {
+    final uri = _uri('/Registro/invitado');
 
-  final response = await http.post(
-    uri,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'nombre': nombre,
-      'sexo': sexo,
-      'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
-      'foto': foto,
-      'ig': instagram,
-      'estado': estado,
-      'respuestas': respuestas,
-      'verificado': verificado,
-      'codigoSala': codigoSala,
-      'latitud': latitud,
-      'longitud': longitud,
-      'accuracy': accuracy,
-      'aceptaTerminos': aceptaTerminos,
-      'aceptaPrivacidad': aceptaPrivacidad,
-      'aceptaBiometria': aceptaBiometria,
-    }),
-  );
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'nombre': nombre,
+        'sexo': sexo,
+        'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
+        'foto': foto,
+        'ig': instagram,
+        'estado': estado,
+        'respuestas': respuestas,
+        'verificado': verificado,
+        'codigoSala': codigoSala,
+        'latitud': latitud,
+        'longitud': longitud,
+        'accuracy': accuracy,
+        'aceptaTerminos': aceptaTerminos,
+        'aceptaPrivacidad': aceptaPrivacidad,
+        'aceptaBiometria': aceptaBiometria,
+      }),
+    );
 
-  debugPrint('POST: $uri');
-  debugPrint('STATUS: ${response.statusCode}');
-  debugPrint('BODY LENGTH: ${response.body.length}');
+    debugPrint('POST: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+    debugPrint('BODY LENGTH: ${response.body.length}');
 
-  final Map<String, dynamic> data =
-      response.body.isNotEmpty ? jsonDecode(response.body) : {};
+    final Map<String, dynamic> data =
+        response.body.isNotEmpty ? jsonDecode(response.body) : {};
 
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(data['mensaje'] ?? 'Error al registrar invitado');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['mensaje'] ?? 'Error al registrar invitado');
+    }
+
+    return RegistroInvitadoResponse.fromJson(data);
   }
-
-  return RegistroInvitadoResponse.fromJson(data);
-}
 
   static Future<List<SalaUsuarioModel>> getUsuariosSala(String salaId) async {
     final response = await http.get(_uri('/Usuario/sala/$salaId'));
@@ -373,6 +374,35 @@ class ApiService {
     }
 
     return const Color(0xFF22C55E);
+  }
+
+    static Future<List<String>> getPreguntasPorEstado(String estado) async {
+    
+    final Map<String, String> estadoMap = {
+      'soltero': 'verde',
+      'verde': 'verde',
+      'amigos': 'amarillo',
+      'haciendo amigos': 'amarillo',
+      'amarillo': 'amarillo',
+      'pareja': 'rojo',
+      'en pareja': 'rojo',
+      'rojo': 'rojo',
+    };
+
+    final estadoBackend = estadoMap[estado.toLowerCase()] ?? 'verde';
+    
+    final uri = _uri('/Preguntas/$estadoBackend');
+    final response = await http.get(uri);
+
+    debugPrint('GET: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener preguntas');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map((e) => e.toString()).toList();
   }
 }
 

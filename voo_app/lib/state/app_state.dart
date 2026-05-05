@@ -826,6 +826,9 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> registrarInvitadoEnBackend() async {
+    debugPrint('nombre: $_userName');
+    debugPrint('estado: $_estado');
+    
     try {
       final response = await ApiService.registrarInvitado(
         nombre: _userName ?? '',
@@ -853,5 +856,10 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       rethrow;
     }
+  }
+
+  void setIsHost(bool value) {
+    _isHost = value;
+    notifyListeners();
   }
 }

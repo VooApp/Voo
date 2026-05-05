@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 import '../home/home_screen.dart';
 import '../host_flow/room_setup_screen.dart';
+import '../../services/api_service.dart';
 
 class QuestionsScreen extends StatefulWidget {
   const QuestionsScreen({super.key});
@@ -18,6 +19,37 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
   final TextEditingController question3Controller = TextEditingController();
 
   bool _isSubmitting = false;
+  List<String> _preguntas = ['', '', '']; // labels de las preguntas
+  bool _loadingPreguntas = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarPreguntas();
+  }
+
+  Future<void> _cargarPreguntas() async {
+    final estado = context.read<AppState>().estado ?? 'verde';
+    try {
+      final todas = await ApiService.getPreguntasPorEstado(estado);
+      // Mezcla y toma 3 sin repetir
+      todas.shuffle();
+      setState(() {
+        _preguntas = todas.take(3).toList();
+        _loadingPreguntas = false;
+      });
+    } catch (e) {
+      debugPrint('Error cargando preguntas: $e');
+      setState(() {
+        _preguntas = [
+          'Pregunta rápida 1',
+          'Pregunta rápida 2',
+          'Pregunta rápida 3',
+        ];
+        _loadingPreguntas = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -38,9 +70,9 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
     if (!canContinue) return;
 
     setState(() => _isSubmitting = true);
-
+  
     final appState = context.read<AppState>();
-
+  
     appState.setQuestionsData([
       question1Controller.text.trim(),
       question2Controller.text.trim(),
@@ -52,18 +84,14 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const RoomSetupScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const RoomSetupScreen()),
         );
       } else {
         await appState.registrarInvitadoEnBackend();
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const HomeScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
     } catch (e) {
@@ -73,6 +101,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
         SnackBar(content: Text('Error: $e')),
       );
     }
+    
   }
 
   @override
@@ -104,79 +133,85 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
               constraints: const BoxConstraints(maxWidth: 430),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        _RoundBackButton(
-                          enabled: !_isSubmitting,
-                          onTap: () => Navigator.pop(context),
+                child: _loadingPreguntas
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF9C4DFF),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Preguntas rápidas',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                      )
+                    : Column(
+                        children: [
+                          Row(
+                            children: [
+                              _RoundBackButton(
+                                enabled: !_isSubmitting,
+                                onTap: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Preguntas rápidas',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Responde estas 3 preguntas para ver tu afinidad con otros invitados.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.68),
+                              fontSize: 14,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _QuestionLabel(text: _preguntas[0]),
+                              const SizedBox(height: 12),
+                              _QuestionInput(
+                                controller: question1Controller,
+                                hintText: 'Escribe tu respuesta',
+                                enabled: !_isSubmitting,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                              const SizedBox(height: 26),
+                              _QuestionLabel(text: _preguntas[1]),
+                              const SizedBox(height: 12),
+                              _QuestionInput(
+                                controller: question2Controller,
+                                hintText: 'Escribe tu respuesta',
+                                enabled: !_isSubmitting,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                              const SizedBox(height: 26),
+                              _QuestionLabel(text: _preguntas[2]),
+                              const SizedBox(height: 12),
+                              _QuestionInput(
+                                controller: question3Controller,
+                                hintText: 'Escribe tu respuesta',
+                                enabled: !_isSubmitting,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _NextButton(
+                              enabled: buttonEnabled,
+                              isLoading: _isSubmitting,
+                              onTap: _submit,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Responde estas 3 preguntas para ver tu afinidad con otros invitados.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.68),
-                        fontSize: 14,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const _QuestionLabel(text: 'Pregunta rápida 1'),
-                        const SizedBox(height: 12),
-                        _QuestionInput(
-                          controller: question1Controller,
-                          hintText: 'Escribe tu respuesta',
-                          enabled: !_isSubmitting,
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const SizedBox(height: 26),
-                        const _QuestionLabel(text: 'Pregunta rápida 2'),
-                        const SizedBox(height: 12),
-                        _QuestionInput(
-                          controller: question2Controller,
-                          hintText: 'Escribe tu respuesta',
-                          enabled: !_isSubmitting,
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const SizedBox(height: 26),
-                        const _QuestionLabel(text: 'Pregunta rápida 3'),
-                        const SizedBox(height: 12),
-                        _QuestionInput(
-                          controller: question3Controller,
-                          hintText: 'Escribe tu respuesta',
-                          enabled: !_isSubmitting,
-                          onChanged: (_) => setState(() {}),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _NextButton(
-                        enabled: buttonEnabled,
-                        isLoading: _isSubmitting,
-                        onTap: _submit,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
