@@ -8,6 +8,8 @@ import '../chats/chats_screen.dart';
 import '../ranking/ranking_screen.dart';
 import '../retos/retos_screen.dart';
 import 'banned_users_screen.dart';
+import 'manual_screen.dart';
+import 'dart:convert';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -33,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         content: Text(
           'Se eliminará la sala y todos los datos. Esta acción no se puede deshacer.',
-          style: TextStyle(color: Colors.white.withOpacity(0.65)),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.65)),
         ),
         actions: [
           TextButton(
@@ -78,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         content: Text(
           'Perderás tu progreso y acceso a los chats activos.',
-          style: TextStyle(color: Colors.white.withOpacity(0.65)),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.65)),
         ),
         actions: [
           TextButton(
@@ -132,99 +134,98 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
             child: Column(
               children: [
-                const Text(
-                  'Ajustes',
-                  style: TextStyle(
-                    color: Color(0xFFD78BFF),
-                    fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _ProfileCard(appState: appState),
-                const SizedBox(height: 20),
-                _SectionCard(
-                  title: 'Ayuda',
-                  children: [
-                    _SettingsRow(
-                      title: 'Manual de uso',
-                      icon: Icons.menu_book_rounded,
-                      onTap: () {},
-                    ),
-                    _SettingsRow(
-                      title: 'Reportar incidencia',
-                      icon: Icons.report_problem_outlined,
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _RoomCard(appState: appState),
-                const Spacer(),
-                if (isHost)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _ActionButton(
-                        text: 'Banear usuario',
-                        color: const Color(0xFF9C4DFF),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const BannedUsersScreen(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Ajustes',
+                          style: TextStyle(
+                            color: Color(0xFFD78BFF),
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _ProfileCard(appState: appState),
+                        const SizedBox(height: 20),
+                        _SectionCard(
+                          title: 'Ayuda',
+                          children: [
+                            _SettingsRow(
+                              title: 'Manual de uso',
+                              icon: Icons.menu_book_rounded,
+                              onTap: () {},
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 14),
-                      _ActionButton(
-                        text: 'Cerrar sala',
-                        color: const Color(0xFFFF3B5C),
-                        onTap: () => _confirmarCerrarSala(appState),
-                      ),
-                    ],
-                  )
-                else
-                  _ActionButton(
-                    text: 'Salir de la sala',
-                    color: const Color(0xFFFF3B5C),
-                    onTap: () => _confirmarSalirSala(appState),
+                            _SettingsRow(
+                              title: 'Reportar incidencia',
+                              icon: Icons.report_problem_outlined,
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        _RoomCard(appState: appState),
+                        const SizedBox(height: 24),
+                        if (isHost)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _ActionButton(
+                                text: 'Banear usuario',
+                                color: const Color(0xFF9C4DFF),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const BannedUsersScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 14),
+                              _ActionButton(
+                                text: 'Cerrar sala',
+                                color: const Color(0xFFFF3B5C),
+                                onTap: () => _confirmarCerrarSala(appState),
+                              ),
+                            ],
+                          )
+                        else
+                          _ActionButton(
+                            text: 'Salir de la sala',
+                            color: const Color(0xFFFF3B5C),
+                            onTap: () => _confirmarSalirSala(appState),
+                          ),
+                        const SizedBox(height: 18),
+                      ],
+                    ),
                   ),
-                const SizedBox(height: 16),
+                ),
+
                 VooBottomNavBar(
                   currentIndex: 4,
                   onTap: (index) {
                     if (index == 0) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const HomeScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const HomeScreen()),
                       );
                     } else if (index == 1) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChatsScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const ChatsScreen()),
                       );
                     } else if (index == 2) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const RankingScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const RankingScreen()),
                       );
                     } else if (index == 3) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const RetosScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const RetosScreen()),
                       );
-                    } else if (index == 4) {
-                      return;
                     }
                   },
                 ),
@@ -269,6 +270,23 @@ class _ProfileCard extends StatelessWidget {
         break;
     }
 
+    ImageProvider? profileImage;
+
+    final foto = appState.profilePhoto;
+    if (foto != null && foto.trim().isNotEmpty) {
+      try {
+        var cleanBase64 = foto.trim();
+
+        if (cleanBase64.contains(',')) {
+          cleanBase64 = cleanBase64.split(',').last;
+        }
+
+        profileImage = MemoryImage(base64Decode(cleanBase64));
+      } catch (_) {
+        profileImage = null;
+      }
+    }
+
     return _GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,14 +310,23 @@ class _ProfileCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF66D63E),
+                        color: estadoColor,
                         width: 3.5,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 38,
+                    child: ClipOval(
+                      child: profileImage != null
+                          ? Image(
+                              image: profileImage,
+                              width: 68,
+                              height: 68,
+                              fit: BoxFit.cover,
+                            )
+                          : const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 38,
+                            ),
                     ),
                   ),
                   Positioned(
@@ -309,7 +336,7 @@ class _ProfileCard extends StatelessWidget {
                       width: 17,
                       height: 17,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF66D63E),
+                        color: estadoColor,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: const Color(0xFF05051C),
@@ -366,7 +393,7 @@ class _ProfileInfo extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.58),
+            color: Colors.white.withValues(alpha: 0.58),
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -447,7 +474,7 @@ class _RoomInfo extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.58),
+              color: Colors.white.withValues(alpha: 0.58),
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -509,7 +536,7 @@ class _SettingsRow extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
             ),
           ),
         ),
@@ -558,7 +585,7 @@ class _GlassCard extends StatelessWidget {
         color: const Color(0xFF151525),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFF9C4DFF).withOpacity(0.55),
+          color: const Color(0xFF9C4DFF).withValues(alpha: 0.55),
           width: 1.5,
         ),
       ),

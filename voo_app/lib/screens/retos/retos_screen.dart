@@ -298,7 +298,7 @@ class _EmptyRetosMessage extends StatelessWidget {
           '$text\nToca para recargar',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.65),
+            color: Colors.white.withValues(alpha: 0.65),
             fontSize: 14,
             height: 1.35,
             fontWeight: FontWeight.w600,
@@ -458,12 +458,12 @@ class _WideChallengeCardState extends State<_WideChallengeCard>
             borderWidth: _borderAnimation.value,
             shadows: [
               BoxShadow(
-                color: color.withOpacity(_glowAnimation.value),
+                color: color.withValues(alpha: _glowAnimation.value),
                 blurRadius: 34,
                 spreadRadius: 4,
               ),
               BoxShadow(
-                color: color.withOpacity(_glowAnimation.value * 0.7),
+                color: color.withValues(alpha: _glowAnimation.value * 0.7),
                 blurRadius: 60,
                 spreadRadius: 8,
               ),
@@ -585,7 +585,7 @@ class _CreateChallengeButtonState extends State<_CreateChallengeButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.22),
+                    color: color.withValues(alpha: 0.22),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),

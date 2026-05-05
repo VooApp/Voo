@@ -130,10 +130,10 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => ChatConversationScreen(
             isHost: appState.isHost,
             chatId: chat!.id,
-            targetUserId: chat!.otherUserId,
-            chatName: chat!.userName,
-            chatFoto: chat!.foto,
-            statusColor: chat!.statusColor,
+            targetUserId: chat.otherUserId,
+            chatName: chat.userName,
+            chatFoto: chat.foto,
+            statusColor: chat.statusColor,
           ),
         ),
       );
@@ -262,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   'No hay más invitados disponibles ahora mismo',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.60),
+                                    color: Colors.white.withValues(alpha: 0.60),
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -378,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (lockHome)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.45),
+                    color: Colors.black.withValues(alpha: 0.45),
                   ),
                 ),
               if (blockingIncoming != null)
@@ -464,7 +464,7 @@ class _AnimatedGuestEntry extends StatelessWidget {
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: glowColor.withOpacity(0.45 * glow),
+                      color: glowColor.withValues(alpha: 0.45 * glow),
                       blurRadius: 28 * glow,
                       spreadRadius: 3 * glow,
                     ),
@@ -525,7 +525,7 @@ class _IncomingRequestPopup extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(0.22),
+              color: const Color(0xFF8B3DFF).withValues(alpha: 0.22),
               blurRadius: 24,
               spreadRadius: 1,
             ),
@@ -572,7 +572,7 @@ class _IncomingRequestPopup extends StatelessWidget {
               'Acepta o rechaza antes de seguir viendo los invitados.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.72),
+                color: Colors.white.withValues(alpha: 0.72),
                 fontSize: 13,
                 height: 1.35,
                 fontWeight: FontWeight.w500,
@@ -652,7 +652,7 @@ class _AcceptedRequestResponsePopupState
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(0.22),
+              color: const Color(0xFF8B3DFF).withValues(alpha: 0.22),
               blurRadius: 24,
               spreadRadius: 1,
             ),
@@ -742,7 +742,7 @@ class _AcceptedRequestResponsePopupState
                 color: const Color(0xFF101018),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.18),
+                  color: Colors.white.withValues(alpha: 0.18),
                   width: 1.3,
                 ),
               ),
@@ -767,7 +767,7 @@ class _AcceptedRequestResponsePopupState
                       decoration: InputDecoration(
                         hintText: 'Responde a ${widget.request.targetUserName}',
                         hintStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.35),
+                          color: Colors.white.withValues(alpha: 0.35),
                         ),
                         isDense: true,
                         border: InputBorder.none,
@@ -784,7 +784,7 @@ class _AcceptedRequestResponsePopupState
                       Icons.send_rounded,
                       color: canSend
                           ? const Color(0xFF52A9FF)
-                          : const Color(0xFF52A9FF).withOpacity(0.35),
+                          : const Color(0xFF52A9FF).withValues(alpha: 0.35),
                       size: 24,
                     ),
                   ),
@@ -834,7 +834,7 @@ class _DecisionButtonState extends State<_DecisionButton> {
           color: widget.color,
           boxShadow: [
             BoxShadow(
-              color: widget.color.withOpacity(_pressed ? 0.45 : 0.25),
+              color: widget.color.withValues(alpha: _pressed ? 0.45 : 0.25),
               blurRadius: _pressed ? 18 : 12,
               spreadRadius: _pressed ? 1.5 : 0.5,
             ),
@@ -935,7 +935,7 @@ class _QrButtonState extends State<_QrButton> {
           boxShadow: [
             BoxShadow(
               color:
-                  const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.45 : 0.18),
+                  const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.45 : 0.18),
               blurRadius: _pressed ? 20 : 12,
               spreadRadius: _pressed ? 1.2 : 0.4,
             ),
@@ -1001,8 +1001,8 @@ class _GuestCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: hasRequestSent
-                ? Colors.white.withOpacity(0.12)
-                : const Color(0xFFD78BFF).withOpacity(0.5),
+                ? Colors.white.withValues(alpha: 0.12)
+                : const Color(0xFFD78BFF).withValues(alpha: 0.5),
             width: 1.4,
           ),
         ),
@@ -1026,7 +1026,7 @@ class _GuestCard extends StatelessWidget {
                     '$name, $age',
                     style: TextStyle(
                       color: hasRequestSent
-                          ? Colors.white.withOpacity(0.62)
+                          ? Colors.white.withValues(alpha: 0.62)
                           : Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1110,12 +1110,12 @@ class _BlinkingProfilePhotoState extends State<_BlinkingProfilePhoto>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: widget.statusColor.withOpacity(0.65 + (_glow.value * 0.35)),
+              color: widget.statusColor.withValues(alpha: 0.65 + (_glow.value * 0.35)),
               width: 2.6,
             ),
             boxShadow: [
               BoxShadow(
-                color: widget.statusColor.withOpacity(0.45 * _glow.value),
+                color: widget.statusColor.withValues(alpha: 0.45 * _glow.value),
                 blurRadius: 18 * _glow.value,
                 spreadRadius: 1.4 * _glow.value,
               ),
@@ -1146,7 +1146,7 @@ class _StaticProfilePhoto extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: statusColor.withOpacity(0.35),
+          color: statusColor.withValues(alpha: 0.35),
           width: 2.2,
         ),
       ),
@@ -1232,7 +1232,7 @@ class _GlowingArrowState extends State<_GlowingArrow>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.35 * _glow.value),
+                color: widget.color.withValues(alpha: 0.35 * _glow.value),
                 blurRadius: 14 * _glow.value,
                 spreadRadius: 1,
               ),
@@ -1240,7 +1240,7 @@ class _GlowingArrowState extends State<_GlowingArrow>
           ),
           child: Icon(
             Icons.chevron_right_rounded,
-            color: widget.color.withOpacity(0.75 + (_glow.value * 0.25)),
+            color: widget.color.withValues(alpha: 0.75 + (_glow.value * 0.25)),
             size: 28,
           ),
         );

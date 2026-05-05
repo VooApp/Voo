@@ -34,6 +34,83 @@ class ApiService {
     return Uri.parse('$baseUrl$path');
   }
 
+  static Future<List<RequestModel>> getSolicitudesEnviadas(String userId) async {
+    final response = await http.get(_uri('/Solicitud/enviadas/$userId'));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener solicitudes enviadas');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data.map((json) {
+      final map = json as Map<String, dynamic>;
+
+      return RequestModel(
+        id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
+        targetUserId: map['receptorId']?.toString() ?? '',
+        targetUserName: map['receptorNombre']?.toString() ?? 'Usuario',
+        type: _requestTypeFromApi(map['tipo']?.toString()),
+        content: map['contenido']?.toString() ?? '',
+        status: _requestStatusFromApi(map['estado']?.toString()),
+        createdAt: DateTime.tryParse(map['fechaCreacion']?.toString() ?? '') ??
+            DateTime.now(),
+      );
+    }).toList();
+  }
+
+  static Future<List<RequestModel>> getSolicitudesRecibidas(String userId) async {
+    final response = await http.get(_uri('/Solicitud/recibidas/$userId'));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener solicitudes recibidas');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data.map((json) {
+      final map = json as Map<String, dynamic>;
+
+      return RequestModel(
+        id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
+        targetUserId: map['emisorId']?.toString() ?? '',
+        targetUserName: map['emisorNombre']?.toString() ?? 'Usuario',
+        type: _requestTypeFromApi(map['tipo']?.toString()),
+        content: map['contenido']?.toString() ?? '',
+        status: _requestStatusFromApi(map['estado']?.toString()),
+        createdAt: DateTime.tryParse(map['fechaCreacion']?.toString() ?? '') ??
+            DateTime.now(),
+      );
+    }).toList();
+  }
+
+  static RequestType _requestTypeFromApi(String? value) {
+    switch (value) {
+      case 'truth':
+        return RequestType.truth;
+      case 'dare':
+        return RequestType.dare;
+      default:
+        return RequestType.messageRequest;
+    }
+  }
+
+  static RequestStatus _requestStatusFromApi(String? value) {
+    switch (value) {
+      case 'aceptada':
+      case 'accepted':
+        return RequestStatus.accepted;
+      case 'rechazada':
+      case 'rejected':
+        return RequestStatus.rejected;
+      case 'answered':
+      case 'respondida':
+        return RequestStatus.answered;
+      default:
+        return RequestStatus.pending;
+    }
+  }
+
   static Future<VerdadRetoRandom> getVerdadRetoRandom() async {
     final response = await http.get(_uri('/VerdadReto/obtener'));
 
@@ -103,6 +180,8 @@ class ApiService {
 
     return id;
   }
+
+
 
   static Future<Map<String, dynamic>> aceptarVerdadReto(String solicitudId) async {
     final response = await http.post(
@@ -220,6 +299,7 @@ class ApiService {
   required bool aceptaTerminos,
   required bool aceptaPrivacidad,
   required bool aceptaBiometria,
+  required String deviceId,
 }) async {
   final uri = _uri('/Registro/invitado');
 
@@ -242,6 +322,7 @@ class ApiService {
       'aceptaTerminos': aceptaTerminos,
       'aceptaPrivacidad': aceptaPrivacidad,
       'aceptaBiometria': aceptaBiometria,
+      'deviceId': deviceId,
     }),
   );
 

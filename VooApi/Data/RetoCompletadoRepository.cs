@@ -24,5 +24,12 @@ namespace VooApi.Data
         {
             await _collection.InsertOneAsync(completado);
         }
+
+        public async Task EliminarPorUsuarioAsync(string usuarioId)
+        {
+            await _collection.DeleteManyAsync(r =>
+                r.UsuarioId == usuarioId || r.UsuarioEscaneadoId == usuarioId
+            );
+        }
     }
 }

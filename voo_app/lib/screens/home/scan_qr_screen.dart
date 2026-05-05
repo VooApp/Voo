@@ -149,7 +149,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.35),
+                color: Colors.black.withValues(alpha: 0.35),
               ),
             ),
           ),
@@ -188,7 +188,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                   _statusText,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.72),
+                    color: Colors.white.withValues(alpha: 0.72),
                     fontSize: 14,
                     height: 1.35,
                   ),
@@ -206,7 +206,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF9C4DFF).withOpacity(0.35),
+                          color: const Color(0xFF9C4DFF).withValues(alpha: 0.35),
                           blurRadius: 26,
                           spreadRadius: 1,
                         ),
@@ -232,10 +232,10 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                       vertical: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.42),
+                      color: Colors.black.withValues(alpha: 0.42),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: const Color(0xFF9C4DFF).withOpacity(0.45),
+                        color: const Color(0xFF9C4DFF).withValues(alpha: 0.45),
                         width: 1.2,
                       ),
                     ),
@@ -346,7 +346,7 @@ class _BackButtonState extends State<_BackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),
@@ -403,7 +403,7 @@ class _SquareActionButtonState extends State<_SquareActionButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.45),
+                    color: color.withValues(alpha: 0.45),
                     blurRadius: 16,
                     spreadRadius: 1.5,
                   ),
@@ -500,7 +500,7 @@ class _ScanResultDialog extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9C4DFF).withOpacity(0.18),
+              color: const Color(0xFF9C4DFF).withValues(alpha: 0.18),
               blurRadius: 22,
               spreadRadius: 1,
             ),
@@ -536,7 +536,7 @@ class _ScanResultDialog extends StatelessWidget {
                 color: const Color(0xFF151525),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: const Color(0xFF9C4DFF).withOpacity(0.35),
+                  color: const Color(0xFF9C4DFF).withValues(alpha: 0.35),
                   width: 1.4,
                 ),
               ),
@@ -597,7 +597,7 @@ class _ScanResultDialog extends StatelessWidget {
                         Text(
                           'Puntos: $detectedPoints',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.62),
+                            color: Colors.white.withValues(alpha: 0.62),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -631,7 +631,7 @@ class _ScanResultDialog extends StatelessWidget {
               child: Text(
                 'Cerrar',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -684,7 +684,7 @@ class _DialogButtonState extends State<_DialogButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.45),
+                    color: widget.color.withValues(alpha: 0.45),
                     blurRadius: 16,
                     spreadRadius: 1.5,
                   ),

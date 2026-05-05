@@ -7,6 +7,8 @@ import '../models/request_model.dart';
 
 import '../services/api_service.dart';
 import 'package:signalr_netcore/signalr_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../navigation/app_navigator.dart';
 
 class AppState extends ChangeNotifier {
   bool _isHost = false;
@@ -87,6 +89,19 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<String> _getOrCreateDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    var deviceId = prefs.getString('deviceId');
+
+    if (deviceId == null || deviceId.isEmpty) {
+      deviceId = DateTime.now().microsecondsSinceEpoch.toString();
+      await prefs.setString('deviceId', deviceId);
+    }
+
+    return deviceId;
+  }
+
   bool get hasBlockingIncomingRequest => blockingIncomingRequest != null;
   bool get isRespondingToAcceptedRequest => _activeAcceptedRequest != null;
 
@@ -125,6 +140,121 @@ class AppState extends ChangeNotifier {
     _aceptaTerminos = false;
     _latitudGuest = null;
     _longitudGuest = null;
+    notifyListeners();
+  }
+
+  Future<void> guardarSesionLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('userId', _userId ?? '');
+    await prefs.setString('salaId', _salaId ?? '');
+    await prefs.setString('userName', _userName ?? '');
+    await prefs.setString('roomCode', _roomCode ?? '');
+    await prefs.setBool('isHost', _isHost);
+  }
+
+  Future<void> borrarSesionLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove('userId');
+    await prefs.remove('salaId');
+    await prefs.remove('userName');
+    await prefs.remove('roomCode');
+    await prefs.remove('isHost');
+  }
+
+  Future<bool> restaurarSesionLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final userId = prefs.getString('userId') ?? '';
+    final salaId = prefs.getString('salaId') ?? '';
+    final userName = prefs.getString('userName') ?? '';
+    final roomCode = prefs.getString('roomCode') ?? '';
+    final isHost = prefs.getBool('isHost') ?? false;
+
+    if (userId.isEmpty || salaId.isEmpty) return false;
+
+    try {
+      final usuario = await ApiService.getUsuarioPorId(userId);
+
+      if (usuario.baneado) {
+        await borrarSesionLocal();
+        clear();
+        return false;
+      }
+
+      await ApiService.getUsuariosSala(salaId);
+
+      _userId = userId;
+      _salaId = salaId;
+      _userName = userName.isNotEmpty ? userName : usuario.nombre;
+      _roomCode = roomCode;
+      _isHost = isHost;
+      _estado = usuario.estado;
+      _birthDate = usuario.fechaNacimiento;
+      _profilePhoto = usuario.foto;
+
+      if ((_userId ?? '').isNotEmpty && (_salaId ?? '').isNotEmpty) {
+        guardarSesionLocal();
+      }
+
+      notifyListeners();
+
+      await cargarSesionCompleta();
+
+      return true;
+    } catch (_) {
+      await borrarSesionLocal();
+      clear();
+      return false;
+    }
+  }
+
+  Future<void> cerrarSesionPorSalaCerrada() async {
+    await borrarSesionLocal();
+    clear();
+
+    appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/',
+      (_) => false,
+    );
+  }
+
+  Future<void> cargarSesionCompleta() async {
+    final id = _userId;
+    final sala = _salaId;
+
+    if (id == null || id.isEmpty || sala == null || sala.isEmpty) return;
+
+    final usuario = await ApiService.getUsuarioPorId(id);
+
+    if (usuario.baneado) {
+      await borrarSesionLocal();
+      clear();
+      return;
+    }
+
+    _userName = usuario.nombre;
+    _birthDate = usuario.fechaNacimiento;
+    _estado = usuario.estado;
+    _profilePhoto = usuario.foto;
+
+    await cargarUsuariosSala();
+    await cargarChats();
+
+    final enviadas = await ApiService.getSolicitudesEnviadas(id);
+    final recibidas = await ApiService.getSolicitudesRecibidas(id);
+
+    _sentRequests
+      ..clear()
+      ..addAll(enviadas);
+
+    _receivedRequests
+      ..clear()
+      ..addAll(recibidas.where((r) => r.status == RequestStatus.pending));
+
+    await iniciarSignalR();
+
     notifyListeners();
   }
 
@@ -698,12 +828,16 @@ class AppState extends ChangeNotifier {
   Future<void> salirDeSala() async {
     final id = _userId;
     if (id != null) await ApiService.salirDeSala(id);
+
+    await borrarSesionLocal();
     clear();
   }
 
   Future<void> cerrarSala() async {
     final id = _salaId;
     if (id != null) await ApiService.cerrarSala(id);
+
+    await borrarSesionLocal();
     clear();
   }
 
@@ -874,6 +1008,35 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     });
 
+    _hubConnection!.on('SalaCerrada', (arguments) async {
+      debugPrint('SALA CERRADA SIGNALR');
+      await cerrarSesionPorSalaCerrada();
+    });
+
+    _hubConnection!.on('UsuarioBaneado', (arguments) async {
+      debugPrint('USUARIO BANEADO SIGNALR');
+
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+      final bannedUserId = data['usuarioId']?.toString() ?? '';
+
+      if (bannedUserId == _userId) {
+        await borrarSesionLocal();
+        clear();
+
+        appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (_) => false,
+        );
+      }
+    });
+
+    _hubConnection!.on('UsuarioSalio', (arguments) {
+      cargarUsuariosSala();
+      cargarChats();
+    });
+
     await _hubConnection!.start();
 
     await _hubConnection!.invoke(
@@ -901,7 +1064,9 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> registrarInvitadoEnBackend() async {
+    
     try {
+      final deviceId = await _getOrCreateDeviceId();
       final response = await ApiService.registrarInvitado(
         nombre: _userName ?? '',
         sexo: _sexo ?? true,
@@ -919,12 +1084,15 @@ class AppState extends ChangeNotifier {
         aceptaTerminos: _aceptaTerminos,
         aceptaPrivacidad: _aceptaTerminos,
         aceptaBiometria: _aceptaTerminos,
+        deviceId: deviceId,
       );
 
       _userId = response.usuarioId;
       _salaId = response.salaId;
       _userName = response.nombreUsuario;
       notifyListeners();
+      await guardarSesionLocal();
+
     } catch (e) {
       rethrow;
     }

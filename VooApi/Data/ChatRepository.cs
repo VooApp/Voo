@@ -32,7 +32,31 @@ namespace VooApi.Data
             ).FirstOrDefaultAsync();
         }
 
-        // Obtener todos los chats de un usuario
+        // Desactivar un chat
+        public async Task DesactivarAsync(string id)
+        {
+            var update = Builders<Chat>.Update.Set(c => c.Activo, false);
+            await _collection.UpdateOneAsync(c => c.Id == id, update);
+        }
+
+        public async Task<List<Chat>> ObtenerPorUsuariosAsync(List<string> usuariosIds)
+        {
+            return await _collection
+                .Find(c =>
+                    usuariosIds.Contains(c.EmisorId) ||
+                    usuariosIds.Contains(c.ReceptorId)
+                )
+                .ToListAsync();
+        }
+
+        public async Task EliminarPorUsuariosAsync(List<string> usuariosIds)
+        {
+            await _collection.DeleteManyAsync(c =>
+                usuariosIds.Contains(c.EmisorId) ||
+                usuariosIds.Contains(c.ReceptorId)
+            );
+        }
+
         public async Task<List<Chat>> ObtenerPorUsuarioAsync(string usuarioId)
         {
             return await _collection.Find(c =>
@@ -40,11 +64,11 @@ namespace VooApi.Data
             ).ToListAsync();
         }
 
-        // Desactivar un chat
-        public async Task DesactivarAsync(string id)
+        public async Task EliminarPorUsuarioAsync(string usuarioId)
         {
-            var update = Builders<Chat>.Update.Set(c => c.Activo, false);
-            await _collection.UpdateOneAsync(c => c.Id == id, update);
+            await _collection.DeleteManyAsync(c =>
+                c.EmisorId == usuarioId || c.ReceptorId == usuarioId
+            );
         }
     }
 }

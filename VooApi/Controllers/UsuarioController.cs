@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using VooApi.Models;
 using VooApi.Services;
+using Microsoft.AspNetCore.SignalR;
+using VooApi.Hubs;
 
 namespace VooApi.Controllers
 {
@@ -9,10 +11,14 @@ namespace VooApi.Controllers
     public class UsuarioController : ControllerBase
     {
         private readonly UsuarioService _service;
+        private readonly IHubContext<SalaHub> _hubContext;
 
-        public UsuarioController(UsuarioService service)
+        public UsuarioController(
+            UsuarioService service,
+            IHubContext<SalaHub> hubContext)
         {
             _service = service;
+            _hubContext = hubContext;
         }
 
         [HttpPost]
@@ -73,7 +79,27 @@ namespace VooApi.Controllers
         [HttpPatch("{id}/banear")]
         public async Task<IActionResult> Banear(string id)
         {
+            var usuario = await _service.ObtenerPorIdAsync(id);
+            if (usuario == null)
+                return NotFound(new { mensaje = "Usuario no encontrado" });
+
             await _service.BanearAsync(id);
+
+            await _hubContext.Clients
+                .Group($"usuario-{id}")
+                .SendAsync("UsuarioBaneado", new
+                {
+                    usuarioId = id,
+                    salaId = usuario.SalaId
+                });
+
+            if (!string.IsNullOrEmpty(usuario.SalaId))
+            {
+                await _hubContext.Clients
+                    .Group(usuario.SalaId)
+                    .SendAsync("UsuarioEntrado");
+            }
+
             return Ok(new { mensaje = "Usuario baneado correctamente" });
         }
 
