@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -13,20 +12,12 @@ import '../models/reto_model.dart';
 
 class ApiService {
   static String get baseUrl {
-    const envUrl = String.fromEnvironment('API_BASE_URL');
+  const envUrl = String.fromEnvironment('API_BASE_URL');
 
-    if (envUrl.isNotEmpty) return envUrl;
+  if (envUrl.isNotEmpty) return envUrl;
 
-    if (kIsWeb) {
-      return 'http://localhost:5011';
-    }
-
-    if (Platform.isAndroid) {
-      return 'http://localhost:5011';
-    }
-
-    return 'http://localhost:5011';
-  }
+  return 'https://voobackend-production.up.railway.app';
+}
 
   
 
