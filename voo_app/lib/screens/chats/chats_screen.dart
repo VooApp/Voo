@@ -111,7 +111,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                               child: Text(
                                 'Todavía no tienes conversaciones',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.62),
+                                  color: Colors.white.withValues(alpha: 0.62),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -122,7 +122,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                               separatorBuilder: (_, _) => Container(
                                 height: 1,
                                 margin: const EdgeInsets.symmetric(vertical: 4),
-                                color: Colors.white.withOpacity(0.08),
+                                color: Colors.white.withValues(alpha: 0.08),
                               ),
                               itemBuilder: (context, index) {
                                 final chat = chats[index];
@@ -302,7 +302,7 @@ class _ChatCard extends StatelessWidget {
                     style: TextStyle(
                       color: chat.unreadCount > 0
                           ? Colors.white
-                          : Colors.white.withOpacity(0.88),
+                          : Colors.white.withValues(alpha: 0.88),
                       fontSize: 15,
                       fontWeight: chat.unreadCount > 0
                           ? FontWeight.w900
@@ -330,7 +330,7 @@ class _ChatCard extends StatelessWidget {
               Text(
                 chat.time,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.45),
+                  color: Colors.white.withValues(alpha: 0.45),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),

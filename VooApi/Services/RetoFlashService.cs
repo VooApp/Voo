@@ -12,257 +12,202 @@ namespace VooApi.Services
             _usuarioRepository = usuarioRepository;
         }
 
-        // Método principal: recibe el progreso y llama al verificador correcto
         public async Task<ResultadoReto> VerificarRetoAsync(ProgresoReto progreso)
         {
+            if (progreso.EscaneadosIds == null || progreso.EscaneadosIds.Count == 0)
+                return Error("Necesitas escanear a una persona");
+
             return progreso.TipoReto switch
             {
                 "misma_edad_mujer"            => await VerificarMismaEdadMujerAsync(progreso),
                 "nombre_a"                    => await VerificarNombreAAsync(progreso),
                 "verde_misma_edad"            => await VerificarVerdeMismaEdadAsync(progreso),
-                "amarillo_2h_1m"              => await VerificarAmarillo2H1MAsync(progreso),
+                "amarillo_2h_1m"              => await VerificarAmarilloAsync(progreso),
                 "match_0pts"                  => await VerificarMatch0PtsAsync(progreso),
                 "misma_edad_mismo_estado"     => await VerificarMismaEdadMismoEstadoAsync(progreso),
                 "mismo_estado"                => await VerificarMismoEstadoAsync(progreso),
                 "mas_joven"                   => await VerificarMasJovenAsync(progreso),
                 "misma_edad_diferente_estado" => await VerificarMismaEdadDiferenteEstadoAsync(progreso),
                 "cualquier_escaneo"           => await VerificarCualquierEscaneoAsync(progreso),
-                _ => new ResultadoReto { Exito = false, Mensaje = "Tipo de reto desconocido" }
+                _ => Error("Tipo de reto desconocido")
             };
         }
 
-        // RETO 1: Escanea el QR de una chica que tenga tu misma edad
-        // Comprueba: escaneado es mujer + misma edad
+        private async Task<(Usuario? usuario, Usuario? escaneado, ResultadoReto? error)> ObtenerUsuariosAsync(ProgresoReto progreso)
+        {
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
+            if (usuario == null) return (null, null, Error("Usuario no encontrado"));
+
+            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
+            if (escaneado == null) return (usuario, null, Error("Usuario escaneado no encontrado"));
+
+            if (escaneado.Id == usuario.Id)
+                return (usuario, escaneado, Error("No puedes completar un reto escaneándote a ti mismo"));
+
+            if (!string.IsNullOrWhiteSpace(progreso.SalaId) && escaneado.SalaId != progreso.SalaId)
+                return (usuario, escaneado, Error("El usuario escaneado no está en tu sala"));
+
+            return (usuario, escaneado, null);
+        }
+
         private async Task<ResultadoReto> VerificarMismaEdadMujerAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
-            if (escaneado == null) return Error("Usuario escaneado no encontrado");
-
-            int edadUsuario = CalcularEdad(usuario.FechaNacimiento);
-            int edadEscaneado = CalcularEdad(escaneado.FechaNacimiento);
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
             if (escaneado.Sexo)
-                return Error("El usuario escaneado no es mujer");
+                return Error("La persona escaneada no es mujer");
 
-            if (edadUsuario != edadEscaneado)
-                return Error($"Las edades no coinciden. Tú tienes {edadUsuario} años y el escaneado tiene {edadEscaneado}");
+            if (CalcularEdad(usuario.FechaNacimiento) != CalcularEdad(escaneado.FechaNacimiento))
+                return Error("La persona escaneada no tiene tu misma edad");
 
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 2: Escanea el QR de 3 personas cuyo nombre empiece por A
-        // Comprueba: los 3 nombres empiezan por "A"
         private async Task<ResultadoReto> VerificarNombreAAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            if (progreso.EscaneadosIds.Count != 3)
-                return Error("Necesitas escanear exactamente 3 personas");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
-            foreach (var id in progreso.EscaneadosIds)
-            {
-                var escaneado = await _usuarioRepository.ObtenerPorIdAsync(id);
-                if (escaneado == null) return Error("Uno de los usuarios escaneados no existe");
+            if (!escaneado.Nombre.StartsWith("A", StringComparison.OrdinalIgnoreCase))
+                return Error($"{escaneado.Nombre} no empieza por la letra A");
 
-                if (!escaneado.Nombre.StartsWith("A", StringComparison.OrdinalIgnoreCase))
-                    return Error($"{escaneado.Nombre} no empieza por la letra A");
-            }
-
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 3: Encuentra el QR de un chico con estado verde que tenga tu edad
-        // Comprueba: escaneado es hombre + estado verde + misma edad
         private async Task<ResultadoReto> VerificarVerdeMismaEdadAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
-            if (escaneado == null) return Error("Usuario escaneado no encontrado");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
             if (!escaneado.Sexo)
-                return Error("El usuario escaneado no es hombre");
+                return Error("La persona escaneada no es hombre");
 
-            if (escaneado.Estado != "verde")
-                return Error("El usuario escaneado no está en estado verde (soltero)");
+            if (!MismoEstadoTexto(escaneado.Estado, "verde") &&
+                !MismoEstadoTexto(escaneado.Estado, "soltero"))
+                return Error("La persona escaneada no está en estado verde");
 
-            int edadUsuario = CalcularEdad(usuario.FechaNacimiento);
-            int edadEscaneado = CalcularEdad(escaneado.FechaNacimiento);
+            if (CalcularEdad(usuario.FechaNacimiento) != CalcularEdad(escaneado.FechaNacimiento))
+                return Error("La persona escaneada no tiene tu misma edad");
 
-            if (edadUsuario != edadEscaneado)
-                return Error($"Las edades no coinciden. Tú tienes {edadUsuario} años y el escaneado tiene {edadEscaneado}");
-
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 4: Escanea el QR de 2 chicos y una chica con estado amarillo
-        // Comprueba: 2 hombres + 1 mujer + los 3 en estado amarillo
-        private async Task<ResultadoReto> VerificarAmarillo2H1MAsync(ProgresoReto progreso)
+        private async Task<ResultadoReto> VerificarAmarilloAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            if (progreso.EscaneadosIds.Count != 3)
-                return Error("Necesitas escanear exactamente 3 personas");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
-            var escaneados = new List<Usuario>();
-            foreach (var id in progreso.EscaneadosIds)
-            {
-                var escaneado = await _usuarioRepository.ObtenerPorIdAsync(id);
-                if (escaneado == null) return Error("Uno de los usuarios escaneados no existe");
-                if (escaneado.Estado != "amarillo")
-                    return Error($"{escaneado.Nombre} no está en estado amarillo");
-                escaneados.Add(escaneado);
-            }
+            if (!MismoEstadoTexto(escaneado.Estado, "amarillo") &&
+                !MismoEstadoTexto(escaneado.Estado, "amigos") &&
+                !MismoEstadoTexto(escaneado.Estado, "buscando amigos"))
+                return Error("La persona escaneada no está en estado amarillo");
 
-            int hombres = escaneados.Count(e => e.Sexo);
-            int mujeres = escaneados.Count(e => !e.Sexo);
-
-            if (hombres != 2 || mujeres != 1)
-                return Error($"Necesitas 2 chicos y 1 chica. Tienes {hombres} chicos y {mujeres} chicas");
-
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 5: Haz match con alguien que tenga 0 puntos
-        // Comprueba: existe solicitud aceptada entre ambos + escaneado tiene 0 puntos
         private async Task<ResultadoReto> VerificarMatch0PtsAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
-            if (escaneado == null) return Error("Usuario escaneado no encontrado");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
             if (escaneado.Puntos != 0)
                 return Error($"{escaneado.Nombre} tiene {escaneado.Puntos} puntos, necesita tener 0");
 
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 6: Escanea el QR de alguien con tu misma edad y mismo estado
-        // Comprueba: misma edad + mismo estado
         private async Task<ResultadoReto> VerificarMismaEdadMismoEstadoAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
-            if (escaneado == null) return Error("Usuario escaneado no encontrado");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
-            int edadUsuario = CalcularEdad(usuario.FechaNacimiento);
-            int edadEscaneado = CalcularEdad(escaneado.FechaNacimiento);
+            if (CalcularEdad(usuario.FechaNacimiento) != CalcularEdad(escaneado.FechaNacimiento))
+                return Error("La persona escaneada no tiene tu misma edad");
 
-            if (edadUsuario != edadEscaneado)
-                return Error($"Las edades no coinciden. Tú tienes {edadUsuario} y el escaneado tiene {edadEscaneado}");
+            if (!MismoEstadoTexto(usuario.Estado, escaneado.Estado))
+                return Error("La persona escaneada no tiene tu mismo estado");
 
-            if (usuario.Estado != escaneado.Estado)
-                return Error($"Los estados no coinciden. Tú estás en {usuario.Estado} y el escaneado en {escaneado.Estado}");
-
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 7: Escanea el QR de 2 personas con tu mismo estado
-        // Comprueba: los 2 escaneados tienen el mismo estado que el usuario
         private async Task<ResultadoReto> VerificarMismoEstadoAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            if (progreso.EscaneadosIds.Count != 2)
-                return Error("Necesitas escanear exactamente 2 personas");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
-            foreach (var id in progreso.EscaneadosIds)
-            {
-                var escaneado = await _usuarioRepository.ObtenerPorIdAsync(id);
-                if (escaneado == null) return Error("Uno de los usuarios escaneados no existe");
+            if (!MismoEstadoTexto(usuario.Estado, escaneado.Estado))
+                return Error("La persona escaneada no tiene tu mismo estado");
 
-                if (escaneado.Estado != usuario.Estado)
-                    return Error($"{escaneado.Nombre} no tiene tu mismo estado");
-            }
-
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 8: Escanea el QR de la persona más joven del evento
-        // Comprueba: el escaneado tiene la fecha de nacimiento más reciente de la sala
         private async Task<ResultadoReto> VerificarMasJovenAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
-            if (escaneado == null) return Error("Usuario escaneado no encontrado");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
-            // Obtenemos todos los usuarios de la sala
             var usuariosSala = await _usuarioRepository.ObtenerPorSalaAsync(progreso.SalaId);
+            if (usuariosSala == null || usuariosSala.Count == 0)
+                return Error("No se pudieron comprobar los usuarios de la sala");
 
-            // La fecha de nacimiento más reciente = la persona más joven
             var fechaMasReciente = usuariosSala.Max(u => u.FechaNacimiento);
 
-            if (escaneado.FechaNacimiento != fechaMasReciente)
-                return Error("Este usuario no es el más joven de la sala");
+            if (escaneado.FechaNacimiento.Date != fechaMasReciente.Date)
+                return Error("Esta persona no es la más joven de la sala");
 
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 9: Escanea el QR de alguien con tu misma edad pero estado diferente
-        // Comprueba: misma edad + estado diferente
         private async Task<ResultadoReto> VerificarMismaEdadDiferenteEstadoAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
-            if (escaneado == null) return Error("Usuario escaneado no encontrado");
+            var usuario = data.usuario!;
+            var escaneado = data.escaneado!;
 
-            int edadUsuario = CalcularEdad(usuario.FechaNacimiento);
-            int edadEscaneado = CalcularEdad(escaneado.FechaNacimiento);
+            if (CalcularEdad(usuario.FechaNacimiento) != CalcularEdad(escaneado.FechaNacimiento))
+                return Error("La persona escaneada no tiene tu misma edad");
 
-            if (edadUsuario != edadEscaneado)
-                return Error($"Las edades no coinciden. Tú tienes {edadUsuario} y el escaneado tiene {edadEscaneado}");
+            if (MismoEstadoTexto(usuario.Estado, escaneado.Estado))
+                return Error("La persona escaneada tiene tu mismo estado, debe ser diferente");
 
-            if (usuario.Estado == escaneado.Estado)
-                return Error("El estado debe ser diferente al tuyo");
-
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(usuario);
         }
 
-        // RETO 10: Escanea el QR de un invitado que te guste
-        // Acepta cualquier escaneo válido dentro de la sala
         private async Task<ResultadoReto> VerificarCualquierEscaneoAsync(ProgresoReto progreso)
         {
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(progreso.UsuarioId);
-            if (usuario == null) return Error("Usuario no encontrado");
+            var data = await ObtenerUsuariosAsync(progreso);
+            if (data.error != null) return data.error;
 
-            var escaneado = await _usuarioRepository.ObtenerPorIdAsync(progreso.EscaneadosIds[0]);
-            if (escaneado == null) return Error("Usuario escaneado no encontrado");
-
-            // Solo comprobamos que el escaneado esté en la misma sala
-            if (escaneado.SalaId != progreso.SalaId)
-                return Error("El usuario escaneado no está en tu sala");
-
-            await SumarPuntosFlashAsync(usuario, 30);
-            return Exito("¡Reto completado! +30 puntos");
+            return await CompletarAsync(data.usuario!);
         }
 
-        // ─── HELPERS ─────────────────────────────────────────────────
-
-        // Calcula la edad en años a partir de la fecha de nacimiento
         private int CalcularEdad(DateTime fechaNacimiento)
         {
             var hoy = DateTime.UtcNow;
@@ -271,7 +216,27 @@ namespace VooApi.Services
             return edad;
         }
 
-        // Suma 30 puntos al usuario y actualiza su poder si corresponde
+        private bool MismoEstadoTexto(string? a, string? b)
+        {
+            return NormalizarEstado(a) == NormalizarEstado(b);
+        }
+
+        private string NormalizarEstado(string? estado)
+        {
+            var value = (estado ?? "").ToLower().Trim();
+
+            if (value.Contains("soltero") || value.Contains("verde"))
+                return "verde";
+
+            if (value.Contains("amigo") || value.Contains("amarillo") || value.Contains("complicado"))
+                return "amarillo";
+
+            if (value.Contains("pareja") || value.Contains("rojo"))
+                return "rojo";
+
+            return value;
+        }
+
         private async Task SumarPuntosFlashAsync(Usuario usuario, int puntos)
         {
             usuario.Puntos += puntos;
@@ -282,15 +247,30 @@ namespace VooApi.Services
                 >= 50  => "chismoso",
                 _      => "ninguno"
             };
+
             await _usuarioRepository.ActualizarPuntosAsync(
                 usuario.Id!, usuario.Puntos, usuario.NivelId);
         }
 
-        // Helpers para construir respuestas
+        private async Task<ResultadoReto> CompletarAsync(Usuario usuario)
+        {
+            await SumarPuntosFlashAsync(usuario, 30);
+            return Exito("¡Reto completado! +30 puntos");
+        }
+
         private ResultadoReto Exito(string mensaje) =>
-            new ResultadoReto { Exito = true, Mensaje = mensaje };
+            new ResultadoReto
+            {
+                Exito = true,
+                Mensaje = mensaje,
+                PuntosGanados = 30
+            };
 
         private ResultadoReto Error(string mensaje) =>
-            new ResultadoReto { Exito = false, Mensaje = mensaje };
+            new ResultadoReto
+            {
+                Exito = false,
+                Mensaje = mensaje
+            };
     }
 }
