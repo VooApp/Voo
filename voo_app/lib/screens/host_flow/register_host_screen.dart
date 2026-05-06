@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart';    
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
@@ -268,6 +268,8 @@ class _RegisterHostScreenState extends State<RegisterHostScreen> {
               : instagramController.text.trim(),
           aceptaTerminos: true,
         );
+
+        context.read<AppState>().setIsHost(true);
 
         Navigator.push(
           context,

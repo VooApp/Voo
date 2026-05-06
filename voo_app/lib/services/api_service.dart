@@ -326,19 +326,20 @@ class ApiService {
     }),
   );
 
-  debugPrint('POST: $uri');
-  debugPrint('STATUS: ${response.statusCode}');
-  debugPrint('BODY LENGTH: ${response.body.length}');
+    debugPrint('POST: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+    debugPrint('BODY LENGTH: ${response.body.length}');
 
-  final Map<String, dynamic> data =
-      response.body.isNotEmpty ? jsonDecode(response.body) : {};
+    final Map<String, dynamic> data =
+        response.body.isNotEmpty ? jsonDecode(response.body) : {};
 
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(data['mensaje'] ?? 'Error al registrar invitado');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['mensaje'] ?? 'Error al registrar invitado');
+    }
+
+    return RegistroInvitadoResponse.fromJson(data);
   }
-
-  return RegistroInvitadoResponse.fromJson(data);
-}
 
   static Future<List<SalaUsuarioModel>> getUsuariosSala(String salaId) async {
     final response = await http.get(_uri('/Usuario/sala/$salaId'));
@@ -613,6 +614,33 @@ class ApiService {
       'activo': parseReto(data['activo']),
       'proximo': parseReto(data['proximo']),
     };
+    static Future<List<String>> getPreguntasPorEstado(String estado) async {
+    
+    final Map<String, String> estadoMap = {
+      'soltero': 'verde',
+      'verde': 'verde',
+      'amigos': 'amarillo',
+      'haciendo amigos': 'amarillo',
+      'amarillo': 'amarillo',
+      'pareja': 'rojo',
+      'en pareja': 'rojo',
+      'rojo': 'rojo',
+    };
+
+    final estadoBackend = estadoMap[estado.toLowerCase()] ?? 'verde';
+    
+    final uri = _uri('/Preguntas/$estadoBackend');
+    final response = await http.get(uri);
+
+    debugPrint('GET: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener preguntas');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map((e) => e.toString()).toList();
   }
 }
 
