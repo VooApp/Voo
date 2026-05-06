@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 
 import 'room_code_screen.dart';
@@ -78,32 +78,19 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
     }
   }
 
-  Future<Position> _getHostLocation() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  Future<Location> _getCoordinatesFromAddress() async {
+    final direccion = addressController.text.trim();
+    final cp = cpController.text.trim();
 
-    if (!serviceEnabled) {
-      throw Exception('Activa la ubicación del dispositivo para crear la sala');
+    final fullAddress = '$direccion, $cp, España';
+
+    final locations = await locationFromAddress(fullAddress);
+
+    if (locations.isEmpty) {
+      throw Exception('No se pudo encontrar esa dirección');
     }
 
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (permission == LocationPermission.denied) {
-      throw Exception('Necesitamos permiso de ubicación para crear la sala');
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      throw Exception(
-        'Permiso de ubicación bloqueado. Actívalo desde ajustes del dispositivo',
-      );
-    }
-
-    return Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
+    return locations.first;
   }
 
   Future<void> _createRoom() async {
@@ -127,7 +114,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
     });
 
     try {
-      final position = await _getHostLocation();
+      final location = await _getCoordinatesFromAddress();
 
       final premiosFlash = flashPrizeControllers
           .map((c) => c.text.trim())
@@ -147,8 +134,8 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
         aforo: _capacityToInt(selectedCapacity!),
         direccion: addressController.text.trim(),
         codigoPostal: int.parse(cpController.text.trim()),
-        latitudSala: position.latitude,
-        longitudSala: position.longitude,
+        latitudSala: location.latitude,
+        longitudSala: location.longitude,
         premioMayor: grandPrizeController.text.trim(),
         premiosFlash: premiosFlash,
         aceptaTerminos: appState.aceptaTerminos,
@@ -390,8 +377,17 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                       const SizedBox(height: 10),
                       _VooInput(
                         controller: addressController,
-                        hintText: 'Escribe la dirección',
+                        hintText: 'Ej: Calle Mayor 10, Barcelona',
                         onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Formato recomendado: Calle + número + ciudad',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(height: 18),
                       const _SectionTitle(text: 'CP'),
