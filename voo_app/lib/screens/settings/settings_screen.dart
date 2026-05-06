@@ -10,6 +10,7 @@ import '../retos/retos_screen.dart';
 import 'banned_users_screen.dart';
 import 'manual_screen.dart';
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -157,11 +158,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               icon: Icons.menu_book_rounded,
                               onTap: () {},
                             ),
-                            _SettingsRow(
-                              title: 'Reportar incidencia',
-                              icon: Icons.report_problem_outlined,
-                              onTap: () {},
-                            ),
+                           _SettingsRow(
+                                title: 'Reportar incidencia',
+                                icon: Icons.report_problem_outlined,
+                                onTap: () async {
+                                  final uri = Uri(
+                                    scheme: 'mailto',
+                                    path: 'soportevoo@gmail.com',
+                                    queryParameters: {
+                                      'subject': 'Incidencia VOO',
+                                      'body': 'Describe aquí tu incidencia:',
+                                    },
+                                  );
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri);
+                                  }
+                                },
+                              ),
                           ],
                         ),
                         const SizedBox(height: 20),
