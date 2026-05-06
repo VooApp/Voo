@@ -128,7 +128,7 @@ class _GuestQuestionsScreenState extends State<GuestQuestionsScreen> {
                       'Responde estas 3 preguntas para ver tu afinidad con otros invitados.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.68),
+                        color: Colors.white.withOpacity(0.68),
                         fontSize: 14,
                         height: 1.35,
                       ),
@@ -241,7 +241,7 @@ class _QuestionInputState extends State<_QuestionInput> {
           boxShadow: _focused && widget.enabled
               ? [
                   BoxShadow(
-                    color: const Color(0xFF9C4DFF).withValues(alpha: 0.22),
+                    color: const Color(0xFF9C4DFF).withOpacity(0.22),
                     blurRadius: 18,
                     spreadRadius: 1,
                   ),
@@ -259,7 +259,7 @@ class _QuestionInputState extends State<_QuestionInput> {
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.42),
+              color: Colors.white.withOpacity(0.42),
               fontSize: 15,
             ),
             filled: true,
@@ -271,14 +271,14 @@ class _QuestionInputState extends State<_QuestionInput> {
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(22),
               borderSide: BorderSide(
-                color: const Color(0xFF9C4DFF).withValues(alpha: 0.18),
+                color: const Color(0xFF9C4DFF).withOpacity(0.18),
                 width: 1.4,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(22),
               borderSide: BorderSide(
-                color: const Color(0xFF9C4DFF).withValues(alpha: 0.38),
+                color: const Color(0xFF9C4DFF).withOpacity(0.38),
                 width: 1.6,
               ),
             ),
@@ -351,7 +351,7 @@ class _RoundBackButtonState extends State<_RoundBackButton> {
             boxShadow: [
               BoxShadow(
                 color:
-                    const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
+                    const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
                 blurRadius: 18,
                 spreadRadius: 1,
               ),
@@ -417,7 +417,7 @@ class _NextButtonState extends State<_NextButton> {
           boxShadow: widget.enabled && _pressed
               ? [
                   BoxShadow(
-                    color: buttonColor.withValues(alpha: 0.55),
+                    color: buttonColor.withOpacity(0.55),
                     blurRadius: 18,
                     spreadRadius: 2,
                   ),

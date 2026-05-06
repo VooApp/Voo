@@ -63,25 +63,11 @@ namespace VooApi.Data
         {
             var update = Builders<Usuario>.Update
                 .Set(u => u.DentroRadio, dentroRadio)
-                .Set(u => u.UltimaVerificacion, ultimaVerificacion);
-        }
-
-        public async Task SalirDeSalaAsync(string id)
-        {
-            var update = Builders<Usuario>.Update.Set(u => u.SalaId, (string?)null);
-            await _collection.UpdateOneAsync(u => u.Id == id, update);
-        }
-
-        public async Task<Usuario?> ObtenerBaneadoPorSalaYDeviceAsync(string salaId, string deviceId)
-        {
-            return await _collection
-                .Find(u => u.SalaId == salaId && u.DeviceId == deviceId && u.Baneado)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task EliminarPorSalaAsync(string salaId)
-        {
-            await _collection.DeleteManyAsync(u => u.SalaId == salaId);
+                .Set(u => u.UltimaVerificacion, ultimaVerificacion);}
+                public async Task SalirDeSalaAsync(string id)
+            {
+                var update = Builders<Usuario>.Update.Set(u => u.SalaId, (string?)null);
+                await _collection.UpdateOneAsync(u => u.Id == id, update);
+            }
         }
     }
-}

@@ -242,7 +242,7 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
                         'Configura la sala y prepara la experiencia para tus invitados.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.68),
+                          color: Colors.white.withOpacity(0.68),
                           fontSize: 14,
                           height: 1.35,
                         ),
@@ -524,7 +524,7 @@ class _VooInput extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.42),
+          color: Colors.white.withOpacity(0.42),
           fontSize: 15,
         ),
         filled: true,
@@ -536,7 +536,7 @@ class _VooInput extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(22),
           borderSide: BorderSide(
-            color: const Color(0xFF9C4DFF).withValues(alpha: 0.38),
+            color: const Color(0xFF9C4DFF).withOpacity(0.38),
             width: 1.6,
           ),
         ),
@@ -583,7 +583,7 @@ class _OptionChip extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withValues(alpha: 0.30),
+                    color: color.withOpacity(0.30),
                     blurRadius: 16,
                     spreadRadius: 1.2,
                   ),
@@ -708,7 +708,7 @@ class _RoundBackButtonState extends State<_RoundBackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),
@@ -773,7 +773,7 @@ class _NextButtonState extends State<_NextButton> {
           boxShadow: _pressed && widget.enabled
               ? [
                   BoxShadow(
-                    color: buttonColor.withValues(alpha: 0.45),
+                    color: buttonColor.withOpacity(0.45),
                     blurRadius: 18,
                     spreadRadius: 1.5,
                   ),

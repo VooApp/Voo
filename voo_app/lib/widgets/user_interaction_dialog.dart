@@ -184,7 +184,7 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: 0.18),
+              color: const Color(0xFF8B3DFF).withOpacity(0.18),
               blurRadius: 22,
               spreadRadius: 1,
             ),
@@ -215,7 +215,7 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.statusColor.withValues(alpha: 0.22),
+                      color: widget.statusColor.withOpacity(0.22),
                       blurRadius: 12,
                       spreadRadius: 0.5,
                     ),
@@ -243,7 +243,7 @@ class _UserInteractionDialogState extends State<UserInteractionDialog> {
               'Escoge cuál enviarle a ${widget.targetUserName}',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.78),
+                color: Colors.white.withOpacity(0.78),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -357,7 +357,7 @@ class _BigChoiceButtonState extends State<_BigChoiceButton> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          color: const Color(0xFF2A220A).withValues(alpha: 0.20),
+          color: const Color(0xFF2A220A).withOpacity(0.20),
           border: Border.all(
             color: widget.color,
             width: _pressed ? 2.6 : 2,
@@ -365,7 +365,7 @@ class _BigChoiceButtonState extends State<_BigChoiceButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withValues(alpha: 0.20),
+                    color: widget.color.withOpacity(0.20),
                     blurRadius: 14,
                     spreadRadius: 1,
                   ),
@@ -429,7 +429,7 @@ class _QuestionChoiceCardState extends State<_QuestionChoiceCard> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withValues(alpha: 0.18),
+                    color: widget.color.withOpacity(0.18),
                     blurRadius: 14,
                     spreadRadius: 1,
                   ),
@@ -506,7 +506,7 @@ class _MessageRequestBarState extends State<_MessageRequestBar> {
         color: const Color(0xFF101018),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
+          color: Colors.white.withOpacity(0.18),
           width: 1.3,
         ),
       ),
@@ -522,7 +522,7 @@ class _MessageRequestBarState extends State<_MessageRequestBar> {
               decoration: InputDecoration(
                 hintText: 'Escribe un mensaje a ${widget.targetName}',
                 hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withOpacity(0.35),
                 ),
                 isDense: true,
                 border: InputBorder.none,
@@ -535,7 +535,7 @@ class _MessageRequestBarState extends State<_MessageRequestBar> {
               Icons.send_rounded,
               color: enabled
                   ? const Color(0xFF52A9FF)
-                  : const Color(0xFF52A9FF).withValues(alpha: 0.35),
+                  : const Color(0xFF52A9FF).withOpacity(0.35),
               size: 24,
             ),
           ),
@@ -632,7 +632,7 @@ class _BigAvatarDialog extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: statusColor.withValues(alpha: 0.28),
+                    color: statusColor.withOpacity(0.28),
                     blurRadius: 20,
                     spreadRadius: 1,
                   ),
@@ -660,7 +660,7 @@ class _BigAvatarDialog extends StatelessWidget {
                   ? 'Vista ampliada del perfil'
                   : 'Este usuario no tiene foto de perfil',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.68),
+                color: Colors.white.withOpacity(0.68),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),

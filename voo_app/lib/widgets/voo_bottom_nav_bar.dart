@@ -33,12 +33,12 @@ class VooBottomNavBar extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: const Color(0xFF7E2BE8).withValues(alpha: 0.45),
+          color: const Color(0xFF7E2BE8).withOpacity(0.45),
           width: 1.4,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8B3DFF).withValues(alpha: 0.10),
+            color: const Color(0xFF8B3DFF).withOpacity(0.10),
             blurRadius: 18,
             spreadRadius: 1,
             offset: const Offset(0, 6),
@@ -105,7 +105,7 @@ class _NavItem extends StatelessWidget {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF8B3DFF).withValues(alpha: 0.18),
+                    color: const Color(0xFF8B3DFF).withOpacity(0.18),
                     blurRadius: 12,
                     spreadRadius: 0.5,
                   ),

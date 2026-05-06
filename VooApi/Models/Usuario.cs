@@ -32,6 +32,5 @@ namespace VooApi.Models
         public List<string> RetosCumplidos { get; set; } = new(); // FK → Reto
         public List<string> Premios { get; set; } = new();      // FK → Premio
         public bool Baneado { get; set; } = false;
-        public string? DeviceId { get; set; }
     }
 }

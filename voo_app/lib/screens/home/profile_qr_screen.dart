@@ -80,7 +80,7 @@ class _ProfileQrScreenState extends State<ProfileQrScreen> {
                       'Este es tu QR de perfil para retos y dinámicas.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.68),
+                        color: Colors.white.withOpacity(0.68),
                         fontSize: 14,
                         height: 1.35,
                       ),
@@ -146,7 +146,7 @@ class _ProfileQrScreenState extends State<ProfileQrScreen> {
                         Text(
                           'Escanear QR',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: Colors.white.withOpacity(0.6),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -203,7 +203,7 @@ class _BackButtonState extends State<_BackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),
@@ -260,7 +260,7 @@ class _IconOnlyActionButtonState extends State<_IconOnlyActionButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withValues(alpha: 0.45),
+                    color: widget.color.withOpacity(0.45),
                     blurRadius: 16,
                     spreadRadius: 1.5,
                   ),

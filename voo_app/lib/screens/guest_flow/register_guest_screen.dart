@@ -364,7 +364,7 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
                                   color: (_profileImageBytes != null
                                           ? const Color(0xFF9C4DFF)
                                           : const Color(0xFF4E2A88))
-                                      .withValues(alpha: 0.28),
+                                      .withOpacity(0.28),
                                   blurRadius: 18,
                                   spreadRadius: 2,
                                 ),
@@ -564,7 +564,7 @@ class _SexButton extends StatelessWidget {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF9C4DFF).withValues(alpha: 0.24),
+                    color: const Color(0xFF9C4DFF).withOpacity(0.24),
                     blurRadius: 18,
                     spreadRadius: 1,
                   ),
@@ -637,7 +637,7 @@ class _TopBarState extends State<_TopBar> {
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF8B3DFF)
-                      .withValues(alpha: _pressed ? 0.55 : 0.16),
+                      .withOpacity(_pressed ? 0.55 : 0.16),
                   blurRadius: _pressed ? 22 : 10,
                   spreadRadius: _pressed ? 1.5 : 0.5,
                 ),
@@ -845,7 +845,7 @@ class _MainGradientButtonState extends State<_MainGradientButton> {
               ? [
                   BoxShadow(
                     color: const Color(0xFF8B3DFF)
-                        .withValues(alpha: _pressed ? 0.6 : 0.22),
+                        .withOpacity(_pressed ? 0.6 : 0.22),
                     blurRadius: _pressed ? 26 : 14,
                     spreadRadius: _pressed ? 2 : 1,
                   ),

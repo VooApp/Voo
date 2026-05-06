@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../state/app_state.dart';
+import '../../services/api_service.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import '../chats/chats_screen.dart';
@@ -6,21 +10,73 @@ import '../retos/retos_screen.dart';
 import 'voo_powers_screen.dart';
 import '../settings/settings_screen.dart';
 
-class RankingScreen extends StatelessWidget {
+class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
 
-  final List<Map<String, dynamic>> ranking = const [
-    {'name': 'Maximo', 'points': 469, 'color': Color(0xFFFFD84D)},
-    {'name': 'Ana', 'points': 375, 'color': Color(0xFFC9D6FF)},
-    {'name': 'Julia', 'points': 280, 'color': Color(0xFFFF9B45)},
-    {'name': 'Maxi', 'points': 278, 'color': Color(0xFF52A9FF)},
-    {'name': 'Paula', 'points': 160, 'color': Color(0xFF52A9FF)},
-    {'name': 'Pablo', 'points': 143, 'color': Color(0xFF52A9FF)},
+  @override
+  State<RankingScreen> createState() => _RankingScreenState();
+}
+
+class _RankingScreenState extends State<RankingScreen> {
+  List<Map<String, dynamic>> _ranking = [];
+  bool _loading = true;
+  String? _error;
+
+  static const List<Color> _positionColors = [
+    Color(0xFFFFD84D),
+    Color(0xFFC9D6FF),
+    Color(0xFFFF9B45),
+    Color(0xFF52A9FF),
+    Color(0xFF52A9FF),
+    Color(0xFF52A9FF),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    _cargarRanking();
+  }
 
+  Future<void> _cargarRanking() async {
+    final salaId = context.read<AppState>().salaId;
+
+    if (salaId == null) {
+      setState(() {
+        _error = 'No se encontró la sala';
+        _loading = false;
+      });
+      return;
+    }
+
+    try {
+      final usuarios = await ApiService.getUsuariosSala(salaId);
+      usuarios.sort((a, b) => b.puntos.compareTo(a.puntos));
+
+      setState(() {
+        _ranking = usuarios
+            .map((u) => {
+                  'name': u.nombre,
+                  'points': u.puntos,
+                  'foto': u.foto,
+                })
+            .toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error al cargar el ranking';
+        _loading = false;
+      });
+    }
+  }
+
+  Color _colorForPosition(int index) {
+    if (index < _positionColors.length) return _positionColors[index];
+    return const Color(0xFF52A9FF);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
       body: Container(
@@ -40,7 +96,7 @@ class RankingScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
             child: Column(
               children: [
-                const _RankingTitle(),
+                _RankingTitle(),
                 const SizedBox(height: 22),
 
                 Container(
@@ -94,7 +150,7 @@ class RankingScreen extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF9C4DFF).withValues(alpha: 0.28),
+                          color: const Color(0xFF9C4DFF).withOpacity(0.28),
                           blurRadius: 18,
                           spreadRadius: 0.5,
                         ),
@@ -109,22 +165,73 @@ class RankingScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 Expanded(
-                  child: ListView.separated(
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: ranking.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final user = ranking[index];
-                      final Color color = user['color'] as Color;
-
-                      return _RankingCard(
-                        position: index + 1,
-                        name: user['name'] as String,
-                        points: user['points'] as int,
-                        color: color,
-                      );
-                    },
-                  ),
+                  child: _loading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF9C4DFF),
+                          ),
+                        )
+                      : _error != null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    _error!,
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _loading = true;
+                                        _error = null;
+                                      });
+                                      _cargarRanking();
+                                    },
+                                    child: const Text(
+                                      'Reintentar',
+                                      style: TextStyle(
+                                        color: Color(0xFF9C4DFF),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : _ranking.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    'Aún no hay puntuaciones',
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                )
+                              : RefreshIndicator(
+                                  color: const Color(0xFF9C4DFF),
+                                  onRefresh: _cargarRanking,
+                                  child: ListView.separated(
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: _ranking.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final user = _ranking[index];
+                                      return _RankingCard(
+                                        position: index + 1,
+                                        name: user['name'] as String,
+                                        points: user['points'] as int,
+                                        foto: user['foto'] as String?,
+                                        color: _colorForPosition(index),
+                                      );
+                                    },
+                                  ),
+                                ),
                 ),
 
                 VooBottomNavBar(
@@ -172,6 +279,8 @@ class RankingScreen extends StatelessWidget {
   }
 }
 
+// ─── WIDGETS ─────────────────────────────────────────────────────────
+
 class _RankingTitle extends StatelessWidget {
   const _RankingTitle();
 
@@ -183,56 +292,37 @@ class _RankingTitle extends StatelessWidget {
           const TextSpan(
             text: 'Ranking de ',
             style: TextStyle(
-              color: Color(0xFFD78BFF),
-              fontSize: 30,
+              color: Colors.white,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
             ),
           ),
-          TextSpan(
+          const TextSpan(
             text: 'V',
             style: TextStyle(
-              color: const Color(0xFF66D63E),
-              fontSize: 32,
+              color: Color(0xFF22C55E),
+              fontSize: 28,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFF66D63E).withValues(alpha: 0.9),
-                  blurRadius: 18,
-                ),
-              ],
             ),
           ),
-          TextSpan(
+          const TextSpan(
             text: 'o',
             style: TextStyle(
-              color: const Color(0xFFEAB308),
-              fontSize: 32,
+              color: Color(0xFFEF4444),
+              fontSize: 28,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFEAB308).withValues(alpha: 0.9),
-                  blurRadius: 18,
-                ),
-              ],
             ),
           ),
-          TextSpan(
+          const TextSpan(
             text: 'o',
             style: TextStyle(
-              color: const Color(0xFFFF3B5C),
-              fontSize: 32,
+              color: Color(0xFFEAB308),
+              fontSize: 28,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFF3B5C).withValues(alpha: 0.9),
-                  blurRadius: 18,
-                ),
-              ],
             ),
           ),
         ],
       ),
-      textAlign: TextAlign.center,
     );
   }
 }
@@ -246,57 +336,32 @@ class _UnlockText extends StatelessWidget {
       TextSpan(
         children: [
           const TextSpan(
-            text: 'Desbloquear poderes ',
+            text: '✦ ',
             style: TextStyle(
-              color: Color(0xFFD78BFF),
-              fontSize: 18,
+              color: Color(0xFF9C4DFF),
+              fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
           ),
-          TextSpan(
-            text: 'V',
+          const TextSpan(
+            text: 'Desbloquea poderes ',
             style: TextStyle(
-              color: const Color(0xFF66D63E),
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFF66D63E).withValues(alpha: 0.85),
-                  blurRadius: 14,
-                ),
-              ],
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          TextSpan(
-            text: 'o',
+          const TextSpan(
+            text: 'Voo',
             style: TextStyle(
-              color: const Color(0xFFEAB308),
-              fontSize: 19,
+              color: Color(0xFF9C4DFF),
+              fontSize: 15,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFEAB308).withValues(alpha: 0.85),
-                  blurRadius: 14,
-                ),
-              ],
-            ),
-          ),
-          TextSpan(
-            text: 'o',
-            style: TextStyle(
-              color: const Color(0xFFFF3B5C),
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFF3B5C).withValues(alpha: 0.85),
-                  blurRadius: 14,
-                ),
-              ],
             ),
           ),
         ],
       ),
+      textAlign: TextAlign.center,
     );
   }
 }
@@ -305,6 +370,7 @@ class _RankingCard extends StatelessWidget {
   final int position;
   final String name;
   final int points;
+  final String? foto;
   final Color color;
 
   const _RankingCard({
@@ -312,6 +378,7 @@ class _RankingCard extends StatelessWidget {
     required this.name,
     required this.points,
     required this.color,
+    this.foto,
   });
 
   @override
@@ -326,13 +393,13 @@ class _RankingCard extends StatelessWidget {
         color: const Color(0xFF111124),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: color.withValues(alpha: isTopThree ? 0.95 : 0.55),
+          color: color.withOpacity(isTopThree ? 0.95 : 0.55),
           width: isTopThree ? 2.2 : 1.4,
         ),
         boxShadow: isTopOne
             ? [
                 BoxShadow(
-                  color: color.withValues(alpha: 0.28),
+                  color: color.withOpacity(0.28),
                   blurRadius: 20,
                   spreadRadius: 0.8,
                 ),
@@ -346,12 +413,12 @@ class _RankingCard extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.12),
+              color: color.withOpacity(0.12),
               border: Border.all(color: color, width: 2.3),
               boxShadow: isTopOne
                   ? [
                       BoxShadow(
-                        color: color.withValues(alpha: 0.35),
+                        color: color.withOpacity(0.35),
                         blurRadius: 12,
                       ),
                     ]
@@ -369,6 +436,7 @@ class _RankingCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
+
           Stack(
             children: [
               Container(
@@ -384,11 +452,23 @@ class _RankingCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 34,
-                ),
+                child: foto != null && foto!.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          foto!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 34,
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 34,
+                      ),
               ),
               Positioned(
                 right: 1,
@@ -409,6 +489,7 @@ class _RankingCard extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 14),
+
           Expanded(
             child: Text(
               name,
@@ -419,6 +500,7 @@ class _RankingCard extends StatelessWidget {
               ),
             ),
           ),
+
           Text(
             '$points',
             style: TextStyle(
@@ -428,7 +510,7 @@ class _RankingCard extends StatelessWidget {
               shadows: isTopOne
                   ? [
                       Shadow(
-                        color: color.withValues(alpha: 0.7),
+                        color: color.withOpacity(0.7),
                         blurRadius: 12,
                       ),
                     ]

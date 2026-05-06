@@ -64,7 +64,7 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
                   'Crea un reto para animar la sala y repartir puntos.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.66),
+                    color: Colors.white.withOpacity(0.66),
                     fontSize: 14,
                     height: 1.35,
                     fontWeight: FontWeight.w600,
@@ -254,7 +254,7 @@ class _ChallengeTitle extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFF66D63E).withValues(alpha: 0.85),
+                  color: const Color(0xFF66D63E).withOpacity(0.85),
                   blurRadius: 14,
                 ),
               ],
@@ -268,7 +268,7 @@ class _ChallengeTitle extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFFEAB308).withValues(alpha: 0.85),
+                  color: const Color(0xFFEAB308).withOpacity(0.85),
                   blurRadius: 14,
                 ),
               ],
@@ -282,7 +282,7 @@ class _ChallengeTitle extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFFFF3B5C).withValues(alpha: 0.85),
+                  color: const Color(0xFFFF3B5C).withOpacity(0.85),
                   blurRadius: 14,
                 ),
               ],
@@ -343,12 +343,12 @@ class _GlassCard extends StatelessWidget {
         color: const Color(0xFF151525),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: const Color(0xFF9C4DFF).withValues(alpha: 0.55),
+          color: const Color(0xFF9C4DFF).withOpacity(0.55),
           width: 1.6,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF9C4DFF).withValues(alpha: 0.12),
+            color: const Color(0xFF9C4DFF).withOpacity(0.12),
             blurRadius: 22,
             spreadRadius: 0.5,
           ),
@@ -389,7 +389,7 @@ class _StyledInput extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.35),
+          color: Colors.white.withOpacity(0.35),
           fontSize: 14,
         ),
         filled: true,
@@ -401,7 +401,7 @@ class _StyledInput extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: const Color(0xFF9C4DFF).withValues(alpha: 0.45),
+            color: const Color(0xFF9C4DFF).withOpacity(0.45),
             width: 1.5,
           ),
         ),
@@ -445,7 +445,7 @@ class _AddPrizeButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: 0.22),
+              color: const Color(0xFF8B3DFF).withOpacity(0.22),
               blurRadius: 16,
             ),
           ],
@@ -488,7 +488,7 @@ class _DurationDropdown extends StatelessWidget {
             color: const Color(0xFF101020),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: const Color(0xFF9C4DFF).withValues(alpha: 0.45),
+              color: const Color(0xFF9C4DFF).withOpacity(0.45),
               width: 1.5,
             ),
           ),
@@ -559,7 +559,7 @@ class _PurpleBackButtonState extends State<_PurpleBackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.22),
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.22),
               blurRadius: 18,
               spreadRadius: 1,
             ),
@@ -622,7 +622,7 @@ class _CreateButtonState extends State<_CreateButton> {
           boxShadow: _pressed && widget.enabled
               ? [
                   BoxShadow(
-                    color: color.withValues(alpha: 0.34),
+                    color: color.withOpacity(0.34),
                     blurRadius: 18,
                     spreadRadius: 1,
                   ),
