@@ -218,169 +218,204 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        child: SafeArea(
+                child: SafeArea(
           child: Stack(
             children: [
-              IgnorePointer(
-                ignoring: lockHome,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _TopHeader(
-                        saludo: 'Hola $nombrePerfil!',
-                        codigoSala: codigoSala,
-                        onQrTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProfileQrScreen(
-                                isHost: isHost,
-                                userName: nombrePerfil,
-                                roomCode: codigoSala,
-                                userId: appState.userId ?? '',
+              // ─── CONTENIDO PRINCIPAL ──────────────────────────────────
+              // El Column principal está FUERA del IgnorePointer
+              // para que el nav bar siempre sea accesible
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Solo la parte superior y la lista quedan bloqueadas
+                    Expanded(
+                      child: IgnorePointer(
+                        ignoring: lockHome,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _TopHeader(
+                              saludo: 'Hola $nombrePerfil!',
+                              codigoSala: codigoSala,
+                              onQrTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProfileQrScreen(
+                                      isHost: isHost,
+                                      userName: nombrePerfil,
+                                      roomCode: codigoSala,
+                                      userId: appState.userId ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            const Text(
+                              'Invitados en la sala',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Invitados en la sala',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
+                            const SizedBox(height: 14),
+                            Expanded(
+                              child: visibleUsers.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'No hay más invitados disponibles ahora mismo',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.60),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      physics: lockHome
+                                          ? const NeverScrollableScrollPhysics()
+                                          : const BouncingScrollPhysics(),
+                                      itemCount: visibleUsers.length,
+                                      separatorBuilder: (_, _) =>
+                                          const SizedBox(height: 12),
+                                      itemBuilder: (context, index) {
+                                        final user = visibleUsers[index];
+                                        final userColor =
+                                            _colorPorEstado(user.estado);
+ 
+                                        final interactionRequest = appState
+                                            .getInteractionRequestForUser(
+                                                user.id);
+ 
+                                        final bool hasRequest =
+                                            interactionRequest != null ||
+                                                appState.shouldHideUserFromHome(
+                                                    user.id);
+ 
+                                        final bool isRejected =
+                                            interactionRequest?.status ==
+                                                RequestStatus.rejected;
+ 
+                                        final String? requestLabel =
+                                            interactionRequest == null
+                                                ? null
+                                                : interactionRequest.status ==
+                                                        RequestStatus.rejected
+                                                    ? 'Solicitud rechazada'
+                                                    : '${_requestTypeLabel(interactionRequest.type)} pendiente';
+ 
+                                        final bool isNewUser =
+                                            !_knownUserIds.contains(user.id);
+ 
+                                        if (isNewUser) {
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            _knownUserIds.add(user.id);
+                                          });
+                                        }
+ 
+                                        return _AnimatedGuestEntry(
+                                          key: ValueKey(user.id),
+                                          animate: isNewUser,
+                                          glowColor: userColor,
+                                          child: _GuestCard(
+                                            name: user.nombre,
+                                            age: user.edad,
+                                            foto: user.foto,
+                                            statusColor: userColor,
+                                            hasRequestSent: hasRequest,
+                                            pendingLabel: requestLabel,
+                                            pendingLabelColor: isRejected
+                                                ? const Color(0xFFFF3B5C)
+                                                : const Color(0xFFEAB308),
+                                            onTap: isRejected
+                                                ? () {
+                                                    context
+                                                        .read<AppState>()
+                                                        .reopenRejectedIncomingRequest(
+                                                            user.id);
+                                                  }
+                                                : hasRequest
+                                                    ? () =>
+                                                        abrirChatConUsuario(
+                                                            user)
+                                                    : () =>
+                                                        openInteractionPopup(
+                                                            user),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Expanded(
-                        child: visibleUsers.isEmpty
-                            ? Center(
-                                child: Text(
-                                  'No hay más invitados disponibles ahora mismo',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.60),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              )
-                            : ListView.separated(
-                                physics: lockHome
-                                    ? const NeverScrollableScrollPhysics()
-                                    : const BouncingScrollPhysics(),
-                                itemCount: visibleUsers.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  final user = visibleUsers[index];
-                                  final userColor = _colorPorEstado(user.estado);
-
-                                  final interactionRequest =
-                                      appState.getInteractionRequestForUser(user.id);
-
-                                  final bool hasRequest =
-                                      interactionRequest != null || appState.shouldHideUserFromHome(user.id);
-
-                                  final bool isRejected =
-                                      interactionRequest?.status == RequestStatus.rejected;
-
-                                  final String? requestLabel = interactionRequest == null
-                                      ? null
-                                      : interactionRequest.status == RequestStatus.rejected
-                                          ? 'Solicitud rechazada'
-                                          : '${_requestTypeLabel(interactionRequest.type)} pendiente';
-
-                                  final bool isNewUser =
-                                      !_knownUserIds.contains(user.id);
-
-                                  if (isNewUser) {
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                      _knownUserIds.add(user.id);
-                                    });
-                                  }
-
-                                  return _AnimatedGuestEntry(
-                                    key: ValueKey(user.id),
-                                    animate: isNewUser,
-                                    glowColor: userColor,
-                                    child: _GuestCard(
-                                      name: user.nombre,
-                                      age: user.edad,
-                                      foto: user.foto,
-                                      statusColor: userColor,
-                                      hasRequestSent: hasRequest,
-                                      pendingLabel: requestLabel,
-                                      pendingLabelColor: isRejected
-                                          ? const Color(0xFFFF3B5C)
-                                          : const Color(0xFFEAB308),
-                                      onTap: isRejected
-                                        ? () {
-                                            context
-                                                .read<AppState>()
-                                                .reopenRejectedIncomingRequest(user.id);
-                                          }
-                                        : hasRequest
-                                            ? () => abrirChatConUsuario(user)
-                                            : () => openInteractionPopup(user),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                      const SizedBox(height: 10),
-                      VooBottomNavBar(
-                        currentIndex: 0,
-                        onTap: (index) {
-                          if (lockHome) return;
-
-                          if (index == 0) {
-                            return;
-                          } else if (index == 1) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ChatsScreen(),
-                              ),
-                            );
-                          } else if (index == 2) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const RankingScreen(),
-                              ),
-                            );
-                          } else if (index == 3) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const RetosScreen(),
-                              ),
-                            );
-                          } else if (index == 4) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SettingsScreen(),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                    ),
+ 
+                    const SizedBox(height: 10),
+ 
+                    // ─── NAV BAR FUERA DEL IgnorePointer ─────────────────
+                    // Siempre accesible aunque haya popup en el home
+                    VooBottomNavBar(
+                      currentIndex: 0,
+                      onTap: (index) {
+                        // index 0 es home, no navegamos
+                        if (index == 0) return;
+ 
+                        if (index == 1) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ChatsScreen(),
+                            ),
+                          );
+                        } else if (index == 2) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RankingScreen(),
+                            ),
+                          );
+                        } else if (index == 3) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RetosScreen(),
+                            ),
+                          );
+                        } else if (index == 4) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
+ 
+              // ─── OVERLAY OSCURO cuando hay popup ─────────────────────
+              // Solo cubre la lista, NO el nav bar
               if (lockHome)
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.45),
+                  child: IgnorePointer(
+                    ignoring: true,
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.45),
+                    ),
                   ),
                 ),
+ 
+              // ─── POPUP DE SOLICITUD ENTRANTE ─────────────────────────
               if (blockingIncoming != null)
                 Center(
                   child: _IncomingRequestPopup(
@@ -397,26 +432,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
+ 
+              // ─── POPUP DE RESPUESTA A SOLICITUD ACEPTADA ─────────────
               if (activeAccepted != null)
                 Center(
                   child: _AcceptedRequestResponsePopup(
                     request: activeAccepted,
                     onBack: () {
-                      context.read<AppState>().restoreAcceptedRequestToPending();
+                      context
+                          .read<AppState>()
+                          .restoreAcceptedRequestToPending();
                     },
                     onSendResponse: (responseText) async {
                       await context
-                        .read<AppState>()
-                        .finishAcceptedRequestResponse(responseText);
-
+                          .read<AppState>()
+                          .finishAcceptedRequestResponse(responseText);
+ 
                       if (!mounted) return;
-
+ 
                       await showDialog<void>(
                         context: context,
                         barrierDismissible: false,
                         builder: (_) => const SentRequestDialog(
                           title: 'Mensaje enviado',
-                          subtitle: 'Ya podéis seguir hablando en vuestro chat.',
+                          subtitle:
+                              'Ya podéis seguir hablando en vuestro chat.',
                         ),
                       );
                     },
