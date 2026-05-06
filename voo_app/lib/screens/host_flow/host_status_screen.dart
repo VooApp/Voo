@@ -123,7 +123,10 @@ class _HostStatusScreenState extends State<HostStatusScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const QuestionsScreen(),
+                              builder: (_) => QuestionsScreen(
+                                estado: selectedStatus!,
+                                isGuestFlow: false,
+                              ),
                             ),
                           );
                         },

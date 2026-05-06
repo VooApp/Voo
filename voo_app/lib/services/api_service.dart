@@ -614,6 +614,106 @@ class ApiService {
       'proximo': parseReto(data['proximo']),
     };
   }
+
+  static Future<List<String>> obtenerPreguntasPorEstado(String estado) async {
+    final estadoApi = _normalizarEstadoPreguntas(estado);
+
+    final uri = _uri('/Preguntas/$estadoApi');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    );
+
+    debugPrint('GET: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al cargar preguntas: ${response.body}');
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! List) {
+      throw Exception('El backend no ha devuelto una lista de preguntas');
+    }
+
+    return decoded
+        .map((item) => item.toString().trim())
+        .where((item) => item.isNotEmpty)
+        .take(3)
+        .toList();
+  }
+
+  static String _normalizarEstadoPreguntas(String estado) {
+    final value = estado.toLowerCase().trim();
+
+    if (value.contains('verde') || value.contains('soltero')) {
+      return 'verde';
+    }
+
+    if (value.contains('amarillo') ||
+        value.contains('amigos') ||
+        value.contains('amigo') ||
+        value.contains('complicado')) {
+      return 'amarillo';
+    }
+
+    if (value.contains('rojo') || value.contains('pareja')) {
+      return 'rojo';
+    }
+
+    return 'verde';
+  }
+
+  static Future<List<PoderModel>> getTodosLosPoderes() async {
+    final uri = _uri('/Poder');
+
+    final response = await http.get(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    debugPrint('GET: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener poderes');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data
+        .map((json) => PoderModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<List<PoderModel>> getPoderesUsuario(String usuarioId) async {
+    final uri = _uri('/Poder/usuario/$usuarioId');
+
+    final response = await http.get(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    debugPrint('GET: $uri');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener poderes del usuario');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data
+        .map((json) => PoderModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 class RegistroHostResponse {
@@ -735,6 +835,46 @@ class SalaUsuarioModel {
     );
   }
 }
+
+class PoderModel {
+  final String id;
+  final String nivelId;
+  final int puntosNecesarios;
+  final String conceptoPoder;
+
+  PoderModel({
+    required this.id,
+    required this.nivelId,
+    required this.puntosNecesarios,
+    required this.conceptoPoder,
+  });
+
+  factory PoderModel.fromJson(Map<String, dynamic> json) {
+    return PoderModel(
+      id: json['id']?.toString() ??
+          json['Id']?.toString() ??
+          json['_id']?.toString() ??
+          '',
+      nivelId: json['nivelId']?.toString() ??
+          json['NivelId']?.toString() ??
+          json['nivel']?.toString() ??
+          '',
+      puntosNecesarios: json['puntosNecesarios'] is int
+          ? json['puntosNecesarios'] as int
+          : int.tryParse(
+                json['puntosNecesarios']?.toString() ??
+                    json['PuntosNecesarios']?.toString() ??
+                    '0',
+              ) ??
+              0,
+      conceptoPoder: json['conceptoPoder']?.toString() ??
+          json['ConceptoPoder']?.toString() ??
+          json['descripcion']?.toString() ??
+          '',
+    );
+  }
+}
+
 class VerdadRetoRandom {
     final String verdad;
     final String reto;

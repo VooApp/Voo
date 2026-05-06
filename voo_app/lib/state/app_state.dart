@@ -26,6 +26,14 @@ class AppState extends ChangeNotifier {
   List<String> _respuestas = [];
   bool? _sexo;
 
+  List<String> _preguntasRapidas = [];
+  bool _cargandoPreguntasRapidas = false;
+  String? _errorPreguntasRapidas;
+
+  List<String> get preguntasRapidas => _preguntasRapidas;
+  bool get cargandoPreguntasRapidas => _cargandoPreguntasRapidas;
+  String? get errorPreguntasRapidas => _errorPreguntasRapidas;
+
   // ✅ Términos y condiciones
   bool _aceptaTerminos = false;
 
@@ -100,6 +108,28 @@ class AppState extends ChangeNotifier {
     }
 
     return deviceId;
+  }
+
+  Future<void> cargarPreguntasRapidasPorEstado(String estado) async {
+    _cargandoPreguntasRapidas = true;
+    _errorPreguntasRapidas = null;
+    _preguntasRapidas = [];
+    notifyListeners();
+
+    try {
+      final preguntas = await ApiService.obtenerPreguntasPorEstado(estado);
+
+      if (preguntas.length < 3) {
+        throw Exception('El backend debe devolver mínimo 3 preguntas.');
+      }
+
+      _preguntasRapidas = preguntas.take(3).toList();
+    } catch (e) {
+      _errorPreguntasRapidas = e.toString();
+    } finally {
+      _cargandoPreguntasRapidas = false;
+      notifyListeners();
+    }
   }
 
   bool get hasBlockingIncomingRequest => blockingIncomingRequest != null;

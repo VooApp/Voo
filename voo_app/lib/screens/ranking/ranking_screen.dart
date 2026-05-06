@@ -1,26 +1,84 @@
-import 'package:flutter/material.dart';
-import '../../widgets/voo_bottom_nav_bar.dart';
-import '../home/home_screen.dart';
-import '../chats/chats_screen.dart';
-import '../retos/retos_screen.dart';
-import 'voo_powers_screen.dart';
-import '../settings/settings_screen.dart';
+import 'dart:convert';
 
-class RankingScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../services/api_service.dart';
+import '../../state/app_state.dart';
+import '../../widgets/voo_bottom_nav_bar.dart';
+import '../chats/chats_screen.dart';
+import '../home/home_screen.dart';
+import '../retos/retos_screen.dart';
+import '../settings/settings_screen.dart';
+import 'voo_powers_screen.dart';
+
+class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
 
-  final List<Map<String, dynamic>> ranking = const [
-    {'name': 'Maximo', 'points': 469, 'color': Color(0xFFFFD84D)},
-    {'name': 'Ana', 'points': 375, 'color': Color(0xFFC9D6FF)},
-    {'name': 'Julia', 'points': 280, 'color': Color(0xFFFF9B45)},
-    {'name': 'Maxi', 'points': 278, 'color': Color(0xFF52A9FF)},
-    {'name': 'Paula', 'points': 160, 'color': Color(0xFF52A9FF)},
-    {'name': 'Pablo', 'points': 143, 'color': Color(0xFF52A9FF)},
+  @override
+  State<RankingScreen> createState() => _RankingScreenState();
+}
+
+class _RankingScreenState extends State<RankingScreen> {
+  List<SalaUsuarioModel> _ranking = [];
+  bool _loading = true;
+  String? _error;
+
+  static const List<Color> _positionColors = [
+    Color(0xFFFFD84D),
+    Color(0xFFC9D6FF),
+    Color(0xFFFF9B45),
+    Color(0xFF52A9FF),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    _cargarRanking();
+  }
 
+  Future<void> _cargarRanking() async {
+    final salaId = context.read<AppState>().salaId;
+
+    if (salaId == null || salaId.isEmpty) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = 'No se encontró la sala';
+        _loading = false;
+      });
+      return;
+    }
+
+    try {
+      final usuarios = await ApiService.getUsuariosSala(salaId);
+
+      usuarios.sort((a, b) => b.puntos.compareTo(a.puntos));
+
+      if (!mounted) return;
+
+      setState(() {
+        _ranking = usuarios.where((u) => !u.baneado).toList();
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = 'Error al cargar el ranking';
+        _loading = false;
+      });
+    }
+  }
+
+  Color _colorForPosition(int index) {
+    if (index < _positionColors.length) return _positionColors[index];
+    return const Color(0xFF52A9FF);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
       body: Container(
@@ -42,7 +100,6 @@ class RankingScreen extends StatelessWidget {
               children: [
                 const _RankingTitle(),
                 const SizedBox(height: 22),
-
                 Container(
                   width: 116,
                   height: 116,
@@ -65,9 +122,7 @@ class RankingScreen extends StatelessWidget {
                     size: 70,
                   ),
                 ),
-
                 const SizedBox(height: 28),
-
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -94,7 +149,8 @@ class RankingScreen extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF9C4DFF).withValues(alpha: 0.28),
+                          color: const Color(0xFF9C4DFF)
+                              .withValues(alpha: 0.28),
                           blurRadius: 18,
                           spreadRadius: 0.5,
                         ),
@@ -105,28 +161,63 @@ class RankingScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 Expanded(
-                  child: ListView.separated(
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: ranking.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final user = ranking[index];
-                      final Color color = user['color'] as Color;
+                  child: _loading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF9C4DFF),
+                          ),
+                        )
+                      : _error != null
+                          ? _RankingError(
+                              message: _error!,
+                              onRetry: () {
+                                setState(() {
+                                  _loading = true;
+                                  _error = null;
+                                });
+                                _cargarRanking();
+                              },
+                            )
+                          : _ranking.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    'Aún no hay puntuaciones',
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                )
+                              : RefreshIndicator(
+                                  color: const Color(0xFF9C4DFF),
+                                  backgroundColor: const Color(0xFF111124),
+                                  onRefresh: _cargarRanking,
+                                  child: ListView.separated(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(
+                                      parent: BouncingScrollPhysics(),
+                                    ),
+                                    itemCount: _ranking.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final user = _ranking[index];
 
-                      return _RankingCard(
-                        position: index + 1,
-                        name: user['name'] as String,
-                        points: user['points'] as int,
-                        color: color,
-                      );
-                    },
-                  ),
+                                      return _RankingCard(
+                                        position: index + 1,
+                                        name: user.nombre,
+                                        points: user.puntos,
+                                        foto: user.foto,
+                                        color: _colorForPosition(index),
+                                        statusColor: user.statusColor,
+                                      );
+                                    },
+                                  ),
+                                ),
                 ),
-
                 VooBottomNavBar(
                   currentIndex: 2,
                   onTap: (index) {
@@ -166,6 +257,78 @@ class RankingScreen extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RankingError extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _RankingError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF151525),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: const Color(0xFFFF3B5C).withValues(alpha: 0.65),
+            width: 1.6,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Color(0xFFFF3B5C),
+              size: 34,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.76),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF151515),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: const Color(0xFF9C4DFF),
+                    width: 1.8,
+                  ),
+                ),
+                child: const Text(
+                  'Reintentar',
+                  style: TextStyle(
+                    color: Color(0xFF9C4DFF),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -305,19 +468,46 @@ class _RankingCard extends StatelessWidget {
   final int position;
   final String name;
   final int points;
+  final String? foto;
   final Color color;
+  final Color statusColor;
 
   const _RankingCard({
     required this.position,
     required this.name,
     required this.points,
     required this.color,
+    required this.statusColor,
+    this.foto,
   });
+
+  ImageProvider? _profileImage() {
+    if (foto == null || foto!.trim().isEmpty) return null;
+
+    final value = foto!.trim();
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return NetworkImage(value);
+    }
+
+    try {
+      var cleanBase64 = value;
+
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+
+      return MemoryImage(base64Decode(cleanBase64));
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final bool isTopOne = position == 1;
     final bool isTopThree = position <= 3;
+    final image = _profileImage();
 
     return Container(
       height: 82,
@@ -374,6 +564,7 @@ class _RankingCard extends StatelessWidget {
               Container(
                 width: 54,
                 height: 54,
+                padding: const EdgeInsets.all(2.2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: color, width: 2.2),
@@ -384,10 +575,18 @@ class _RankingCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 34,
+                child: ClipOval(
+                  child: image != null
+                      ? Image(
+                          image: image,
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                        )
+                      : const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 34,
+                        ),
                 ),
               ),
               Positioned(
@@ -397,7 +596,7 @@ class _RankingCard extends StatelessWidget {
                   width: 15,
                   height: 15,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF66D63E),
+                    color: statusColor,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: const Color(0xFF05051C),
@@ -417,6 +616,7 @@ class _RankingCard extends StatelessWidget {
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           Text(

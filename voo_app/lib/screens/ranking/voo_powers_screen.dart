@@ -1,14 +1,208 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
-class VooPowersScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../services/api_service.dart';
+import '../../state/app_state.dart';
+
+class VooPowersScreen extends StatefulWidget {
   const VooPowersScreen({super.key});
 
   @override
+  State<VooPowersScreen> createState() => _VooPowersScreenState();
+}
+
+class _VooPowersScreenState extends State<VooPowersScreen> {
+  SalaUsuarioModel? _usuario;
+  List<PoderModel> _todosLosPoderes = [];
+  List<PoderModel> _poderesDesbloqueados = [];
+
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    final userId = context.read<AppState>().userId;
+
+    if (userId == null || userId.isEmpty) {
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _error = 'No se encontró el usuario';
+      });
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        ApiService.getUsuarioPorId(userId),
+        ApiService.getTodosLosPoderes(),
+        ApiService.getPoderesUsuario(userId),
+      ]);
+
+      if (!mounted) return;
+
+      setState(() {
+        _usuario = results[0] as SalaUsuarioModel;
+        _todosLosPoderes = results[1] as List<PoderModel>;
+        _poderesDesbloqueados = results[2] as List<PoderModel>;
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      debugPrint('Error cargando poderes: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _error = 'No se han podido cargar los poderes';
+      });
+    }
+  }
+
+  String _poderActivo() {
+    if (_poderesDesbloqueados.isEmpty) return 'Ninguno';
+
+    final sorted = List<PoderModel>.from(_poderesDesbloqueados)
+      ..sort((a, b) => b.puntosNecesarios.compareTo(a.puntosNecesarios));
+
+    return _nombrePoder(sorted.first.nivelId);
+  }
+
+  String _nombrePoder(String nivelId) {
+    switch (nivelId.toLowerCase()) {
+      case 'chismoso':
+        return 'El Chismoso';
+      case 'cupido':
+        return 'El Cupido';
+      case 'rey':
+        return 'Rey de la pista';
+      default:
+        return nivelId;
+    }
+  }
+
+  bool _estaDesbloqueado(String nivelId) {
+    return _poderesDesbloqueados.any(
+      (poder) => poder.nivelId.toLowerCase() == nivelId.toLowerCase(),
+    );
+  }
+
+  Color _colorEstado(String estado) {
+    final value = estado.toLowerCase().trim();
+
+    if (value.contains('amarillo') ||
+        value.contains('amigos') ||
+        value.contains('amigo') ||
+        value.contains('complicado')) {
+      return const Color(0xFFEAB308);
+    }
+
+    if (value.contains('rojo') || value.contains('pareja')) {
+      return const Color(0xFFEF4444);
+    }
+
+    return const Color(0xFF66D63E);
+  }
+
+  _PowerConfig _configPoder(String nivelId) {
+    switch (nivelId.toLowerCase()) {
+      case 'chismoso':
+        return const _PowerConfig(
+          color: Color(0xFF66D63E),
+          icon: Icons.chat_bubble_outline_rounded,
+          title: 'Nivel 1 · El Chismoso',
+        );
+      case 'cupido':
+        return const _PowerConfig(
+          color: Color(0xFFEAB308),
+          icon: Icons.bolt_rounded,
+          title: 'Nivel 2 · El Cupido',
+        );
+      case 'rey':
+        return const _PowerConfig(
+          color: Color(0xFFFF3B5C),
+          icon: Icons.workspace_premium_rounded,
+          title: 'Nivel 3 · Rey de la pista',
+        );
+      default:
+        return _PowerConfig(
+          color: Colors.white24,
+          icon: Icons.star_outline_rounded,
+          title: nivelId,
+        );
+    }
+  }
+
+  List<PoderModel> _fallbackPoderes() {
+    return [
+      PoderModel(
+        id: 'local-1',
+        nivelId: 'chismoso',
+        puntosNecesarios: 50,
+        conceptoPoder:
+            'Descubre quién ha visto tu perfil y consigue una pequeña ventaja antes de empezar una conversación.',
+      ),
+      PoderModel(
+        id: 'local-2',
+        nivelId: 'cupido',
+        puntosNecesarios: 100,
+        conceptoPoder:
+            'Lanza un reto flash anónimo para dos personas y crea el momento perfecto para romper el hielo.',
+      ),
+      PoderModel(
+        id: 'local-3',
+        nivelId: 'rey',
+        puntosNecesarios: 150,
+        conceptoPoder:
+            'Desbloquea el poder de lanzar un reto personalizado a toda la sala y poner el juego patas arriba.',
+      ),
+    ];
+  }
+
+  ImageProvider? _profileImage(String? foto) {
+    if (foto == null || foto.trim().isEmpty) return null;
+
+    final value = foto.trim();
+
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return NetworkImage(value);
+    }
+
+    try {
+      var cleanBase64 = value;
+
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last;
+      }
+
+      return MemoryImage(base64Decode(cleanBase64));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const String userName = 'Maxi';
-    const String estado = 'Soltero';
-    const int puntos = 25;
-    const String poderActivo = 'Ninguno';
+    final appState = context.watch<AppState>();
+
+    final userName = _usuario?.nombre ?? appState.userName ?? 'Usuario';
+    final estado = _usuario?.estado ?? appState.estado ?? 'verde';
+    final puntos = _usuario?.puntos ?? 0;
+    final foto = _usuario?.foto ?? appState.profilePhoto;
+    final colorEstado = _colorEstado(estado);
+    final image = _profileImage(foto);
+
+    final poderes =
+        _todosLosPoderes.isNotEmpty ? _todosLosPoderes : _fallbackPoderes();
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -25,179 +219,221 @@ class VooPowersScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    _CircleBackButton(
-                      onTap: () => Navigator.pop(context),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Poderes Voo',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFD78BFF),
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 54),
-                  ],
-                ),
-
-                const SizedBox(height: 18),
-
-                Text.rich(
-                  TextSpan(
+          child: _loading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF9C4DFF),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+                  child: Column(
                     children: [
-                      const TextSpan(
-                        text: 'Hola ',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Row(
+                        children: [
+                          _CircleBackButton(
+                            onTap: () => Navigator.pop(context),
+                          ),
+                          const Expanded(
+                            child: Text(
+                              'Poderes Voo',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFD78BFF),
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 54),
+                        ],
                       ),
-                      TextSpan(
-                        text: userName,
-                        style: const TextStyle(
-                          color: Color(0xFFD78BFF),
-                          fontSize: 38,
-                          fontWeight: FontWeight.w900,
-                          shadows: [
-                            Shadow(
-                              color: Color(0xFF9C4DFF),
-                              blurRadius: 18,
+                      const SizedBox(height: 18),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(
+                              text: 'Hola ',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            TextSpan(
+                              text: userName,
+                              style: const TextStyle(
+                                color: Color(0xFFD78BFF),
+                                fontSize: 38,
+                                fontWeight: FontWeight.w900,
+                                shadows: [
+                                  Shadow(
+                                    color: Color(0xFF9C4DFF),
+                                    blurRadius: 18,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Consigue puntos, sube de nivel y desbloquea ventajas dentro de la sala.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.68),
+                          fontSize: 14.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      Row(
+                        children: [
+                          Stack(
+                            children: [
+                              Container(
+                                width: 116,
+                                height: 116,
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: colorEstado,
+                                    width: 4,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colorEstado.withValues(alpha: 0.22),
+                                      blurRadius: 18,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: image != null
+                                      ? Image(
+                                          image: image,
+                                          fit: BoxFit.cover,
+                                          gaplessPlayback: true,
+                                        )
+                                      : const Icon(
+                                          Icons.person,
+                                          color: Colors.white,
+                                          size: 62,
+                                        ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 8,
+                                bottom: 8,
+                                child: Container(
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    color: colorEstado,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFF05051C),
+                                      width: 3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _InfoLine(
+                                  label: 'Estado',
+                                  value: estado,
+                                ),
+                                const SizedBox(height: 10),
+                                _InfoLine(
+                                  label: 'Puntos',
+                                  value: '$puntos pts',
+                                ),
+                                const SizedBox(height: 10),
+                                _InfoLine(
+                                  label: 'Poder activo',
+                                  value: _poderActivo(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                      if (_error != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF151525),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color:
+                                  const Color(0xFFFF3B5C).withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.74),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      Expanded(
+                        child: ListView.separated(
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: poderes.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            final poder = poderes[index];
+                            final config = _configPoder(poder.nivelId);
+                            final desbloqueado =
+                                _estaDesbloqueado(poder.nivelId);
+
+                            return _PowerCard(
+                              borderColor: config.color,
+                              icon: config.icon,
+                              title: config.title,
+                              points: '${poder.puntosNecesarios} pts',
+                              description: poder.conceptoPoder,
+                              desbloqueado: desbloqueado,
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
-                  textAlign: TextAlign.center,
                 ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  'Consigue puntos, sube de nivel y desbloquea ventajas dentro de la sala.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.68),
-                    fontSize: 14.5,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-                const SizedBox(height: 26),
-
-                Row(
-                  children: [
-                    Stack(
-                      children: [
-                        Container(
-                          width: 116,
-                          height: 116,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF66D63E),
-                              width: 4,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF66D63E).withValues(alpha: 0.22),
-                                blurRadius: 18,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 62,
-                          ),
-                        ),
-                        Positioned(
-                          right: 8,
-                          bottom: 8,
-                          child: Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF66D63E),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFF05051C),
-                                width: 3,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(width: 24),
-
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _InfoLine(label: 'Estado', value: estado),
-                          SizedBox(height: 10),
-                          _InfoLine(label: 'Puntos', value: '$puntos'),
-                          SizedBox(height: 10),
-                          _InfoLine(label: 'Poder activo', value: poderActivo),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 28),
-
-                const _PowerCard(
-                  borderColor: Color(0xFF66D63E),
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: 'Nivel 1 · El Chismoso',
-                  points: '50 pts',
-                  description:
-                      'Descubre quién ha visto tu perfil y consigue una pequeña ventaja antes de empezar una conversación.',
-                ),
-
-                const SizedBox(height: 16),
-
-                const _PowerCard(
-                  borderColor: Color(0xFFEAB308),
-                  icon: Icons.bolt_rounded,
-                  title: 'Nivel 2 · El Cupido',
-                  points: '100 pts',
-                  description:
-                      'Lanza un reto flash anónimo para dos personas y crea el momento perfecto para romper el hielo.',
-                ),
-
-                const SizedBox(height: 16),
-
-                const _PowerCard(
-                  borderColor: Color(0xFFFF3B5C),
-                  icon: Icons.workspace_premium_rounded,
-                  title: 'Nivel 3 · Rey de la pista',
-                  points: '200 pts',
-                  description:
-                      'Desbloquea el poder de lanzar un reto personalizado a toda la sala y poner el juego patas arriba.',
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
   }
+}
+
+class _PowerConfig {
+  final Color color;
+  final IconData icon;
+  final String title;
+
+  const _PowerConfig({
+    required this.color,
+    required this.icon,
+    required this.title,
+  });
 }
 
 class _InfoLine extends StatelessWidget {
@@ -242,6 +478,7 @@ class _PowerCard extends StatelessWidget {
   final String title;
   final String points;
   final String description;
+  final bool desbloqueado;
 
   const _PowerCard({
     required this.borderColor,
@@ -249,41 +486,54 @@ class _PowerCard extends StatelessWidget {
     required this.title,
     required this.points,
     required this.description,
+    required this.desbloqueado,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color color = desbloqueado ? borderColor : Colors.white24;
+    final Color bgColor =
+        desbloqueado ? const Color(0xFF101020) : const Color(0xFF0A0A18);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF101020),
+        color: bgColor,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: borderColor,
+          color: color,
           width: 2.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: borderColor.withValues(alpha: 0.25),
-            blurRadius: 20,
-            spreadRadius: 0.7,
-          ),
-        ],
+        boxShadow: desbloqueado
+            ? [
+                BoxShadow(
+                  color: borderColor.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  spreadRadius: 0.7,
+                ),
+              ]
+            : [],
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: borderColor,
-            size: 54,
-            shadows: [
-              Shadow(
-                color: borderColor.withValues(alpha: 0.8),
-                blurRadius: 16,
-              ),
-            ],
-          ),
+          desbloqueado
+              ? Icon(
+                  icon,
+                  color: color,
+                  size: 54,
+                  shadows: [
+                    Shadow(
+                      color: color.withValues(alpha: 0.8),
+                      blurRadius: 16,
+                    ),
+                  ],
+                )
+              : const Icon(
+                  Icons.lock_outline_rounded,
+                  color: Colors.white24,
+                  size: 54,
+                ),
           const SizedBox(width: 18),
           Expanded(
             child: Column(
@@ -292,7 +542,7 @@ class _PowerCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: borderColor,
+                    color: color,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -304,16 +554,16 @@ class _PowerCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: borderColor.withValues(alpha: 0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: borderColor.withValues(alpha: 0.7),
+                      color: color.withValues(alpha: 0.7),
                     ),
                   ),
                   child: Text(
-                    points,
+                    desbloqueado ? '✓ $points' : points,
                     style: TextStyle(
-                      color: borderColor,
+                      color: color,
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
                     ),
@@ -323,7 +573,9 @@ class _PowerCard extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
+                    color: desbloqueado
+                        ? Colors.white.withValues(alpha: 0.88)
+                        : Colors.white38,
                     fontSize: 14,
                     height: 1.35,
                     fontWeight: FontWeight.w600,
@@ -379,7 +631,9 @@ class _CircleBackButtonState extends State<_CircleBackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.22),
+              color: const Color(0xFF8B3DFF).withValues(
+                alpha: _pressed ? 0.5 : 0.22,
+              ),
               blurRadius: 18,
               spreadRadius: 1,
             ),
