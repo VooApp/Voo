@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/app_state.dart';
-import '../shared_flow/questions_screen.dart';
+import 'guest_questions_screen.dart';
 
 class GuestStatusScreen extends StatefulWidget {
   const GuestStatusScreen({super.key});
@@ -119,7 +119,7 @@ class _GuestStatusScreenState extends State<GuestStatusScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const QuestionsScreen(),
+                              builder: (_) => const GuestQuestionsScreen(),
                             ),
                           );
                         },

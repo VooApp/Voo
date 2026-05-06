@@ -1064,8 +1064,6 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> registrarInvitadoEnBackend() async {
-    debugPrint('nombre: $_userName');
-    debugPrint('estado: $_estado');
     
     try {
       final deviceId = await _getOrCreateDeviceId();
@@ -1098,10 +1096,5 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       rethrow;
     }
-  }
-
-  void setIsHost(bool value) {
-    _isHost = value;
-    notifyListeners();
   }
 }
