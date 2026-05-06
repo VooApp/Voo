@@ -138,6 +138,84 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                         child: CircularProgressIndicator(
                           color: Color(0xFF9C4DFF),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Preguntas rápidas',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Responde estas 3 preguntas para ver tu afinidad con otros invitados.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.68),
+                        fontSize: 14,
+                        height: 1.35,
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 👇 BLOQUE DE PREGUNTAS (SIN ESPACIO EXCESIVO ARRIBA)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _QuestionLabel(text: 'Pregunta rápida 1'),
+                        const SizedBox(height: 12),
+                        _QuestionInput(
+                          controller: question1Controller,
+                          hintText: 'Escribe tu respuesta',
+                          onChanged: (_) => setState(() {}),
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        const _QuestionLabel(text: 'Pregunta rápida 2'),
+                        const SizedBox(height: 12),
+                        _QuestionInput(
+                          controller: question2Controller,
+                          hintText: 'Escribe tu respuesta',
+                          onChanged: (_) => setState(() {}),
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        const _QuestionLabel(text: 'Pregunta rápida 3'),
+                        const SizedBox(height: 12),
+                        _QuestionInput(
+                          controller: question3Controller,
+                          hintText: 'Escribe tu respuesta',
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _NextButton(
+                        enabled: canContinue,
+                        onTap: () {
+                          if (!canContinue) return;
+
+                          context.read<AppState>().setQuestionsData([
+                          question1Controller.text.trim(),
+                          question2Controller.text.trim(),
+                          question3Controller.text.trim(),
+                        ]);
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RoomSetupScreen(),
                       )
                     : Column(
                         children: [
@@ -277,7 +355,7 @@ class _QuestionInputState extends State<_QuestionInput> {
           boxShadow: _focused && widget.enabled
               ? [
                   BoxShadow(
-                    color: const Color(0xFF9C4DFF).withOpacity(0.22),
+                    color: const Color(0xFF9C4DFF).withValues(alpha: 0.22),
                     blurRadius: 18,
                     spreadRadius: 1,
                   ),
@@ -295,7 +373,7 @@ class _QuestionInputState extends State<_QuestionInput> {
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.42),
+              color: Colors.white.withValues(alpha: 0.42),
               fontSize: 15,
             ),
             filled: true,
@@ -314,7 +392,7 @@ class _QuestionInputState extends State<_QuestionInput> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(22),
               borderSide: BorderSide(
-                color: const Color(0xFF9C4DFF).withOpacity(0.38),
+                color: const Color(0xFF9C4DFF).withValues(alpha: 0.38),
                 width: 1.6,
               ),
             ),
@@ -398,6 +476,18 @@ class _RoundBackButtonState extends State<_RoundBackButton> {
             color: Colors.white,
             size: 20,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
         ),
       ),
     );
@@ -453,6 +543,9 @@ class _NextButtonState extends State<_NextButton> {
           boxShadow: widget.enabled && _pressed
               ? [
                   BoxShadow(
+                    color: buttonColor.withValues(alpha: _pressed ? 0.55 : 0.22),
+                    blurRadius: _pressed ? 18 : 12,
+                    spreadRadius: _pressed ? 2 : 0.5,
                     color: buttonColor.withOpacity(0.55),
                     blurRadius: 18,
                     spreadRadius: 2,

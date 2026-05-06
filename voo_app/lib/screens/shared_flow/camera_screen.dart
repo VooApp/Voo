@@ -432,7 +432,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                         color: (_faceCentered
                                                 ? const Color(0xFF22C55E)
                                                 : const Color(0xFF9C4DFF))
-                                            .withOpacity(0.25),
+                                            .withValues(alpha: 0.25),
                                         blurRadius: 18,
                                         spreadRadius: 1,
                                       ),
@@ -510,7 +510,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: Colors.white,
                                   overlayColor:
-                                      const Color(0xFF9C4DFF).withOpacity(0.2),
+                                      const Color(0xFF9C4DFF).withValues(alpha: 0.2),
                                 ),
                                 child: Slider(
                                   value: _currentZoom,
@@ -571,7 +571,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                 color: const Color(0xFF9C4DFF),
                                 width: 1.5,
                               ),
-                              color: const Color(0xFF9C4DFF).withOpacity(0.15),
+                              color: const Color(0xFF9C4DFF).withValues(alpha: 0.15),
                             ),
                             child: const Center(
                               child: Text(
@@ -636,7 +636,7 @@ class _BackButtonPurpleState extends State<_BackButtonPurple> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),

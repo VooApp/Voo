@@ -7,6 +7,8 @@ import '../models/request_model.dart';
 
 import '../services/api_service.dart';
 import 'package:signalr_netcore/signalr_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../navigation/app_navigator.dart';
 
 class AppState extends ChangeNotifier {
   bool _isHost = false;
@@ -74,6 +76,9 @@ class AppState extends ChangeNotifier {
   double? get latitudGuest => _latitudGuest;
   double? get longitudGuest => _longitudGuest;
 
+  int _retosVersion = 0;
+  int get retosVersion => _retosVersion;
+
   RequestModel? get blockingIncomingRequest {
     try {
       return _receivedRequests.firstWhere(
@@ -82,6 +87,19 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<String> _getOrCreateDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    var deviceId = prefs.getString('deviceId');
+
+    if (deviceId == null || deviceId.isEmpty) {
+      deviceId = DateTime.now().microsecondsSinceEpoch.toString();
+      await prefs.setString('deviceId', deviceId);
+    }
+
+    return deviceId;
   }
 
   bool get hasBlockingIncomingRequest => blockingIncomingRequest != null;
@@ -125,6 +143,121 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> guardarSesionLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('userId', _userId ?? '');
+    await prefs.setString('salaId', _salaId ?? '');
+    await prefs.setString('userName', _userName ?? '');
+    await prefs.setString('roomCode', _roomCode ?? '');
+    await prefs.setBool('isHost', _isHost);
+  }
+
+  Future<void> borrarSesionLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove('userId');
+    await prefs.remove('salaId');
+    await prefs.remove('userName');
+    await prefs.remove('roomCode');
+    await prefs.remove('isHost');
+  }
+
+  Future<bool> restaurarSesionLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final userId = prefs.getString('userId') ?? '';
+    final salaId = prefs.getString('salaId') ?? '';
+    final userName = prefs.getString('userName') ?? '';
+    final roomCode = prefs.getString('roomCode') ?? '';
+    final isHost = prefs.getBool('isHost') ?? false;
+
+    if (userId.isEmpty || salaId.isEmpty) return false;
+
+    try {
+      final usuario = await ApiService.getUsuarioPorId(userId);
+
+      if (usuario.baneado) {
+        await borrarSesionLocal();
+        clear();
+        return false;
+      }
+
+      await ApiService.getUsuariosSala(salaId);
+
+      _userId = userId;
+      _salaId = salaId;
+      _userName = userName.isNotEmpty ? userName : usuario.nombre;
+      _roomCode = roomCode;
+      _isHost = isHost;
+      _estado = usuario.estado;
+      _birthDate = usuario.fechaNacimiento;
+      _profilePhoto = usuario.foto;
+
+      if ((_userId ?? '').isNotEmpty && (_salaId ?? '').isNotEmpty) {
+        guardarSesionLocal();
+      }
+
+      notifyListeners();
+
+      await cargarSesionCompleta();
+
+      return true;
+    } catch (_) {
+      await borrarSesionLocal();
+      clear();
+      return false;
+    }
+  }
+
+  Future<void> cerrarSesionPorSalaCerrada() async {
+    await borrarSesionLocal();
+    clear();
+
+    appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/',
+      (_) => false,
+    );
+  }
+
+  Future<void> cargarSesionCompleta() async {
+    final id = _userId;
+    final sala = _salaId;
+
+    if (id == null || id.isEmpty || sala == null || sala.isEmpty) return;
+
+    final usuario = await ApiService.getUsuarioPorId(id);
+
+    if (usuario.baneado) {
+      await borrarSesionLocal();
+      clear();
+      return;
+    }
+
+    _userName = usuario.nombre;
+    _birthDate = usuario.fechaNacimiento;
+    _estado = usuario.estado;
+    _profilePhoto = usuario.foto;
+
+    await cargarUsuariosSala();
+    await cargarChats();
+
+    final enviadas = await ApiService.getSolicitudesEnviadas(id);
+    final recibidas = await ApiService.getSolicitudesRecibidas(id);
+
+    _sentRequests
+      ..clear()
+      ..addAll(enviadas);
+
+    _receivedRequests
+      ..clear()
+      ..addAll(recibidas.where((r) => r.status == RequestStatus.pending));
+
+    await iniciarSignalR();
+
+    notifyListeners();
+  }
+
   void setActiveChat(String? chatId) {
     _activeChatId = chatId;
 
@@ -164,8 +297,18 @@ class AppState extends ChangeNotifier {
 
     if (hasBlockingState) return;
 
+    final myId = _userId;
+    if (myId == null || myId.isEmpty) return;
+
+    final solicitudId = await ApiService.crearSolicitud(
+      emisorId: myId,
+      receptorId: targetUserId,
+      type: type,
+      content: content,
+    );
+
     final request = RequestModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: solicitudId,
       targetUserId: targetUserId,
       targetUserName: targetUserName,
       type: type,
@@ -176,7 +319,9 @@ class AppState extends ChangeNotifier {
 
     _sentRequests.insert(0, request);
 
-    final alreadyInChats = _dynamicChats.any((chat) => chat.id == targetUserId);
+    final alreadyInChats = _dynamicChats.any(
+      (chat) => chat.otherUserId == targetUserId,
+    );
     if (!alreadyInChats) {
       _dynamicChats.insert(
         0,
@@ -196,9 +341,20 @@ class AppState extends ChangeNotifier {
 
     notifyListeners();
 
+    debugPrint('ENVIANDO SOLICITUD SIGNALR');
+    debugPrint('solicitudId: $solicitudId');
+    debugPrint('fromUserId: $_userId');
+    debugPrint('targetUserId: $targetUserId');
+    debugPrint('hubState: ${_hubConnection?.state}');
+
+    if (_hubConnection?.state != HubConnectionState.Connected) {
+      await iniciarSignalR();
+    }
+
     await _hubConnection?.invoke(
       'EnviarSolicitud',
       args: [
+        solicitudId,
         _userId ?? '',
         _userName ?? '',
         targetUserId,
@@ -271,6 +427,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  RequestModel? getInteractionRequestForUser(String userId) {
+    try {
+      return _sentRequests.firstWhere(
+        (request) => request.targetUserId == userId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   bool shouldHideUserFromHome(String userId) {
     final hasOutgoingState = _sentRequests.any(
       (request) =>
@@ -280,12 +446,15 @@ class AppState extends ChangeNotifier {
               request.status == RequestStatus.rejected),
     );
 
-    final hasChat = _dynamicChats.any((chat) => chat.id == userId);
+    final hasChat = _dynamicChats.any(
+      (chat) => chat.otherUserId == userId,
+    );
 
     return hasOutgoingState || hasChat;
   }
 
   void addIncomingRequest({
+    required String solicitudId,
     required String fromUserId,
     required String fromUserName,
     required RequestType type,
@@ -293,14 +462,15 @@ class AppState extends ChangeNotifier {
   }) {
     final alreadyExists = _receivedRequests.any(
       (request) =>
-          request.targetUserId == fromUserId &&
-          request.status == RequestStatus.pending,
+          request.id == solicitudId ||
+          (request.targetUserId == fromUserId &&
+              request.status == RequestStatus.pending),
     );
 
     if (alreadyExists) return;
 
     final request = RequestModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: solicitudId,
       targetUserId: fromUserId,
       targetUserName: fromUserName,
       type: type,
@@ -317,7 +487,43 @@ class AppState extends ChangeNotifier {
     final index = _receivedRequests.indexWhere((r) => r.id == requestId);
     if (index == -1) return;
 
+    final request = _receivedRequests[index];
+
+    ApiService.rechazarVerdadReto(request.id);
+
     _receivedRequests.removeAt(index);
+
+    final existingIndex = _sentRequests.indexWhere(
+      (r) => r.targetUserId == request.targetUserId,
+    );
+
+    final rejectedRequest = request.copyWith(status: RequestStatus.rejected);
+
+    if (existingIndex == -1) {
+      _sentRequests.insert(0, rejectedRequest);
+    } else {
+      _sentRequests[existingIndex] = rejectedRequest;
+    }
+
+    notifyListeners();
+  }
+
+  void reopenRejectedIncomingRequest(String userId) {
+    final index = _sentRequests.indexWhere(
+      (request) =>
+          request.targetUserId == userId &&
+          request.status == RequestStatus.rejected,
+    );
+
+    if (index == -1) return;
+
+    final request = _sentRequests[index].copyWith(
+      status: RequestStatus.pending,
+    );
+
+    _sentRequests.removeAt(index);
+    _receivedRequests.insert(0, request);
+
     notifyListeners();
   }
 
@@ -336,10 +542,9 @@ class AppState extends ChangeNotifier {
     final myId = _userId;
     if (myId == null || myId.isEmpty) return;
 
-    await ApiService.crearOObtenerChat(
-      usuarioAId: myId,
-      usuarioBId: request.targetUserId,
-    );
+    await ApiService.aceptarVerdadReto(request.id);
+
+    _sentRequests.removeWhere((r) => r.targetUserId == request.targetUserId);
 
     await cargarChats();
   }
@@ -359,6 +564,7 @@ class AppState extends ChangeNotifier {
   Future<void> finishAcceptedRequestResponse(String responseText) async {
     final request = _activeAcceptedRequest;
     if (request == null) return;
+
     final myId = _userId;
     if (myId == null || myId.isEmpty) return;
 
@@ -373,73 +579,6 @@ class AppState extends ChangeNotifier {
       text: responseText,
       isMine: true,
     );
-
-    _activeAcceptedRequest = null;
-    notifyListeners();
-    return;
-
-    final sentIndex = _sentRequests.indexWhere(
-      (r) => r.targetUserId == request.targetUserId,
-    );
-
-    if (sentIndex != -1) {
-      _sentRequests[sentIndex] = _sentRequests[sentIndex].copyWith(
-        status: RequestStatus.accepted,
-      );
-    }
-
-    final existingChatIndex = _dynamicChats.indexWhere(
-      (chat) => chat.id == request.targetUserId,
-    );
-
-    final previousColor = existingChatIndex != -1
-        ? _dynamicChats[existingChatIndex].statusColor
-        : _statusColorFromType(request.type);
-
-    final chat = ChatModel(
-      id: request.targetUserId,
-      otherUserId: request.targetUserId,
-      userName: request.targetUserName,
-      lastMessage: responseText,
-      time: _formatNow(),
-      unreadCount: 0,
-      statusColor: previousColor,
-      previewState: ChatPreviewState.normal,
-    );
-
-    if (existingChatIndex == -1) {
-      _dynamicChats.insert(0, chat);
-    } else {
-      _dynamicChats.removeAt(existingChatIndex);
-      _dynamicChats.insert(0, chat);
-    }
-
-    final alreadyHasMessages =
-        _messages.any((message) => message.chatId == request.targetUserId);
-
-    if (!alreadyHasMessages) {
-      _messages.add(
-        MessageModel(
-          id:
-              '${request.targetUserId}_incoming_${DateTime.now().microsecondsSinceEpoch}',
-          chatId: request.targetUserId,
-          text: request.content,
-          isMine: false,
-          time: _formatNow(),
-        ),
-      );
-
-      _messages.add(
-        MessageModel(
-          id:
-              '${request.targetUserId}_mine_${DateTime.now().microsecondsSinceEpoch + 1}',
-          chatId: request.targetUserId,
-          text: responseText,
-          isMine: true,
-          time: _formatNow(),
-        ),
-      );
-    }
 
     _activeAcceptedRequest = null;
     notifyListeners();
@@ -612,11 +751,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final chats = await ApiService.getChatsUsuario(id);
+      final backendChats = await ApiService.getChatsUsuario(id);
+
+      final localMissionChats = _dynamicChats.where((chat) {
+        final hasBackendChat = backendChats.any(
+          (backendChat) => backendChat.otherUserId == chat.otherUserId,
+        );
+
+        return !hasBackendChat &&
+            (chat.previewState == ChatPreviewState.missionBusy ||
+                isPendingOutgoingChat(chat.otherUserId));
+      }).toList();
 
       _dynamicChats
         ..clear()
-        ..addAll(chats);
+        ..addAll(localMissionChats)
+        ..addAll(backendChats);
     } finally {
       _loadingChats = false;
       notifyListeners();
@@ -628,17 +778,6 @@ class AppState extends ChangeNotifier {
       (request) =>
           request.targetUserId == chatId &&
           request.status == RequestStatus.pending,
-    );
-  }
-
-  void seedDemoIncomingRequestIfNeeded() {
-    if (_receivedRequests.isNotEmpty || _activeAcceptedRequest != null) return;
-
-    addIncomingRequest(
-      fromUserId: 'demo_maria',
-      fromUserName: 'Maria',
-      type: RequestType.truth,
-      content: '¿Qué pensaste al ver mi foto?',
     );
   }
 
@@ -689,12 +828,16 @@ class AppState extends ChangeNotifier {
   Future<void> salirDeSala() async {
     final id = _userId;
     if (id != null) await ApiService.salirDeSala(id);
+
+    await borrarSesionLocal();
     clear();
   }
 
   Future<void> cerrarSala() async {
     final id = _salaId;
     if (id != null) await ApiService.cerrarSala(id);
+
+    await borrarSesionLocal();
     clear();
   }
 
@@ -728,10 +871,12 @@ class AppState extends ChangeNotifier {
         .build();
 
     _hubConnection!.on('SolicitudRecibida', (arguments) {
+      debugPrint('SOLICITUD RECIBIDA SIGNALR: $arguments');
       if (arguments == null || arguments.isEmpty) return;
 
       final data = arguments.first as Map<Object?, Object?>;
 
+      final solicitudId = data['solicitudId']?.toString() ?? '';
       final fromUserId = data['fromUserId']?.toString() ?? '';
       final fromUserName = data['fromUserName']?.toString() ?? '';
       final typeText = data['type']?.toString() ?? '';
@@ -739,9 +884,10 @@ class AppState extends ChangeNotifier {
 
       final type = _requestTypeFromString(typeText);
 
-      if (fromUserId.isEmpty || fromUserName.isEmpty || content.isEmpty) return;
+      if (solicitudId.isEmpty || fromUserId.isEmpty || fromUserName.isEmpty || content.isEmpty) return;
 
       addIncomingRequest(
+        solicitudId: solicitudId,
         fromUserId: fromUserId,
         fromUserName: fromUserName,
         type: type,
@@ -800,6 +946,97 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     });
 
+    _hubConnection!.on('SolicitudAceptada', (arguments) async {
+      debugPrint('SOLICITUD ACEPTADA SIGNALR: $arguments');
+
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+
+      final solicitudId = data['solicitudId']?.toString() ?? '';
+
+      _sentRequests.removeWhere((request) => request.id == solicitudId);
+
+      await cargarChats();
+
+      notifyListeners();
+    });
+
+    _hubConnection!.on('SolicitudRechazada', (arguments) {
+      debugPrint('SOLICITUD RECHAZADA SIGNALR: $arguments');
+
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+
+      final solicitudId = data['solicitudId']?.toString() ?? '';
+      final receptorId = data['receptorId']?.toString() ?? '';
+      final mensaje = data['mensaje']?.toString() ??
+          'Está en otra misión ahora mismo ¡intenta con otro!';
+
+      if (solicitudId.isEmpty || receptorId.isEmpty) return;
+
+      final sentIndex = _sentRequests.indexWhere((r) => r.id == solicitudId);
+
+      if (sentIndex != -1) {
+        _sentRequests[sentIndex] = _sentRequests[sentIndex].copyWith(
+          status: RequestStatus.rejected,
+        );
+      }
+
+      final chatIndex = _dynamicChats.indexWhere(
+        (chat) => chat.otherUserId == receptorId || chat.id == receptorId,
+      );
+
+      if (chatIndex != -1) {
+        final oldChat = _dynamicChats[chatIndex];
+
+        _dynamicChats[chatIndex] = oldChat.copyWith(
+          lastMessage: mensaje,
+          previewState: ChatPreviewState.missionBusy,
+          unreadCount: 0,
+          time: _formatNow(),
+        );
+      }
+
+      notifyListeners();
+    });
+
+    _hubConnection!.on('RetosActualizados', (arguments) {
+      debugPrint('RETOS ACTUALIZADOS SIGNALR');
+      _retosVersion++;
+      notifyListeners();
+    });
+
+    _hubConnection!.on('SalaCerrada', (arguments) async {
+      debugPrint('SALA CERRADA SIGNALR');
+      await cerrarSesionPorSalaCerrada();
+    });
+
+    _hubConnection!.on('UsuarioBaneado', (arguments) async {
+      debugPrint('USUARIO BANEADO SIGNALR');
+
+      if (arguments == null || arguments.isEmpty) return;
+
+      final data = arguments.first as Map<Object?, Object?>;
+      final bannedUserId = data['usuarioId']?.toString() ?? '';
+
+      if (bannedUserId == _userId) {
+        await borrarSesionLocal();
+        clear();
+
+        appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (_) => false,
+        );
+      }
+    });
+
+    _hubConnection!.on('UsuarioSalio', (arguments) {
+      cargarUsuariosSala();
+      cargarChats();
+    });
+
     await _hubConnection!.start();
 
     await _hubConnection!.invoke(
@@ -811,6 +1048,7 @@ class AppState extends ChangeNotifier {
       'JoinUsuario',
       args: [currentUserId],
     );
+    
   }
 
   void setGuestJoinData({
@@ -826,10 +1064,9 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> registrarInvitadoEnBackend() async {
-    debugPrint('nombre: $_userName');
-    debugPrint('estado: $_estado');
     
     try {
+      final deviceId = await _getOrCreateDeviceId();
       final response = await ApiService.registrarInvitado(
         nombre: _userName ?? '',
         sexo: _sexo ?? true,
@@ -847,12 +1084,15 @@ class AppState extends ChangeNotifier {
         aceptaTerminos: _aceptaTerminos,
         aceptaPrivacidad: _aceptaTerminos,
         aceptaBiometria: _aceptaTerminos,
+        deviceId: deviceId,
       );
 
       _userId = response.usuarioId;
       _salaId = response.salaId;
       _userName = response.nombreUsuario;
       notifyListeners();
+      await guardarSesionLocal();
+
     } catch (e) {
       rethrow;
     }

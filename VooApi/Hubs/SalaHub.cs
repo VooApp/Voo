@@ -16,10 +16,16 @@ namespace VooApi.Hubs
 
         public async Task JoinUsuario(string userId)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"usuario-{userId}");
+            await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+        }
+
+        public async Task NotificarSalaCerrada(string salaId)
+        {
+            await Clients.Group(salaId).SendAsync("SalaCerrada");
         }
 
         public async Task EnviarSolicitud(
+            string solicitudId,
             string fromUserId,
             string fromUserName,
             string targetUserId,
@@ -28,6 +34,7 @@ namespace VooApi.Hubs
         {
             await Clients.Group($"usuario-{targetUserId}").SendAsync("SolicitudRecibida", new
             {
+                solicitudId,
                 fromUserId,
                 fromUserName,
                 type,
@@ -56,6 +63,11 @@ namespace VooApi.Hubs
         public async Task NotificarUsuarioEntradoSala(string salaId)
         {
             await Clients.Group(salaId).SendAsync("UsuarioEntradoSala");
+        }
+
+        public async Task NotificarRetosActualizados(string salaId)
+        {
+            await Clients.Group(salaId).SendAsync("RetosActualizados");
         }
     }
 }

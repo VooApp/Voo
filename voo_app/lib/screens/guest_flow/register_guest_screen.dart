@@ -29,15 +29,17 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
 
   Uint8List? _profileImageBytes;
   DateTime? _selectedBirthDate;
+  bool? selectedSex;
   bool _isPickingImage = false;
   bool _requestingCameraPermission = false;
   bool _acceptedTerms = false;
 
   bool get canContinue {
-    return nameController.text.trim().isNotEmpty &&
-        birthDateController.text.trim().isNotEmpty &&
-        _profileImageBytes != null &&
-        _acceptedTerms;
+  return nameController.text.trim().isNotEmpty &&
+      selectedSex != null &&
+      birthDateController.text.trim().isNotEmpty &&
+      _profileImageBytes != null &&
+      _acceptedTerms;
   }
 
   @override
@@ -165,6 +167,18 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
     );
   }
 
+  bool _isAtLeast16(DateTime date) {
+    final today = DateTime.now();
+    var age = today.year - date.year;
+
+    if (today.month < date.month ||
+        (today.month == date.month && today.day < date.day)) {
+      age--;
+    }
+
+    return age >= 16;
+  }
+
   Future<void> _pickBirthDate() async {
     FocusScope.of(context).unfocus();
 
@@ -200,6 +214,18 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
     );
 
     if (pickedDate == null) return;
+
+    if (!_isAtLeast16(pickedDate)) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes ser mayor de 16 años para usar Voo.'),
+        ),
+      );
+
+      return;
+    }
 
     final formatted =
         '${pickedDate.day.toString().padLeft(2, '0')}/'
@@ -238,7 +264,7 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
           userName: nameController.text.trim(),
           birthDate: _selectedBirthDate!,
           profilePhoto: base64Encode(_profileImageBytes!),
-          sexo: false,
+          sexo: selectedSex!,
           instagram: instagramController.text.trim().isEmpty
               ? null
               : instagramController.text.trim(),
@@ -338,7 +364,7 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
                                   color: (_profileImageBytes != null
                                           ? const Color(0xFF9C4DFF)
                                           : const Color(0xFF4E2A88))
-                                      .withOpacity(0.28),
+                                      .withValues(alpha: 0.28),
                                   blurRadius: 18,
                                   spreadRadius: 2,
                                 ),
@@ -396,6 +422,15 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 14),
+                  _SexSelector(
+                    selectedSex: selectedSex,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedSex = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 14),
                   _StyledInput(
                     controller: birthDateController,
                     hintText: 'Fecha de nacimiento',
@@ -431,7 +466,7 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        'Completa nombre, fecha de nacimiento, foto de perfil y acepta los términos para continuar.',
+                        'Completa nombre, sexo, fecha de nacimiento, foto de perfil y acepta los términos para continuar.',
                         style: TextStyle(
                           color: Colors.white54,
                           fontSize: 13,
@@ -455,6 +490,105 @@ class _RegisterGuestScreenState extends State<RegisterGuestScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SexSelector extends StatelessWidget {
+  final bool? selectedSex;
+  final ValueChanged<bool> onChanged;
+
+  const _SexSelector({
+    required this.selectedSex,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SexButton(
+            label: 'Hombre',
+            icon: Icons.male_rounded,
+            selected: selectedSex == true,
+            onTap: () => onChanged(true),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _SexButton(
+            label: 'Mujer',
+            icon: Icons.female_rounded,
+            selected: selectedSex == false,
+            onTap: () => onChanged(false),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SexButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SexButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        selected ? const Color(0xFF9C4DFF) : const Color(0xFF4A267D);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 170),
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          color: const Color(0xFF181835),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: borderColor,
+            width: selected ? 2.4 : 1.6,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF9C4DFF).withValues(alpha: 0.24),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: selected ? const Color(0xFFB15CFF) : Colors.white54,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.white60,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -503,7 +637,7 @@ class _TopBarState extends State<_TopBar> {
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF8B3DFF)
-                      .withOpacity(_pressed ? 0.55 : 0.16),
+                      .withValues(alpha: _pressed ? 0.55 : 0.16),
                   blurRadius: _pressed ? 22 : 10,
                   spreadRadius: _pressed ? 1.5 : 0.5,
                 ),
@@ -711,7 +845,7 @@ class _MainGradientButtonState extends State<_MainGradientButton> {
               ? [
                   BoxShadow(
                     color: const Color(0xFF8B3DFF)
-                        .withOpacity(_pressed ? 0.6 : 0.22),
+                        .withValues(alpha: _pressed ? 0.6 : 0.22),
                     blurRadius: _pressed ? 26 : 14,
                     spreadRadius: _pressed ? 2 : 1,
                   ),

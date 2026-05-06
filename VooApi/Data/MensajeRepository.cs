@@ -43,5 +43,10 @@ namespace VooApi.Data
         {
             await _collection.DeleteOneAsync(m => m.Id == id);
         }
+
+        public async Task EliminarPorChatsAsync(List<string> chatIds)
+        {
+            await _collection.DeleteManyAsync(m => chatIds.Contains(m.ChatId));
+        }
     }
 }

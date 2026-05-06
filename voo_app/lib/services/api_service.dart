@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/chat_preview_state.dart';
+import '../models/request_model.dart';
+import '../models/reto_model.dart';
 
 
 class ApiService {
@@ -20,14 +22,197 @@ class ApiService {
     }
 
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5011';
+      return 'http://localhost:5011';
     }
 
     return 'http://localhost:5011';
   }
 
+  
+
   static Uri _uri(String path) {
     return Uri.parse('$baseUrl$path');
+  }
+
+  static Future<List<RequestModel>> getSolicitudesEnviadas(String userId) async {
+    final response = await http.get(_uri('/Solicitud/enviadas/$userId'));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener solicitudes enviadas');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data.map((json) {
+      final map = json as Map<String, dynamic>;
+
+      return RequestModel(
+        id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
+        targetUserId: map['receptorId']?.toString() ?? '',
+        targetUserName: map['receptorNombre']?.toString() ?? 'Usuario',
+        type: _requestTypeFromApi(map['tipo']?.toString()),
+        content: map['contenido']?.toString() ?? '',
+        status: _requestStatusFromApi(map['estado']?.toString()),
+        createdAt: DateTime.tryParse(map['fechaCreacion']?.toString() ?? '') ??
+            DateTime.now(),
+      );
+    }).toList();
+  }
+
+  static Future<List<RequestModel>> getSolicitudesRecibidas(String userId) async {
+    final response = await http.get(_uri('/Solicitud/recibidas/$userId'));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener solicitudes recibidas');
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data.map((json) {
+      final map = json as Map<String, dynamic>;
+
+      return RequestModel(
+        id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
+        targetUserId: map['emisorId']?.toString() ?? '',
+        targetUserName: map['emisorNombre']?.toString() ?? 'Usuario',
+        type: _requestTypeFromApi(map['tipo']?.toString()),
+        content: map['contenido']?.toString() ?? '',
+        status: _requestStatusFromApi(map['estado']?.toString()),
+        createdAt: DateTime.tryParse(map['fechaCreacion']?.toString() ?? '') ??
+            DateTime.now(),
+      );
+    }).toList();
+  }
+
+  static RequestType _requestTypeFromApi(String? value) {
+    switch (value) {
+      case 'truth':
+        return RequestType.truth;
+      case 'dare':
+        return RequestType.dare;
+      default:
+        return RequestType.messageRequest;
+    }
+  }
+
+  static RequestStatus _requestStatusFromApi(String? value) {
+    switch (value) {
+      case 'aceptada':
+      case 'accepted':
+        return RequestStatus.accepted;
+      case 'rechazada':
+      case 'rejected':
+        return RequestStatus.rejected;
+      case 'answered':
+      case 'respondida':
+        return RequestStatus.answered;
+      default:
+        return RequestStatus.pending;
+    }
+  }
+
+  static Future<VerdadRetoRandom> getVerdadRetoRandom() async {
+    final response = await http.get(_uri('/VerdadReto/obtener'));
+
+    debugPrint('GET: ${_uri('/VerdadReto/obtener')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener verdad o reto');
+    }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+
+    return VerdadRetoRandom.fromJson(data);
+  }
+
+
+  static Future<String> crearSolicitud({
+    required String emisorId,
+    required String receptorId,
+    required RequestType type,
+    required String content,
+  }) async {
+    final response = await http.post(
+      _uri('/Solicitud'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'emisorId': emisorId,
+        'receptorId': receptorId,
+        'tipo': type == RequestType.truth
+            ? 'truth'
+            : type == RequestType.dare
+                ? 'dare'
+                : 'messageRequest',
+        'contenido': content,
+        'estado': 'pendiente',
+        'aceptado': null,
+      }),
+    );
+
+    debugPrint('POST: ${_uri('/Solicitud')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al crear solicitud');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    final solicitud = data['solicitud'] as Map<String, dynamic>?;
+    final id = data['solicitudId']?.toString() ??
+      data['SolicitudId']?.toString() ??
+      data['id']?.toString() ??
+      data['Id']?.toString() ??
+      data['_id']?.toString() ??
+      solicitud?['solicitudId']?.toString() ??
+      solicitud?['SolicitudId']?.toString() ??
+      solicitud?['id']?.toString() ??
+      solicitud?['Id']?.toString() ??
+      solicitud?['_id']?.toString() ??
+      '';
+
+    if (id.isEmpty) {
+      throw Exception('La solicitud se creó, pero el backend no devolvió el ID');
+    }
+
+    return id;
+  }
+
+
+
+  static Future<Map<String, dynamic>> aceptarVerdadReto(String solicitudId) async {
+    final response = await http.post(
+      _uri('/VerdadReto/aceptar/$solicitudId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    debugPrint('POST: ${_uri('/VerdadReto/aceptar/$solicitudId')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    final data = response.body.isNotEmpty
+        ? jsonDecode(response.body) as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['mensaje'] ?? 'Error al aceptar verdad/reto');
+    }
+
+    return data;
+  }
+
+  static Future<void> rechazarVerdadReto(String solicitudId) async {
+    final response = await http.post(
+      _uri('/VerdadReto/rechazar/$solicitudId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al rechazar verdad/reto');
+    }
   }
 
   static Future<RegistroHostResponse> registrarHost({
@@ -99,45 +284,47 @@ class ApiService {
   }
 
   static Future<RegistroInvitadoResponse> registrarInvitado({
-    required String nombre,
-    required bool sexo,
-    required DateTime fechaNacimiento,
-    required String foto,
-    required String? instagram,
-    required String estado,
-    required List<String> respuestas,
-    required String codigoSala,
-    required double latitud,
-    required double longitud,
-    required double accuracy,
-    bool verificado = true,
-    required bool aceptaTerminos,
-    required bool aceptaPrivacidad,
-    required bool aceptaBiometria,
-  }) async {
-    final uri = _uri('/Registro/invitado');
+  required String nombre,
+  required bool sexo,
+  required DateTime fechaNacimiento,
+  required String foto,
+  required String? instagram,
+  required String estado,
+  required List<String> respuestas,
+  required String codigoSala,
+  required double latitud,
+  required double longitud,
+  required double accuracy,
+  bool verificado = true,
+  required bool aceptaTerminos,
+  required bool aceptaPrivacidad,
+  required bool aceptaBiometria,
+  required String deviceId,
+}) async {
+  final uri = _uri('/Registro/invitado');
 
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'nombre': nombre,
-        'sexo': sexo,
-        'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
-        'foto': foto,
-        'ig': instagram,
-        'estado': estado,
-        'respuestas': respuestas,
-        'verificado': verificado,
-        'codigoSala': codigoSala,
-        'latitud': latitud,
-        'longitud': longitud,
-        'accuracy': accuracy,
-        'aceptaTerminos': aceptaTerminos,
-        'aceptaPrivacidad': aceptaPrivacidad,
-        'aceptaBiometria': aceptaBiometria,
-      }),
-    );
+  final response = await http.post(
+    uri,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'nombre': nombre,
+      'sexo': sexo,
+      'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
+      'foto': foto,
+      'ig': instagram,
+      'estado': estado,
+      'respuestas': respuestas,
+      'verificado': verificado,
+      'codigoSala': codigoSala,
+      'latitud': latitud,
+      'longitud': longitud,
+      'accuracy': accuracy,
+      'aceptaTerminos': aceptaTerminos,
+      'aceptaPrivacidad': aceptaPrivacidad,
+      'aceptaBiometria': aceptaBiometria,
+      'deviceId': deviceId,
+    }),
+  );
 
     debugPrint('POST: $uri');
     debugPrint('STATUS: ${response.statusCode}');
@@ -225,6 +412,8 @@ class ApiService {
     }
   }
 
+  
+
   static Future<String> crearOObtenerChat({
     required String usuarioAId,
     required String usuarioBId,
@@ -264,6 +453,8 @@ class ApiService {
     return data.map((json) {
       final map = json as Map<String, dynamic>;
 
+      final ultimoMensaje = map['ultimoMensaje']?.toString().trim() ?? '';
+
       final estado = map['otroUsuarioEstado']?.toString() ?? 'soltero';
 
       return ChatModel(
@@ -271,15 +462,15 @@ class ApiService {
         otherUserId: map['otroUsuarioId']?.toString() ?? '',
         userName: map['otroUsuarioNombre']?.toString() ?? 'Usuario',
         foto: map['otroUsuarioFoto']?.toString(),
-        lastMessage: (map['ultimoMensaje']?.toString().trim().isNotEmpty ?? false)
-          ? map['ultimoMensaje'].toString()
-          : 'Todavía no hay mensajes',
+        lastMessage: ultimoMensaje.isEmpty
+          ? '${map['otroUsuarioNombre']?.toString() ?? 'Usuario'} está en una misión ahora mismo ¡intenta con otro!'
+          : ultimoMensaje,
         time: _formatApiDate(map['ultimoMensajeFecha']?.toString()),
         unreadCount: map['mensajesNoLeidos'] as int? ?? 0,
         statusColor: _statusColorFromEstado(estado),
         previewState: ChatPreviewState.normal,
       );
-    }).toList();
+    }).whereType<ChatModel>().toList();
   }
 
   static Future<List<MessageModel>> getMensajesChat({
@@ -376,6 +567,53 @@ class ApiService {
     return const Color(0xFF22C55E);
   }
 
+  static Future<Map<String, dynamic>> completarRetoActual({
+    required String usuarioId,
+    required String usuarioEscaneadoId,
+  }) async {
+    final response = await http.post(
+      _uri('/Reto/completar-actual'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'usuarioId': usuarioId,
+        'usuarioEscaneadoId': usuarioEscaneadoId,
+      }),
+    );
+
+    debugPrint('POST: ${_uri('/Reto/completar-actual')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al completar reto');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, RetoModel?>> getRetosTimeline(String usuarioId) async {
+    final response = await http.get(_uri('/Reto/timeline/$usuarioId'));
+
+    debugPrint('GET: ${_uri('/Reto/timeline/$usuarioId')}');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error al obtener retos');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    RetoModel? parseReto(dynamic value) {
+      if (value == null) return null;
+      return RetoModel.fromJson(value as Map<String, dynamic>);
+    }
+
+    return {
+      'anterior': parseReto(data['anterior']),
+      'activo': parseReto(data['activo']),
+      'proximo': parseReto(data['proximo']),
+    };
     static Future<List<String>> getPreguntasPorEstado(String estado) async {
     
     final Map<String, String> estadoMap = {
@@ -525,3 +763,19 @@ class SalaUsuarioModel {
     );
   }
 }
+class VerdadRetoRandom {
+    final String verdad;
+    final String reto;
+
+    VerdadRetoRandom({
+      required this.verdad,
+      required this.reto,
+    });
+
+    factory VerdadRetoRandom.fromJson(Map<String, dynamic> json) {
+      return VerdadRetoRandom(
+        verdad: json['verdad']?.toString() ?? '',
+        reto: json['reto']?.toString() ?? '',
+      );
+    }
+  }

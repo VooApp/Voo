@@ -26,6 +26,8 @@ builder.Services.AddControllers()
 // SignalR para notificaciones en tiempo real
 builder.Services.AddSignalR();
 
+builder.Services.AddScoped<RetoCompletadoRepository>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VooCors", policy =>
@@ -65,6 +67,9 @@ builder.Services.AddScoped<RetoFlashService>();
 builder.Services.AddScoped<RetoReyService>();
 builder.Services.AddScoped<VerdadRetoService>();
 builder.Services.AddScoped<PresenciaService>();
+builder.Services.AddScoped<RetoGeneratorService>();
+builder.Services.AddHostedService<RetoGeneratorBackgroundService>();
+builder.Services.AddHostedService<RetoBackgroundService>();
 
 // BackgroundService
 builder.Services.AddHostedService<PresenciaBackgroundService>();

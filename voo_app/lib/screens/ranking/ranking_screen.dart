@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../state/app_state.dart';
 import '../../widgets/voo_bottom_nav_bar.dart';
 import '../home/home_screen.dart';
 import '../chats/chats_screen.dart';
@@ -23,8 +20,6 @@ class RankingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final bool isHost = appState.isHost;
 
     return Scaffold(
       backgroundColor: const Color(0xFF05051C),
@@ -99,7 +94,7 @@ class RankingScreen extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF9C4DFF).withOpacity(0.28),
+                          color: const Color(0xFF9C4DFF).withValues(alpha: 0.28),
                           blurRadius: 18,
                           spreadRadius: 0.5,
                         ),
@@ -201,7 +196,7 @@ class _RankingTitle extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFF66D63E).withOpacity(0.9),
+                  color: const Color(0xFF66D63E).withValues(alpha: 0.9),
                   blurRadius: 18,
                 ),
               ],
@@ -215,7 +210,7 @@ class _RankingTitle extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFFEAB308).withOpacity(0.9),
+                  color: const Color(0xFFEAB308).withValues(alpha: 0.9),
                   blurRadius: 18,
                 ),
               ],
@@ -229,7 +224,7 @@ class _RankingTitle extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFFFF3B5C).withOpacity(0.9),
+                  color: const Color(0xFFFF3B5C).withValues(alpha: 0.9),
                   blurRadius: 18,
                 ),
               ],
@@ -266,7 +261,7 @@ class _UnlockText extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFF66D63E).withOpacity(0.85),
+                  color: const Color(0xFF66D63E).withValues(alpha: 0.85),
                   blurRadius: 14,
                 ),
               ],
@@ -280,7 +275,7 @@ class _UnlockText extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFFEAB308).withOpacity(0.85),
+                  color: const Color(0xFFEAB308).withValues(alpha: 0.85),
                   blurRadius: 14,
                 ),
               ],
@@ -294,7 +289,7 @@ class _UnlockText extends StatelessWidget {
               fontWeight: FontWeight.w900,
               shadows: [
                 Shadow(
-                  color: const Color(0xFFFF3B5C).withOpacity(0.85),
+                  color: const Color(0xFFFF3B5C).withValues(alpha: 0.85),
                   blurRadius: 14,
                 ),
               ],
@@ -331,13 +326,13 @@ class _RankingCard extends StatelessWidget {
         color: const Color(0xFF111124),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: color.withOpacity(isTopThree ? 0.95 : 0.55),
+          color: color.withValues(alpha: isTopThree ? 0.95 : 0.55),
           width: isTopThree ? 2.2 : 1.4,
         ),
         boxShadow: isTopOne
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.28),
+                  color: color.withValues(alpha: 0.28),
                   blurRadius: 20,
                   spreadRadius: 0.8,
                 ),
@@ -351,12 +346,12 @@ class _RankingCard extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               border: Border.all(color: color, width: 2.3),
               boxShadow: isTopOne
                   ? [
                       BoxShadow(
-                        color: color.withOpacity(0.35),
+                        color: color.withValues(alpha: 0.35),
                         blurRadius: 12,
                       ),
                     ]
@@ -433,7 +428,7 @@ class _RankingCard extends StatelessWidget {
               shadows: isTopOne
                   ? [
                       Shadow(
-                        color: color.withOpacity(0.7),
+                        color: color.withValues(alpha: 0.7),
                         blurRadius: 12,
                       ),
                     ]

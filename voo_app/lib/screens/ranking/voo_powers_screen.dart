@@ -87,7 +87,7 @@ class VooPowersScreen extends StatelessWidget {
                   'Consigue puntos, sube de nivel y desbloquea ventajas dentro de la sala.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.68),
+                    color: Colors.white.withValues(alpha: 0.68),
                     fontSize: 14.5,
                     height: 1.35,
                     fontWeight: FontWeight.w600,
@@ -111,7 +111,7 @@ class VooPowersScreen extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF66D63E).withOpacity(0.22),
+                                color: const Color(0xFF66D63E).withValues(alpha: 0.22),
                                 blurRadius: 18,
                                 spreadRadius: 1,
                               ),
@@ -215,7 +215,7 @@ class _InfoLine extends StatelessWidget {
       TextSpan(
         text: '$label\n',
         style: TextStyle(
-          color: Colors.white.withOpacity(0.58),
+          color: Colors.white.withValues(alpha: 0.58),
           fontSize: 13,
           fontWeight: FontWeight.w700,
           height: 1.25,
@@ -265,7 +265,7 @@ class _PowerCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: borderColor.withOpacity(0.25),
+            color: borderColor.withValues(alpha: 0.25),
             blurRadius: 20,
             spreadRadius: 0.7,
           ),
@@ -279,7 +279,7 @@ class _PowerCard extends StatelessWidget {
             size: 54,
             shadows: [
               Shadow(
-                color: borderColor.withOpacity(0.8),
+                color: borderColor.withValues(alpha: 0.8),
                 blurRadius: 16,
               ),
             ],
@@ -304,10 +304,10 @@ class _PowerCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: borderColor.withOpacity(0.12),
+                    color: borderColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: borderColor.withOpacity(0.7),
+                      color: borderColor.withValues(alpha: 0.7),
                     ),
                   ),
                   child: Text(
@@ -323,7 +323,7 @@ class _PowerCard extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.88),
+                    color: Colors.white.withValues(alpha: 0.88),
                     fontSize: 14,
                     height: 1.35,
                     fontWeight: FontWeight.w600,
@@ -379,7 +379,7 @@ class _CircleBackButtonState extends State<_CircleBackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.22),
+              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.22),
               blurRadius: 18,
               spreadRadius: 1,
             ),

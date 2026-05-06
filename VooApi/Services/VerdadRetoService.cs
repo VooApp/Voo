@@ -106,18 +106,18 @@ namespace VooApi.Services
 
             // 6. Mandar el verdad o reto como primer mensaje del chat
             // Esto es lo que el receptor ve cuando entra al chat
-            var random = new Random();
-            var esVerdad = random.Next(2) == 0;
-            var contenidoPrimerMensaje = esVerdad
-                ? _verdades[random.Next(_verdades.Count)]
-                : _retos[random.Next(_retos.Count)];
+            var tipoMensaje = solicitud.Tipo == "truth"
+                ? "verdad"
+                : solicitud.Tipo == "dare"
+                    ? "reto"
+                    : "mensaje";
 
             var primerMensaje = new Mensaje
             {
                 ChatId = chat.Id!,
-                Tipo = esVerdad ? "verdad" : "reto",
+                Tipo = tipoMensaje,
                 EmisorId = solicitud.EmisorId,
-                Contenido = contenidoPrimerMensaje,
+                Contenido = solicitud.Contenido,
                 Leido = false
             };
             await _mensajeRepository.InsertarAsync(primerMensaje);
@@ -128,7 +128,9 @@ namespace VooApi.Services
                 Mensaje = "¡Match conseguido! Ambos ganan +5 puntos",
                 PuntosGanados = 5,
                 ChatId = chat.Id!,
-                PrimerMensaje = primerMensaje
+                PrimerMensaje = primerMensaje,
+                EmisorId = solicitud.EmisorId,
+                ReceptorId = solicitud.ReceptorId
             };
         }
 
@@ -146,7 +148,9 @@ namespace VooApi.Services
             return new ResultadoReto
             {
                 Exito = true,
-                Mensaje = "Está en otra misión, intenta con otro"
+                Mensaje = "Está en otra misión, intenta con otro",
+                EmisorId = solicitud.EmisorId,
+                ReceptorId = solicitud.ReceptorId
             };
         }
 

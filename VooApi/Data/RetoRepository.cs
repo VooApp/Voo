@@ -50,5 +50,19 @@ namespace VooApi.Data
         {
             await _collection.DeleteOneAsync(r => r.Id == id);
         }
+
+        public async Task ActualizarCamposAsync(
+            string id,
+            string estado,
+            DateTime? horaActivacion,
+            TimeSpan? duracion)
+        {
+            var update = Builders<Reto>.Update
+                .Set(r => r.EstadoReto, estado)
+                .Set(r => r.HoraActivacion, horaActivacion)
+                .Set(r => r.Duracion, duracion);
+
+            await _collection.UpdateOneAsync(r => r.Id == id, update);
+        }
     }
 }

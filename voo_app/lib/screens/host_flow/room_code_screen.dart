@@ -201,7 +201,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                         'Comparte el código o el QR con tus invitados.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.68),
+                          color: Colors.white.withValues(alpha: 0.68),
                           fontSize: 14,
                           height: 1.35,
                         ),
@@ -232,7 +232,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: accentColor.withOpacity(
+                                color: accentColor.withValues(alpha: 
                                   _copied ? 0.30 : 0.12,
                                 ),
                                 blurRadius: _copied ? 26 : 14,
@@ -286,7 +286,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                     : 'Toca el QR o el código para copiarlo',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.56),
+                                  color: Colors.white.withValues(alpha: 0.56),
                                   fontSize: 13,
                                   height: 1.35,
                                 ),
@@ -374,7 +374,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                 shadows: [
                                   Shadow(
                                     color: const Color(0xFF22C55E)
-                                        .withOpacity(0.65),
+                                        .withValues(alpha: 0.65),
                                     blurRadius: 18,
                                   ),
                                 ],
@@ -387,7 +387,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                 shadows: [
                                   Shadow(
                                     color: const Color(0xFFEAB308)
-                                        .withOpacity(0.65),
+                                        .withValues(alpha: 0.65),
                                     blurRadius: 18,
                                   ),
                                 ],
@@ -400,7 +400,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                                 shadows: [
                                   Shadow(
                                     color: const Color(0xFFEF4444)
-                                        .withOpacity(0.65),
+                                        .withValues(alpha: 0.65),
                                     blurRadius: 18,
                                   ),
                                 ],
@@ -423,7 +423,7 @@ class _RoomCodeScreenState extends State<RoomCodeScreen> {
                         'Comparte esta tarjeta con tus invitados',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.60),
+                          color: Colors.white.withValues(alpha: 0.60),
                           fontSize: 15,
                         ),
                       ),
@@ -540,7 +540,7 @@ class _ActionButtonState extends State<_ActionButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.45),
+                    color: widget.color.withValues(alpha: 0.45),
                     blurRadius: 16,
                     spreadRadius: 1.5,
                   ),
@@ -595,7 +595,7 @@ class _MainButtonState extends State<_MainButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.45),
+                    color: color.withValues(alpha: 0.45),
                     blurRadius: 18,
                     spreadRadius: 1.5,
                   ),

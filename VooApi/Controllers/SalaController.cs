@@ -50,7 +50,8 @@ namespace VooApi.Controllers
         public async Task<IActionResult> CerrarSala(string id)
         {
             await _service.CerrarSalaAsync(id);
-            return Ok(new { mensaje = "Sala cerrada correctamente" });
+
+            return Ok(new { mensaje = "Sala cerrada y datos eliminados correctamente" });
         }
 
         [HttpPut("{id}")]
