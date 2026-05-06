@@ -155,7 +155,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             _SettingsRow(
                               title: 'Manual de uso',
                               icon: Icons.menu_book_rounded,
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ManualScreen(),
+                                  ),
+                                );
+                              },
                             ),
                             _SettingsRow(
                               title: 'Reportar incidencia',
@@ -260,13 +267,20 @@ class _ProfileCard extends StatelessWidget {
       edadStr = '$edad años';
     }
 
-    Color estadoColor = const Color(0xFF22C55E);
-    switch (appState.estado?.toLowerCase()) {
-      case 'amarillo':
-        estadoColor = const Color(0xFFEAB308);
+    final estado = appState.estado?.toLowerCase().trim() ?? '';
+
+    Color estadoColor;
+
+    switch (estado) {
+      case 'amigos':
+        estadoColor = const Color(0xFFEAB308); // amarillo
         break;
-      case 'rojo':
-        estadoColor = const Color(0xFFEF4444);
+      case 'pareja':
+        estadoColor = const Color(0xFFEF4444); // rojo
+        break;
+      case 'soltero':
+      default:
+        estadoColor = const Color(0xFF22C55E); // verde
         break;
     }
 
