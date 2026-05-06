@@ -31,6 +31,20 @@ class _RankingScreenState extends State<RankingScreen> {
     Color(0xFF52A9FF),
   ];
 
+  Color _getStatusColor(String? estadoRaw) {
+    final estado = estadoRaw?.toLowerCase().trim() ?? '';
+
+    switch (estado) {
+      case 'amigos':
+        return const Color(0xFFEAB308); // amarillo
+      case 'pareja':
+        return const Color(0xFFEF4444); // rojo
+      case 'soltero':
+      default:
+        return const Color(0xFF22C55E); // verde
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -212,7 +226,7 @@ class _RankingScreenState extends State<RankingScreen> {
                                         points: user.puntos,
                                         foto: user.foto,
                                         color: _colorForPosition(index),
-                                        statusColor: user.statusColor,
+                                        statusColor: _getStatusColor(user.estado),
                                       );
                                     },
                                   ),

@@ -69,12 +69,19 @@ class _VooPowersScreenState extends State<VooPowersScreen> {
   }
 
   String _poderActivo() {
-    if (_poderesDesbloqueados.isEmpty) return 'Ninguno';
+    final puntosActuales = _usuario?.puntos ?? 0;
 
-    final sorted = List<PoderModel>.from(_poderesDesbloqueados)
+    final poderes =
+        _todosLosPoderes.isNotEmpty ? _todosLosPoderes : _fallbackPoderes();
+
+    final desbloqueados = poderes
+        .where((poder) => puntosActuales >= poder.puntosNecesarios)
+        .toList()
       ..sort((a, b) => b.puntosNecesarios.compareTo(a.puntosNecesarios));
 
-    return _nombrePoder(sorted.first.nivelId);
+    if (desbloqueados.isEmpty) return 'Ninguno';
+
+    return _nombrePoder(desbloqueados.first.nivelId);
   }
 
   String _nombrePoder(String nivelId) {
@@ -90,10 +97,9 @@ class _VooPowersScreenState extends State<VooPowersScreen> {
     }
   }
 
-  bool _estaDesbloqueado(String nivelId) {
-    return _poderesDesbloqueados.any(
-      (poder) => poder.nivelId.toLowerCase() == nivelId.toLowerCase(),
-    );
+  bool _estaDesbloqueado(PoderModel poder) {
+    final puntosActuales = _usuario?.puntos ?? 0;
+    return puntosActuales >= poder.puntosNecesarios;
   }
 
   Color _colorEstado(String estado) {
@@ -401,9 +407,7 @@ class _VooPowersScreenState extends State<VooPowersScreen> {
                           itemBuilder: (context, index) {
                             final poder = poderes[index];
                             final config = _configPoder(poder.nivelId);
-                            final desbloqueado =
-                                _estaDesbloqueado(poder.nivelId);
-
+                            final desbloqueado = _estaDesbloqueado(poder);
                             return _PowerCard(
                               borderColor: config.color,
                               icon: config.icon,
