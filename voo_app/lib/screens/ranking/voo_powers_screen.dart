@@ -221,120 +221,6 @@ class _VooPowersScreenState extends State<VooPowersScreen> {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  'Consigue puntos, sube de nivel y desbloquea ventajas dentro de la sala.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.68),
-                    fontSize: 14.5,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-                const SizedBox(height: 26),
-
-                Row(
-                  children: [
-                    Stack(
-                      children: [
-                        Container(
-                          width: 116,
-                          height: 116,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF66D63E),
-                              width: 4,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF66D63E).withValues(alpha: 0.22),
-                                blurRadius: 18,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 62,
-                          ),
-                        ),
-                        Positioned(
-                          right: 8,
-                          bottom: 8,
-                          child: Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF66D63E),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFF05051C),
-                                width: 3,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(width: 24),
-
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _InfoLine(label: 'Estado', value: estado),
-                          SizedBox(height: 10),
-                          _InfoLine(label: 'Puntos', value: '$puntos'),
-                          SizedBox(height: 10),
-                          _InfoLine(label: 'Poder activo', value: poderActivo),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 28),
-
-                const _PowerCard(
-                  borderColor: Color(0xFF66D63E),
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: 'Nivel 1 · El Chismoso',
-                  points: '50 pts',
-                  description:
-                      'Descubre quién ha visto tu perfil y consigue una pequeña ventaja antes de empezar una conversación.',
-                ),
-
-                const SizedBox(height: 16),
-
-                const _PowerCard(
-                  borderColor: Color(0xFFEAB308),
-                  icon: Icons.bolt_rounded,
-                  title: 'Nivel 2 · El Cupido',
-                  points: '100 pts',
-                  description:
-                      'Lanza un reto flash anónimo para dos personas y crea el momento perfecto para romper el hielo.',
-                ),
-
-                const SizedBox(height: 16),
-
-                const _PowerCard(
-                  borderColor: Color(0xFFFF3B5C),
-                  icon: Icons.workspace_premium_rounded,
-                  title: 'Nivel 3 · Rey de la pista',
-                  points: '200 pts',
-                  description:
-                      'Desbloquea el poder de lanzar un reto personalizado a toda la sala y poner el juego patas arriba.',
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -358,12 +244,6 @@ class _InfoLine extends StatelessWidget {
     return Text.rich(
       TextSpan(
         text: '$label\n',
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.58),
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          height: 1.25,
-        ),
         style: TextStyle(color: Colors.white.withOpacity(0.58), fontSize: 13, fontWeight: FontWeight.w700, height: 1.25),
         children: [
           TextSpan(text: value,
@@ -399,31 +279,6 @@ class _PowerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: borderColor,
-          width: 2.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: borderColor.withValues(alpha: 0.25),
-            blurRadius: 20,
-            spreadRadius: 0.7,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: borderColor,
-            size: 54,
-            shadows: [
-              Shadow(
-                color: borderColor.withValues(alpha: 0.8),
-                blurRadius: 16,
-              ),
-            ],
-          ),
         border: Border.all(color: color, width: 2.8),
         boxShadow: desbloqueado
             ? [BoxShadow(color: borderColor.withOpacity(0.25), blurRadius: 20, spreadRadius: 0.7)]
@@ -445,20 +300,6 @@ class _PowerCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: borderColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: borderColor.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  child: Text(
-                    points,
-                    style: TextStyle(
-                      color: borderColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
                     color: color.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: color.withOpacity(0.7))),
@@ -468,12 +309,6 @@ class _PowerCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
-                    fontSize: 14,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
                     color: desbloqueado ? Colors.white.withOpacity(0.88) : Colors.white38,
                     fontSize: 14, height: 1.35, fontWeight: FontWeight.w600)),
               ],
@@ -510,18 +345,6 @@ class _CircleBackButtonState extends State<_CircleBackButton> {
           shape: BoxShape.circle,
           border: Border.all(color: const Color(0xFF9C4DFF), width: 2.4),
           boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.22),
-              blurRadius: 18,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Colors.white,
-          size: 22,
-        ),
             BoxShadow(color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.22),
               blurRadius: 18, spreadRadius: 1)]),
         child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 22),

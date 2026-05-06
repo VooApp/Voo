@@ -88,7 +88,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                             height: 1.15,
                             shadows: [
                               Shadow(
-                                color: const Color(0xFFB35CFF).withValues(alpha: 0.30),
+                                color: const Color(0xFFB35CFF).withOpacity(0.30),
                                 blurRadius: 18,
                               ),
                             ],
@@ -117,7 +117,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                               boxShadow: [
                                 BoxShadow(
                                   color: const Color(0xFF9C4DFF)
-                                      .withValues(alpha: outerGlow),
+                                      .withOpacity(outerGlow),
                                   blurRadius: 30,
                                   spreadRadius: 3,
                                 ),
@@ -133,7 +133,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: const Color(0xFF9C4DFF)
-                                          .withValues(alpha: 0.28),
+                                          .withOpacity(0.28),
                                       width: 1.2,
                                     ),
                                   ),
@@ -160,10 +160,10 @@ class _LoadingScreenState extends State<LoadingScreen>
                             vertical: 16,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
+                            color: Colors.white.withOpacity(0.04),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: const Color(0xFF7E2BE8).withValues(alpha: 0.35),
+                              color: const Color(0xFF7E2BE8).withOpacity(0.35),
                               width: 1.2,
                             ),
                           ),
@@ -183,7 +183,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                           'Esto puede tardar unos segundos...',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.58),
+                            color: Colors.white.withOpacity(0.58),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),

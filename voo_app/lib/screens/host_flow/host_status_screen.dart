@@ -62,7 +62,7 @@ class _HostStatusScreenState extends State<HostStatusScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.35,
-                        color: Colors.white.withValues(alpha: 0.68),
+                        color: Colors.white.withOpacity(0.68),
                       ),
                     ),
 
@@ -182,8 +182,8 @@ class _StatusOptionState extends State<_StatusOption> {
           gradient: LinearGradient(
             colors: active
                 ? [
-                    widget.color.withValues(alpha: 0.25),
-                    widget.color.withValues(alpha: 0.10),
+                    widget.color.withOpacity(0.25),
+                    widget.color.withOpacity(0.10),
                   ]
                 : const [
                     Color(0xFF1A1A28),
@@ -191,13 +191,13 @@ class _StatusOptionState extends State<_StatusOption> {
                   ],
           ),
           border: Border.all(
-            color: active ? widget.color : widget.color.withValues(alpha: 0.3),
+            color: active ? widget.color : widget.color.withOpacity(0.3),
             width: active ? 2.5 : 1.4,
           ),
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: widget.color.withValues(alpha: 0.35),
+                    color: widget.color.withOpacity(0.35),
                     blurRadius: 24,
                     spreadRadius: 1,
                   ),
@@ -211,7 +211,7 @@ class _StatusOptionState extends State<_StatusOption> {
               height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: active ? widget.color : widget.color.withValues(alpha: 0.2),
+                color: active ? widget.color : widget.color.withOpacity(0.2),
               ),
               child: Icon(
                 _getIcon(),
@@ -236,7 +236,7 @@ class _StatusOptionState extends State<_StatusOption> {
                   Text(
                     widget.subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.white.withOpacity(0.6),
                       fontSize: 13,
                     ),
                   ),
@@ -307,7 +307,7 @@ class _RoundBackButtonState extends State<_RoundBackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),
@@ -366,7 +366,7 @@ class _NextButtonState extends State<_NextButton> {
           boxShadow: _pressed && widget.enabled
               ? [
                   BoxShadow(
-                    color: color.withValues(alpha: 0.4),
+                    color: color.withOpacity(0.4),
                     blurRadius: 20,
                     spreadRadius: 1,
                   ),

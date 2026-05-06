@@ -150,7 +150,7 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(18),
                       borderSide: BorderSide(
-                        color: const Color(0xFF9C4DFF).withValues(alpha: 0.55),
+                        color: const Color(0xFF9C4DFF).withOpacity(0.55),
                         width: 1.5,
                       ),
                     ),
@@ -173,7 +173,7 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                             'No se ha encontrado ningún invitado',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.58),
+                              color: Colors.white.withOpacity(0.58),
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
@@ -200,8 +200,8 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                                 border: Border.all(
                                   color: isBanned
                                       ? const Color(0xFFFF3B5C)
-                                          .withValues(alpha: 0.75)
-                                      : Colors.white.withValues(alpha: 0.08),
+                                          .withOpacity(0.75)
+                                      : Colors.white.withOpacity(0.08),
                                   width: isBanned ? 1.6 : 1,
                                 ),
                               ),
@@ -236,7 +236,7 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                                           user.nombre,
                                           style: TextStyle(
                                             color: isBanned
-                                                ? Colors.white.withValues(alpha: 0.55)
+                                                ? Colors.white.withOpacity(0.55)
                                                 : Colors.white,
                                             fontSize: 16,
                                             fontWeight: FontWeight.w800,
@@ -269,7 +269,7 @@ class _BannedUsersScreenState extends State<BannedUsersScreen> {
                                         shape: BoxShape.circle,
                                         color: isBanned
                                             ? const Color(0xFFFF3B5C)
-                                                .withValues(alpha: 0.13)
+                                                .withOpacity(0.13)
                                             : const Color(0xFF151525),
                                         border: Border.all(
                                           color: isBanned
@@ -379,7 +379,7 @@ class _PurpleBackButtonState extends State<_PurpleBackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),
@@ -418,7 +418,7 @@ class _ConfirmBanDialog extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF3B5C).withValues(alpha: 0.22),
+              color: const Color(0xFFFF3B5C).withOpacity(0.22),
               blurRadius: 24,
               spreadRadius: 1,
             ),
@@ -448,7 +448,7 @@ class _ConfirmBanDialog extends StatelessWidget {
               '¿Estás seguro de que quieres banear a $userName?',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.68),
+                color: Colors.white.withOpacity(0.68),
                 fontSize: 14,
                 height: 1.35,
                 fontWeight: FontWeight.w600,
@@ -507,7 +507,7 @@ class _DialogActionButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.18),
+              color: color.withOpacity(0.18),
               blurRadius: 14,
               spreadRadius: 0.5,
             ),

@@ -71,7 +71,5 @@ namespace VooApi.Models
         [Range(typeof(bool), "true", "true",
             ErrorMessage = "Debes aceptar el tratamiento de datos biométricos")]
         public bool AceptaBiometria { get; set; }
-
-        public string? DeviceId { get; set; }
     }
 }

@@ -8,7 +8,6 @@ import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../models/chat_preview_state.dart';
 import '../models/request_model.dart';
-import '../models/reto_model.dart';
 
 class ApiService {
   static String get baseUrl {
@@ -21,83 +20,6 @@ class ApiService {
 
   static Uri _uri(String path) {
     return Uri.parse('$baseUrl$path');
-  }
-
-  static Future<List<RequestModel>> getSolicitudesEnviadas(String userId) async {
-    final response = await http.get(_uri('/Solicitud/enviadas/$userId'));
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Error al obtener solicitudes enviadas');
-    }
-
-    final List<dynamic> data = jsonDecode(response.body);
-
-    return data.map((json) {
-      final map = json as Map<String, dynamic>;
-
-      return RequestModel(
-        id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
-        targetUserId: map['receptorId']?.toString() ?? '',
-        targetUserName: map['receptorNombre']?.toString() ?? 'Usuario',
-        type: _requestTypeFromApi(map['tipo']?.toString()),
-        content: map['contenido']?.toString() ?? '',
-        status: _requestStatusFromApi(map['estado']?.toString()),
-        createdAt: DateTime.tryParse(map['fechaCreacion']?.toString() ?? '') ??
-            DateTime.now(),
-      );
-    }).toList();
-  }
-
-  static Future<List<RequestModel>> getSolicitudesRecibidas(String userId) async {
-    final response = await http.get(_uri('/Solicitud/recibidas/$userId'));
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Error al obtener solicitudes recibidas');
-    }
-
-    final List<dynamic> data = jsonDecode(response.body);
-
-    return data.map((json) {
-      final map = json as Map<String, dynamic>;
-
-      return RequestModel(
-        id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
-        targetUserId: map['emisorId']?.toString() ?? '',
-        targetUserName: map['emisorNombre']?.toString() ?? 'Usuario',
-        type: _requestTypeFromApi(map['tipo']?.toString()),
-        content: map['contenido']?.toString() ?? '',
-        status: _requestStatusFromApi(map['estado']?.toString()),
-        createdAt: DateTime.tryParse(map['fechaCreacion']?.toString() ?? '') ??
-            DateTime.now(),
-      );
-    }).toList();
-  }
-
-  static RequestType _requestTypeFromApi(String? value) {
-    switch (value) {
-      case 'truth':
-        return RequestType.truth;
-      case 'dare':
-        return RequestType.dare;
-      default:
-        return RequestType.messageRequest;
-    }
-  }
-
-  static RequestStatus _requestStatusFromApi(String? value) {
-    switch (value) {
-      case 'aceptada':
-      case 'accepted':
-        return RequestStatus.accepted;
-      case 'rechazada':
-      case 'rejected':
-        return RequestStatus.rejected;
-      case 'answered':
-      case 'respondida':
-        return RequestStatus.answered;
-      default:
-        return RequestStatus.pending;
-    }
   }
 
   static Future<VerdadRetoRandom> getVerdadRetoRandom() async {
@@ -158,8 +80,6 @@ class ApiService {
     }
     return id;
   }
-
-
 
   static Future<Map<String, dynamic>> aceptarVerdadReto(String solicitudId) async {
     final response = await http.post(
@@ -249,57 +169,6 @@ class ApiService {
   }
 
   static Future<RegistroInvitadoResponse> registrarInvitado({
-  required String nombre,
-  required bool sexo,
-  required DateTime fechaNacimiento,
-  required String foto,
-  required String? instagram,
-  required String estado,
-  required List<String> respuestas,
-  required String codigoSala,
-  required double latitud,
-  required double longitud,
-  required double accuracy,
-  bool verificado = true,
-  required bool aceptaTerminos,
-  required bool aceptaPrivacidad,
-  required bool aceptaBiometria,
-  required String deviceId,
-}) async {
-  final uri = _uri('/Registro/invitado');
-
-  final response = await http.post(
-    uri,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'nombre': nombre,
-      'sexo': sexo,
-      'fechaNacimiento': fechaNacimiento.toUtc().toIso8601String(),
-      'foto': foto,
-      'ig': instagram,
-      'estado': estado,
-      'respuestas': respuestas,
-      'verificado': verificado,
-      'codigoSala': codigoSala,
-      'latitud': latitud,
-      'longitud': longitud,
-      'accuracy': accuracy,
-      'aceptaTerminos': aceptaTerminos,
-      'aceptaPrivacidad': aceptaPrivacidad,
-      'aceptaBiometria': aceptaBiometria,
-      'deviceId': deviceId,
-    }),
-  );
-
-  debugPrint('POST: $uri');
-  debugPrint('STATUS: ${response.statusCode}');
-  debugPrint('BODY LENGTH: ${response.body.length}');
-
-  final Map<String, dynamic> data =
-      response.body.isNotEmpty ? jsonDecode(response.body) : {};
-
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(data['mensaje'] ?? 'Error al registrar invitado');
     required String nombre,
     required bool sexo,
     required DateTime fechaNacimiento,
@@ -663,55 +532,6 @@ class ApiService {
       return const Color(0xFFEF4444);
     }
     return const Color(0xFF22C55E);
-  }
-
-  static Future<Map<String, dynamic>> completarRetoActual({
-    required String usuarioId,
-    required String usuarioEscaneadoId,
-  }) async {
-    final response = await http.post(
-      _uri('/Reto/completar-actual'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'usuarioId': usuarioId,
-        'usuarioEscaneadoId': usuarioEscaneadoId,
-      }),
-    );
-
-    debugPrint('POST: ${_uri('/Reto/completar-actual')}');
-    debugPrint('STATUS: ${response.statusCode}');
-    debugPrint('BODY: ${response.body}');
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Error al completar reto');
-    }
-
-    return jsonDecode(response.body) as Map<String, dynamic>;
-  }
-
-  static Future<Map<String, RetoModel?>> getRetosTimeline(String usuarioId) async {
-    final response = await http.get(_uri('/Reto/timeline/$usuarioId'));
-
-    debugPrint('GET: ${_uri('/Reto/timeline/$usuarioId')}');
-    debugPrint('STATUS: ${response.statusCode}');
-    debugPrint('BODY: ${response.body}');
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Error al obtener retos');
-    }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-
-    RetoModel? parseReto(dynamic value) {
-      if (value == null) return null;
-      return RetoModel.fromJson(value as Map<String, dynamic>);
-    }
-
-    return {
-      'anterior': parseReto(data['anterior']),
-      'activo': parseReto(data['activo']),
-      'proximo': parseReto(data['proximo']),
-    };
   }
 }
 

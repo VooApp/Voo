@@ -1,30 +1,15 @@
-using Microsoft.AspNetCore.SignalR;
-using VooApi.Data;
-using VooApi.Hubs;
 using VooApi.Models;
+using VooApi.Data;
 
 namespace VooApi.Services
 {
     public class SalaService
     {
         private readonly SalaRepository _repository;
-        private readonly UsuarioRepository _usuarioRepository;
-        private readonly ChatRepository _chatRepository;
-        private readonly MensajeRepository _mensajeRepository;
-        private readonly IHubContext<SalaHub> _hubContext;
 
-        public SalaService(
-            SalaRepository repository,
-            UsuarioRepository usuarioRepository,
-            ChatRepository chatRepository,
-            MensajeRepository mensajeRepository,
-            IHubContext<SalaHub> hubContext)
+        public SalaService(SalaRepository repository)
         {
             _repository = repository;
-            _usuarioRepository = usuarioRepository;
-            _chatRepository = chatRepository;
-            _mensajeRepository = mensajeRepository;
-            _hubContext = hubContext;
         }
 
         public async Task<Sala> CrearAsync(Sala sala)
@@ -50,36 +35,7 @@ namespace VooApi.Services
 
         public async Task CerrarSalaAsync(string id)
         {
-            await _hubContext.Clients.Group(id).SendAsync("SalaCerrada");
-
-            await Task.Delay(300);
-
-            var usuarios = await _usuarioRepository.ObtenerPorSalaAsync(id);
-
-            var usuariosIds = usuarios
-                .Where(u => u.Id != null)
-                .Select(u => u.Id!)
-                .ToList();
-
-            if (usuariosIds.Count > 0)
-            {
-                var chats = await _chatRepository.ObtenerPorUsuariosAsync(usuariosIds);
-
-                var chatIds = chats
-                    .Where(c => c.Id != null)
-                    .Select(c => c.Id!)
-                    .ToList();
-
-                if (chatIds.Count > 0)
-                {
-                    await _mensajeRepository.EliminarPorChatsAsync(chatIds);
-                }
-
-                await _chatRepository.EliminarPorUsuariosAsync(usuariosIds);
-                await _usuarioRepository.EliminarPorSalaAsync(id);
-            }
-
-            await _repository.EliminarAsync(id);
+            await _repository.CerrarSalaAsync(id);
         }
 
         public async Task ActualizarAsync(string id, Sala sala)

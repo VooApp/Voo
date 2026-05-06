@@ -76,7 +76,7 @@ class _SentRequestDialogState extends State<SentRequestDialog> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF8B3DFF).withValues(alpha: 0.28),
+                color: const Color(0xFF8B3DFF).withOpacity(0.28),
                 blurRadius: 28,
                 spreadRadius: 1.2,
               ),
@@ -98,7 +98,7 @@ class _SentRequestDialogState extends State<SentRequestDialog> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF9C4DFF).withValues(alpha: 0.36),
+                      color: const Color(0xFF9C4DFF).withOpacity(0.36),
                       blurRadius: 18,
                       spreadRadius: 1,
                     ),
@@ -125,7 +125,7 @@ class _SentRequestDialogState extends State<SentRequestDialog> {
                 widget.subtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
+                  color: Colors.white.withOpacity(0.72),
                   fontSize: 13,
                   height: 1.35,
                   fontWeight: FontWeight.w500,

@@ -32,7 +32,6 @@ class _RankingScreenState extends State<RankingScreen> {
   ];
 
   @override
-  Widget build(BuildContext context) {
   void initState() {
     super.initState();
     _cargarRanking();
@@ -151,7 +150,7 @@ class _RankingScreenState extends State<RankingScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF9C4DFF).withValues(alpha: 0.28),
+                          color: const Color(0xFF9C4DFF).withOpacity(0.28),
                           blurRadius: 18,
                           spreadRadius: 0.5,
                         ),
@@ -304,12 +303,6 @@ class _RankingTitle extends StatelessWidget {
               color: Color(0xFF22C55E),
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFF66D63E).withValues(alpha: 0.9),
-                  blurRadius: 18,
-                ),
-              ],
             ),
           ),
           const TextSpan(
@@ -318,12 +311,6 @@ class _RankingTitle extends StatelessWidget {
               color: Color(0xFFEF4444),
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFEAB308).withValues(alpha: 0.9),
-                  blurRadius: 18,
-                ),
-              ],
             ),
           ),
           const TextSpan(
@@ -332,12 +319,6 @@ class _RankingTitle extends StatelessWidget {
               color: Color(0xFFEAB308),
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFF3B5C).withValues(alpha: 0.9),
-                  blurRadius: 18,
-                ),
-              ],
             ),
           ),
         ],
@@ -365,15 +346,6 @@ class _UnlockText extends StatelessWidget {
           const TextSpan(
             text: 'Desbloquea poderes ',
             style: TextStyle(
-              color: const Color(0xFF66D63E),
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFF66D63E).withValues(alpha: 0.85),
-                  blurRadius: 14,
-                ),
-              ],
               color: Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -385,26 +357,6 @@ class _UnlockText extends StatelessWidget {
               color: Color(0xFF9C4DFF),
               fontSize: 15,
               fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFEAB308).withValues(alpha: 0.85),
-                  blurRadius: 14,
-                ),
-              ],
-            ),
-          ),
-          TextSpan(
-            text: 'o',
-            style: TextStyle(
-              color: const Color(0xFFFF3B5C),
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              shadows: [
-                Shadow(
-                  color: const Color(0xFFFF3B5C).withValues(alpha: 0.85),
-                  blurRadius: 14,
-                ),
-              ],
             ),
           ),
         ],
@@ -441,13 +393,13 @@ class _RankingCard extends StatelessWidget {
         color: const Color(0xFF111124),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: color.withValues(alpha: isTopThree ? 0.95 : 0.55),
+          color: color.withOpacity(isTopThree ? 0.95 : 0.55),
           width: isTopThree ? 2.2 : 1.4,
         ),
         boxShadow: isTopOne
             ? [
                 BoxShadow(
-                  color: color.withValues(alpha: 0.28),
+                  color: color.withOpacity(0.28),
                   blurRadius: 20,
                   spreadRadius: 0.8,
                 ),
@@ -461,12 +413,12 @@ class _RankingCard extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.12),
+              color: color.withOpacity(0.12),
               border: Border.all(color: color, width: 2.3),
               boxShadow: isTopOne
                   ? [
                       BoxShadow(
-                        color: color.withValues(alpha: 0.35),
+                        color: color.withOpacity(0.35),
                         blurRadius: 12,
                       ),
                     ]
@@ -558,7 +510,7 @@ class _RankingCard extends StatelessWidget {
               shadows: isTopOne
                   ? [
                       Shadow(
-                        color: color.withValues(alpha: 0.7),
+                        color: color.withOpacity(0.7),
                         blurRadius: 12,
                       ),
                     ]

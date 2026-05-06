@@ -233,7 +233,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                               shadows: [
                                 Shadow(
                                   color: const Color(0xFF22C55E)
-                                      .withValues(alpha: 0.65),
+                                      .withOpacity(0.65),
                                   blurRadius: 16,
                                 ),
                               ],
@@ -246,7 +246,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                               shadows: [
                                 Shadow(
                                   color: const Color(0xFFEAB308)
-                                      .withValues(alpha: 0.65),
+                                      .withOpacity(0.65),
                                   blurRadius: 16,
                                 ),
                               ],
@@ -259,7 +259,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                               shadows: [
                                 Shadow(
                                   color: const Color(0xFFEF4444)
-                                      .withValues(alpha: 0.65),
+                                      .withOpacity(0.65),
                                   blurRadius: 16,
                                 ),
                               ],
@@ -272,7 +272,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                               shadows: [
                                 Shadow(
                                   color: const Color(0xFF9C4DFF)
-                                      .withValues(alpha: 0.65),
+                                      .withOpacity(0.65),
                                   blurRadius: 16,
                                 ),
                               ],
@@ -286,7 +286,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                       'Introduce el código para unirte a la sala.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.68),
+                        color: Colors.white.withOpacity(0.68),
                         fontSize: 14,
                         height: 1.35,
                       ),
@@ -361,7 +361,7 @@ class _VooInputState extends State<_VooInput> {
           boxShadow: _focused
               ? [
                   BoxShadow(
-                    color: const Color(0xFF9C4DFF).withValues(alpha: 0.22),
+                    color: const Color(0xFF9C4DFF).withOpacity(0.22),
                     blurRadius: 18,
                     spreadRadius: 1,
                   ),
@@ -378,7 +378,7 @@ class _VooInputState extends State<_VooInput> {
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.42),
+              color: Colors.white.withOpacity(0.42),
               fontSize: 15,
             ),
             filled: true,
@@ -390,7 +390,7 @@ class _VooInputState extends State<_VooInput> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(22),
               borderSide: BorderSide(
-                color: const Color(0xFF9C4DFF).withValues(alpha: 0.38),
+                color: const Color(0xFF9C4DFF).withOpacity(0.38),
                 width: 1.6,
               ),
             ),
@@ -449,7 +449,7 @@ class _RoundBackButtonState extends State<_RoundBackButton> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B3DFF).withValues(alpha: _pressed ? 0.5 : 0.2),
+              color: const Color(0xFF8B3DFF).withOpacity(_pressed ? 0.5 : 0.2),
               blurRadius: 18,
               spreadRadius: 1,
             ),
@@ -515,7 +515,7 @@ class _NextButtonState extends State<_NextButton> {
           boxShadow: (_pressed && widget.enabled)
               ? [
                   BoxShadow(
-                    color: color.withValues(alpha: 0.55),
+                    color: color.withOpacity(0.55),
                     blurRadius: 18,
                     spreadRadius: 2,
                   ),
@@ -570,7 +570,7 @@ class _LocationPermissionDialog extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9C4DFF).withValues(alpha: 0.18),
+              color: const Color(0xFF9C4DFF).withOpacity(0.18),
               blurRadius: 22,
               spreadRadius: 1,
             ),
@@ -600,7 +600,7 @@ class _LocationPermissionDialog extends StatelessWidget {
               'Solo la usamos para comprobar que estás dentro del radio del evento.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.58),
+                color: Colors.white.withOpacity(0.58),
                 fontSize: 13,
                 height: 1.35,
               ),
@@ -673,7 +673,7 @@ class _DialogButtonState extends State<_DialogButton> {
           boxShadow: _pressed
               ? [
                   BoxShadow(
-                    color: widget.color.withValues(alpha: 0.55),
+                    color: widget.color.withOpacity(0.55),
                     blurRadius: 16,
                     spreadRadius: 2,
                   ),

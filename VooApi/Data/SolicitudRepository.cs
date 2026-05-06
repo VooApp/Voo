@@ -58,12 +58,5 @@ namespace VooApi.Data
                 s.Estado == estado
             ).FirstOrDefaultAsync();
         }
-
-        public async Task EliminarPorUsuarioAsync(string usuarioId)
-        {
-            await _collection.DeleteManyAsync(s =>
-                s.EmisorId == usuarioId || s.ReceptorId == usuarioId
-            );
-        }
     }
 }
