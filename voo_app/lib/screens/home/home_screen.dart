@@ -194,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
       };
 
-      await showDialog<void>(
+      showDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (_) => SentRequestDialog(
@@ -202,6 +202,12 @@ class _HomeScreenState extends State<HomeScreen> {
           subtitle: dialogData.$2,
         ),
       );
+
+      await Future.delayed(const Duration(milliseconds: 1300));
+
+      if (!context.mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pop();
     }
 
     return Scaffold(
