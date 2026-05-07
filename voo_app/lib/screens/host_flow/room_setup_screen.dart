@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'room_code_screen.dart';
 import '../../services/api_service.dart';
 import '../../state/app_state.dart';
+import 'package:flutter/foundation.dart';
 
 class RoomSetupScreen extends StatefulWidget {
   const RoomSetupScreen({super.key});
@@ -78,19 +79,31 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
     }
   }
 
-  Future<Location> _getCoordinatesFromAddress() async {
+  Future<({double latitud, double longitud})> _getCoordinatesFromAddress() async {
     final direccion = addressController.text.trim();
-    final cp = cpController.text.trim();
 
-    final fullAddress = '$direccion, $cp, España';
-
-    final locations = await locationFromAddress(fullAddress);
-
-    if (locations.isEmpty) {
-      throw Exception('No se pudo encontrar esa dirección');
+    if (direccion.isEmpty) {
+      throw Exception('Escribe una dirección');
     }
 
-    return locations.first;
+    if (kIsWeb) {
+      // TEMPORAL WEB: coordenadas falsas para poder probar el flujo
+      return (
+        latitud: 41.3851,
+        longitud: 2.1734,
+      );
+    }
+
+    final locations = await locationFromAddress(direccion);
+
+    if (locations.isEmpty) {
+      throw Exception('No se encontró esa dirección');
+    }
+
+    return (
+      latitud: locations.first.latitude,
+      longitud: locations.first.longitude,
+    );
   }
 
   Future<void> _createRoom() async {
@@ -104,6 +117,27 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Faltan datos del registro del host'),
+        ),
+      );
+      return;
+    }
+
+    if (selectedContext == null || selectedCapacity == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecciona contexto y aforo para continuar'),
+        ),
+      );
+      return;
+    }
+
+    if (roomNameController.text.trim().isEmpty ||
+        addressController.text.trim().isEmpty ||
+        cpController.text.trim().isEmpty ||
+        grandPrizeController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Completa todos los campos obligatorios'),
         ),
       );
       return;
@@ -130,12 +164,12 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
         estado: appState.estado!,
         respuestas: appState.respuestas,
         nombreSala: roomNameController.text.trim(),
-        contexto: selectedContext!,
-        aforo: _capacityToInt(selectedCapacity!),
+        contexto: selectedContext ?? '',
+        aforo: _capacityToInt(selectedCapacity ?? '15_30'),
         direccion: addressController.text.trim(),
-        codigoPostal: int.parse(cpController.text.trim()),
-        latitudSala: location.latitude,
-        longitudSala: location.longitude,
+        codigoPostal: int.tryParse(cpController.text.trim()) ?? 0,
+        latitudSala: location.latitud,
+        longitudSala: location.longitud,
         premioMayor: grandPrizeController.text.trim(),
         premiosFlash: premiosFlash,
         aceptaTerminos: appState.aceptaTerminos,
@@ -161,7 +195,9 @@ class _RoomSetupScreenState extends State<RoomSetupScreen> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('ERROR CREANDO SALA: $e');
+      debugPrint('STACK CREANDO SALA: $stack');
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
