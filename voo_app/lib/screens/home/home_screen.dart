@@ -301,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         final bool isRejected =
                                             interactionRequest?.status ==
                                                 RequestStatus.rejected;
- 
+
                                         final String? requestLabel =
                                             interactionRequest == null
                                                 ? null
@@ -331,23 +331,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                             statusColor: userColor,
                                             hasRequestSent: hasRequest,
                                             pendingLabel: requestLabel,
-                                            pendingLabelColor: isRejected
-                                                ? const Color(0xFFFF3B5C)
-                                                : const Color(0xFFEAB308),
-                                            onTap: isRejected
-                                                ? () {
-                                                    context
-                                                        .read<AppState>()
-                                                        .reopenRejectedIncomingRequest(
-                                                            user.id);
-                                                  }
-                                                : hasRequest
-                                                    ? () =>
-                                                        abrirChatConUsuario(
-                                                            user)
-                                                    : () =>
-                                                        openInteractionPopup(
-                                                            user),
+                                            pendingLabelColor: const Color(0xFFEAB308),
+                                            onTap: hasRequest
+                                                ? () => abrirChatConUsuario(user)
+                                                : () => openInteractionPopup(user),
                                           ),
                                         );
                                       },

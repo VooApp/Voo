@@ -34,146 +34,34 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
   }
 
   Future<void> _goNext() async {
-    if (!_isValid || _requestingLocation) return;
+  if (!_isValid || _requestingLocation) return;
 
-    LocationPermission permission = await Geolocator.checkPermission();
+  setState(() {
+    _requestingLocation = true;
+  });
 
-    // Si ya tiene permiso, no mostramos popup y pasa directo
-    if (permission == LocationPermission.always ||
-        permission == LocationPermission.whileInUse) {
-      setState(() {
-        _requestingLocation = true;
-      });
+  context.read<AppState>().setGuestJoinData(
+        roomCode: _codeController.text.trim().toUpperCase(),
+        latitud: 0.0,
+        longitud: 0.0,
+        accuracy: 0.0,
+      );
 
-      try {
-        final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Activa la ubicación del dispositivo para continuar'),
-            ),
-          );
-          return;
-        }
+  if (!mounted) return;
 
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const GuestStatusScreen(),
+    ),
+  );
 
-        if (!mounted) return;
-
-        context.read<AppState>().setGuestJoinData(
-              roomCode: _codeController.text.trim().toUpperCase(),
-              latitud: position.latitude,
-              longitud: position.longitude,
-              accuracy: position.accuracy,
-            );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const GuestStatusScreen(),
-          ),
-        );
-      } finally {
-        if (mounted) {
-          setState(() {
-            _requestingLocation = false;
-          });
-        }
-      }
-      return;
-    }
-
-    // Si no tiene permiso, mostramos popup propio
-    final bool? wantsToContinue = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const _LocationPermissionDialog(),
-    );
-
-    if (wantsToContinue != true) return;
-
+  if (mounted) {
     setState(() {
-      _requestingLocation = true;
+      _requestingLocation = false;
     });
-
-    try {
-      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Activa la ubicación del dispositivo para continuar'),
-          ),
-        );
-        return;
-      }
-
-      permission = await Geolocator.checkPermission();
-
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (!mounted) return;
-
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Debes permitir la ubicación para entrar a la sala'),
-          ),
-        );
-        return;
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'La ubicación está bloqueada. Actívala desde ajustes para continuar',
-            ),
-          ),
-        );
-        await Geolocator.openAppSettings();
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      if (!mounted) return;
-
-      context.read<AppState>().setGuestJoinData(
-            roomCode: _codeController.text.trim().toUpperCase(),
-            latitud: position.latitude,
-            longitud: position.longitude,
-            accuracy: position.accuracy,
-          );
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const GuestStatusScreen(),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo obtener la ubicación'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _requestingLocation = false;
-        });
-      }
-    }
   }
+}
 
   @override
   Widget build(BuildContext context) {

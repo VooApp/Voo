@@ -50,6 +50,7 @@ class _CameraScreenState extends State<CameraScreen> {
         enableClassification: false,
         enableTracking: false,
         performanceMode: FaceDetectorMode.fast,
+        minFaceSize: 0.08,
       ),
     );
 
@@ -146,9 +147,9 @@ class _CameraScreenState extends State<CameraScreen> {
       final bytes = allBytes.done().buffer.asUint8List();
 
       final camera = _cameras[_currentCameraIndex];
-      final rotation = InputImageRotationValue.fromRawValue(
-        camera.sensorOrientation,
-      );
+      final rotation = Platform.isAndroid
+        ? InputImageRotation.rotation270deg
+        : InputImageRotation.rotation0deg;
 
       final format = InputImageFormatValue.fromRawValue(image.format.raw);
 
@@ -200,7 +201,7 @@ class _CameraScreenState extends State<CameraScreen> {
       final dx = (faceCenterX - targetCenterX).abs();
       final dy = (faceCenterY - targetCenterY).abs();
 
-      final centered = dx < frameWidth * 0.15 && dy < frameHeight * 0.15;
+      final centered = dx < frameWidth * 0.35 && dy < frameHeight * 0.35;
 
       setState(() {
         _faceDetected = true;
@@ -266,14 +267,14 @@ class _CameraScreenState extends State<CameraScreen> {
       return;
     }
 
-    if (!_faceDetected || !_faceCentered) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Coloca bien tu cara antes de continuar'),
-        ),
-      );
-      return;
-    }
+    // if (!_faceDetected || !_faceCentered) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Coloca bien tu cara antes de continuar'),
+    //     ),
+    //   );
+    //   return;
+    // }
 
     try {
       setState(() {
